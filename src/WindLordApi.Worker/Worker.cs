@@ -1,5 +1,6 @@
 using WindLordApi.Data;
 using Microsoft.EntityFrameworkCore;
+using WindLordApi.Data.Services;
 
 namespace WindLordApi.Worker;
 
@@ -21,30 +22,17 @@ public class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // Load the connection string from configuration
-        var connectionString = _configuration.GetConnectionString("SUPABASE_CONNECTION_STRING")
-            ?? throw new InvalidOperationException("Supabase connection string not found");
-
-        _logger.LogInformation("DB Connection String configured: {HasConnection}",
-            connectionString != "Supabase connection string not found");
 
         // Test database connection
         try
         {
             using var scope = _serviceProvider.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var stationDataService = scope.ServiceProvider.GetRequiredService<IStationDataService>();
+            // Get all data for a station
+            var allData = await stationDataService.GetByStationIdAsync("1576", stoppingToken);
 
-            // Test the connection
-            var canConnect = await dbContext.Database.CanConnectAsync(stoppingToken);
+            _logger.LogInformation("Found {Count} records for station {StationId}", allData.Count(), "STATION_001");
 
-            if (canConnect)
-            {
-                _logger.LogInformation("Successfully connected to database!");
-            }
-            else
-            {
-                _logger.LogWarning("Cannot connect to database");
-            }
         }
         catch (Exception ex)
         {
