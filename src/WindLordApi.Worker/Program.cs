@@ -1,5 +1,6 @@
 using WindLordApi.Worker;
 using WindLordApi.Data;
+using WindLordApi.Data.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -12,6 +13,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
     options.UseNpgsql(connectionString);
 });
+
+// Register Services
+builder.Services.AddScoped<IStationDataService, StationDataService>();
 
 builder.Services.AddHostedService<Worker>();
 
