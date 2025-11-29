@@ -19,7 +19,35 @@ public class Worker : BackgroundService
     {
 
 
+        // Test database connection
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var stationDataService = scope.ServiceProvider.GetRequiredService<IStationDataService>();
+            // Get all data for a station
+            var allData = await stationDataService.GetByStationIdAsync("1576", stoppingToken);
 
+            _logger.LogInformation("Found {Count} records for station {StationId}", allData.Count(), "1576");
+
+            // Modify the first record's wind speed to 10 for testing upsert logic
+            var dataArray = allData.ToArray();
+            if (dataArray.Length > 0)
+            {
+                dataArray[0].WindSpeed = 123;
+                // Round down to nearest 15-minute interval (00, 15, 30, or 45)
+                var now = DateTime.UtcNow;
+                var roundedMinutes = now.Minute - (now.Minute % 15);
+                dataArray[0].UpdatedAt = new DateTime(now.Year, now.Month, now.Day, now.Hour, roundedMinutes, 0, DateTimeKind.Utc);
+                _logger.LogInformation("Modified first record's wind speed to 10 for testing");
+            }
+
+            // Upsert the data - reuse the same scope and service
+            await stationDataService.UpsertManyAsync(dataArray, stoppingToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error connecting to database");
+        }
         while (!stoppingToken.IsCancellationRequested)
         {
             if (_logger.IsEnabled(LogLevel.Information))
@@ -27,26 +55,6 @@ public class Worker : BackgroundService
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
             }
 
-
-            // Test database connection
-            try
-            {
-                using var scope = _serviceProvider.CreateScope();
-                var stationDataService = scope.ServiceProvider.GetRequiredService<IStationDataService>();
-                // Get all data for a station
-                var allData = await stationDataService.GetByStationIdAsync("1576", stoppingToken);
-
-                _logger.LogInformation("Found {Count} records for station {StationId}", allData.Count(), "STATION_001");
-
-
-                var stationDataService2 = scope.ServiceProvider.GetRequiredService<IStationDataService>();
-                var allData2 = await stationDataService2.GetByStationIdAsync("1576", stoppingToken);
-                _logger.LogInformation("Found {Count} records for station {StationId}", allData2.Count(), "STATION_002");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error connecting to database");
-            }
             await Task.Delay(10000, stoppingToken);
 
 

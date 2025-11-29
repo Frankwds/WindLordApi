@@ -21,6 +21,12 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<WeatherStation>(entity =>
         {
             entity.HasKey(e => e.Id);
+
+            // Database generates primary key IDs
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .ValueGeneratedOnAdd();
+
             entity.HasIndex(e => e.StationId)
                 .IsUnique()
                 .HasDatabaseName("weather_stations_station_id_unique");
@@ -51,6 +57,11 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<StationData>(entity =>
         {
             entity.HasKey(e => e.Id);
+
+            // Database generates primary key IDs
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .ValueGeneratedOnAdd();
 
             entity.HasIndex(e => new { e.StationId, e.UpdatedAt })
                 .IsUnique()
