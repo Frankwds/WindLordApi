@@ -95,7 +95,17 @@ public class MetFrostClient
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "Error fetching MET Frost data");
+            _logger.LogError(ex, "HTTP error while fetching MET Frost data");
+            throw;
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Invalid JSON response received from MET Frost API");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while fetching MET Frost data");
             throw;
         }
     }
