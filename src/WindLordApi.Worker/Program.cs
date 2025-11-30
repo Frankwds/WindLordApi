@@ -20,7 +20,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IStationDataService, StationDataService>();
 
 // Register MET Frost Client
-builder.Services.AddScoped<IMetFrostClient, MetFrostClient>();
+// 1. Configure Options (binds from appsettings)
+builder.Services.Configure<MetFrostOptions>(
+    builder.Configuration.GetSection(MetFrostOptions.SectionName));
+
+// 2. Register HttpClient + Service together (recommended)
+builder.Services.AddHttpClient<IMetFrostClient, MetFrostClient>();
 
 builder.Services.AddHostedService<Worker>();
 
