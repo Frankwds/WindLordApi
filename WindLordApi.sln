@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindLordApi.Worker", "src\W
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindLordApi.Data", "src\WindLordApi.Data\WindLordApi.Data.csproj", "{0D02EC78-0984-493C-A90D-43CAA5D97AAB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindLordApi.Integrations", "WindLordApi.Integrations\WindLordApi.Integrations.csproj", "{0DC98B56-0CA8-4B98-8C31-B916C9F39B07}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindLordApi.Integrations", "src\WindLordApi.Integrations\WindLordApi.Integrations.csproj", "{0DC98B56-0CA8-4B98-8C31-B916C9F39B07}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
