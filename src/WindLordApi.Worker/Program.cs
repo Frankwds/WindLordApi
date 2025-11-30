@@ -2,6 +2,8 @@ using WindLordApi.Worker;
 using WindLordApi.Data;
 using WindLordApi.Data.Services;
 using Microsoft.EntityFrameworkCore;
+using WindLordApi.Integrations.Clients.MetFrost;
+
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -16,6 +18,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Register Services
 builder.Services.AddScoped<IStationDataService, StationDataService>();
+
+// Register MET Frost Client
+builder.Services.AddScoped<IMetFrostClient, MetFrostClient>();
 
 builder.Services.AddHostedService<Worker>();
 

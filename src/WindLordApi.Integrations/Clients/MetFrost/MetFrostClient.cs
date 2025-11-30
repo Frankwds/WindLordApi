@@ -4,12 +4,12 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace WindLordApi.Integrations.Clients;
+namespace WindLordApi.Integrations.Clients.MetFrost;
 
 /// <summary>
 /// Client for fetching weather station data from MET Frost API
 /// </summary>
-public class MetFrostClient
+public class MetFrostClient : IMetFrostClient
 {
     private readonly HttpClient _httpClient;
     private readonly MetFrostOptions _options;
@@ -18,14 +18,14 @@ public class MetFrostClient
     // Query parameters constants
     private const string BaseUrl = "https://frost.met.no/observations/v0.jsonld";
     private const string TimeRange = "latest";
-    private static readonly string[] Elements = new[]
-    {
+    private static readonly string[] Elements =
+    [
         "wind_speed",
         "wind_from_direction",
         "max(wind_speed_of_gust PT10M)", // 10-minute resolution (preferred, but not available for all stations)
         "max(wind_speed_of_gust PT1H)", // Hourly resolution (fallback for stations without PT10M)
         "air_temperature"
-    };
+    ];
 
     public MetFrostClient(
         HttpClient httpClient,
@@ -38,7 +38,7 @@ public class MetFrostClient
     }
 
     /// <summary>
-    /// Gets the last 10 minutes of station data from MET Frost API
+    /// Gets the latest station data from MET Frost API
     /// </summary>
     /// <param name="stationIds">Array of station IDs to fetch data for (should be <= 100 stations)</param>
     /// <param name="cancellationToken">Cancellation token</param>

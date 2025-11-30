@@ -1,4 +1,4 @@
-namespace WindLordApi.Integrations.Clients;
+namespace WindLordApi.Integrations.Clients.MetFrost;
 
 /// <summary>
 /// Configuration options for MET Frost API client

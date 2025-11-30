@@ -13,5 +13,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WindLordApi.Data\WindLordApi.Data.csproj" />
+    <ProjectReference Include="..\WindLordApi.Integrations\WindLordApi.Integrations.csproj" />
   </ItemGroup>
 </Project>
