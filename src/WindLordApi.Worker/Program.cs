@@ -7,6 +7,15 @@ using WindLordApi.Integrations.MetFrost;
 
 var builder = Host.CreateApplicationBuilder(args);
 
+// Explicitly configure logging to prevent duplicates
+builder.Logging.ClearProviders();
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.IncludeScopes = false;
+    options.SingleLine = false;
+    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
+});
+
 // Register DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
