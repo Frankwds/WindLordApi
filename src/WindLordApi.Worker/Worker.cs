@@ -1,4 +1,5 @@
 using WindLordApi.Data.Services;
+using WindLordApi.Integrations.MetFrost;
 
 namespace WindLordApi.Worker;
 

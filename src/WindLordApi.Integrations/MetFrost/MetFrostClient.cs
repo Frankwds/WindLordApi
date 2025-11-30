@@ -4,7 +4,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace WindLordApi.Integrations.Clients.MetFrost;
+namespace WindLordApi.Integrations.MetFrost;
 
 /// <summary>
 /// Client for fetching weather station data from MET Frost API
@@ -83,7 +83,12 @@ public class MetFrostClient : IMetFrostClient
         try
         {
             using var response = await _httpClient.SendAsync(request, cancellationToken);
-            response.EnsureSuccessStatusCode();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                throw new HttpRequestException($"MET Frost API returned error status {response.StatusCode}. Response body: {errorContent}");
+            }
 
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
             var jsonDocument = JsonDocument.Parse(content);
@@ -93,7 +98,7 @@ public class MetFrostClient : IMetFrostClient
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "HTTP error while fetching MET Frost data");
+            _logger.LogError(ex, "HTTP error while fetching MET Frost data: {ErrorMessage}", ex.Message);
             throw;
         }
         catch (JsonException ex)

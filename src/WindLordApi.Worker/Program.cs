@@ -2,7 +2,7 @@ using WindLordApi.Worker;
 using WindLordApi.Data;
 using WindLordApi.Data.Services;
 using Microsoft.EntityFrameworkCore;
-using WindLordApi.Integrations.Clients.MetFrost;
+using WindLordApi.Integrations.MetFrost;
 
 
 var builder = Host.CreateApplicationBuilder(args);

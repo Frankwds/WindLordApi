@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace WindLordApi.Integrations.Clients.MetFrost;
+namespace WindLordApi.Integrations.MetFrost;
 
 public interface IMetFrostClient
 {
