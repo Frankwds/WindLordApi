@@ -35,9 +35,6 @@ public class MetFrostClient
         _httpClient = httpClient;
         _options = options.Value;
         _logger = logger;
-
-        // Set timeout (30 seconds default, matching Next.js implementation)
-        _httpClient.Timeout = TimeSpan.FromSeconds(30);
     }
 
     /// <summary>
@@ -75,7 +72,8 @@ public class MetFrostClient
         var queryString = string.Join("&", queryParams);
         var requestUrl = $"{BaseUrl}?{queryString}";
 
-        var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         request.Headers.Add("User-Agent", "WindAlert/1.0");
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authHeader);
@@ -84,7 +82,7 @@ public class MetFrostClient
 
         try
         {
-            var response = await _httpClient.SendAsync(request, cancellationToken);
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
