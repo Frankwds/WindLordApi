@@ -85,7 +85,7 @@ public static class MetFrostMapping
 
         // Convert map to list and filter out incomplete records
         var stationDataList = stationDataMap.Values
-            .Where(data => 
+            .Where(data =>
                 // Only include records that have at least wind_speed and direction
                 data.WindSpeed.HasValue && data.Direction.HasValue)
             .Select(data => new StationData

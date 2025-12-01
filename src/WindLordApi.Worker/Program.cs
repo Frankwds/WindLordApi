@@ -1,4 +1,5 @@
 using WindLordApi.Worker;
+using WindLordApi.Worker.Services;
 using WindLordApi.Data;
 using WindLordApi.Data.Services;
 using Microsoft.EntityFrameworkCore;
@@ -25,8 +26,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString);
 });
 
-// Register Services
+// Register Data Services
 builder.Services.AddScoped<IStationDataService, StationDataService>();
+builder.Services.AddScoped<IWeatherStationService, WeatherStationService>();
+
+// Register Worker Services
+builder.Services.AddScoped<IMetFrostSyncService, MetFrostSyncService>();
 
 // Register MET Frost Client
 // 1. Configure Options (binds from appsettings)
