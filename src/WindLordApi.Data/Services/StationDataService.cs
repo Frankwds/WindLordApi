@@ -34,7 +34,7 @@ public class StationDataService : IStationDataService
         return stationData;
     }
 
-    public async Task UpsertManyAsync(StationData[] stationDataArray, CancellationToken cancellationToken = default)
+    public async Task<int> UpsertManyAsync(StationData[] stationDataArray, CancellationToken cancellationToken = default)
     {
         if (stationDataArray == null || stationDataArray.Length == 0)
         {
@@ -43,25 +43,24 @@ public class StationDataService : IStationDataService
         var records = stationDataArray.Where(sd => sd is not null).ToList();
         if (records.Count == 0)
         {
-            _logger.LogWarning("Upsert skipped because all entries were null");
-            return;
+            return 0;
         }
 
-        _logger.LogInformation("Upserting {Count} station data rows", records.Count);
+        var totalInserted = 0;
 
         // Process in batches to avoid parameter limits
         for (int i = 0; i < records.Count; i += BatchSize)
         {
             var batch = records.Skip(i).Take(BatchSize).ToList();
-            await UpsertBatchAsync(batch, cancellationToken);
+            totalInserted += await UpsertBatchAsync(batch, cancellationToken);
         }
 
-        _logger.LogInformation("Done Upserting {Count} station data rows (conflicts ignored)", records.Count);
+        return totalInserted;
     }
 
-    private async Task UpsertBatchAsync(List<StationData> batch, CancellationToken cancellationToken)
+    private async Task<int> UpsertBatchAsync(List<StationData> batch, CancellationToken cancellationToken)
     {
-        if (batch.Count == 0) return;
+        if (batch.Count == 0) return 0;
 
         // Use explicit transaction for Supabase connection pooler compatibility
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -104,8 +103,9 @@ public class StationDataService : IStationDataService
                 VALUES {string.Join(", ", valueClauses)}
                 ON CONFLICT (station_id, updated_at) DO NOTHING";
 
-            await _dbContext.Database.ExecuteSqlRawAsync(sql, parameters.ToArray(), cancellationToken);
+            var inserted = await _dbContext.Database.ExecuteSqlRawAsync(sql, parameters.ToArray(), cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            return inserted;
         }
         catch (Exception ex)
         {

@@ -35,46 +35,47 @@ public class MetFrostSyncService : IMetFrostSyncService
             return 0;
         }
 
-        _logger.LogInformation("Starting sync for {Count} stations", stationIds.Count);
-
-        var totalUpserted = 0;
+        var totalAttempted = 0;
+        var totalInserted = 0;
+        var batchNumber = 0;
 
         // 2. Process stations in batches (MetFrost API limit is 100)
         for (int i = 0; i < stationIds.Count; i += MaxStationsPerRequest)
         {
             var batch = stationIds.Skip(i).Take(MaxStationsPerRequest).ToArray();
+            batchNumber++;
+            var processedCount = Math.Min(i + MaxStationsPerRequest, stationIds.Count);
+
+            _logger.LogInformation("Processing batch {BatchNumber}, {Processed}/{Total} station_ids",
+                batchNumber, processedCount, stationIds.Count);
 
             try
             {
                 // 3. Fetch data from MetFrost API
                 var response = await _metFrostClient.FetchMetStationDataAsync(batch, cancellationToken);
-                _logger.LogInformation("Fetched {Count} data points for batch {BatchNumber}",
-                    response.Data.Count, (i / MaxStationsPerRequest) + 1);
 
                 // 4. Map MET observations to StationData
                 var stationDataList = MetFrostMapping.MapMetObservationsToStationData(response.Data);
-                _logger.LogInformation("Mapped {Count} valid station data records from {DataPointCount} data points",
-                    stationDataList.Count, response.Data.Count);
 
                 // 5. Upsert the mapped data to database
                 if (stationDataList.Count > 0)
                 {
-                    await _stationDataService.UpsertManyAsync(stationDataList.ToArray(), cancellationToken);
-                    totalUpserted += stationDataList.Count;
-                    _logger.LogInformation("Successfully upserted {Count} station data records for batch {BatchNumber}",
-                        stationDataList.Count, (i / MaxStationsPerRequest) + 1);
+                    var inserted = await _stationDataService.UpsertManyAsync(stationDataList.ToArray(), cancellationToken);
+                    totalAttempted += stationDataList.Count;
+                    totalInserted += inserted;
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing batch {BatchNumber} with stations: {Stations}",
-                    (i / MaxStationsPerRequest) + 1, string.Join(", ", batch));
+                    batchNumber, string.Join(", ", batch));
                 // Continue with next batch instead of failing completely
             }
         }
 
-        _logger.LogInformation("Sync completed. Total records upserted: {Count}", totalUpserted);
-        return totalUpserted;
+        _logger.LogInformation("Inserted {Inserted}/{Attempted} new records of station data",
+            totalInserted, totalAttempted);
+        return totalInserted;
     }
 }
 
