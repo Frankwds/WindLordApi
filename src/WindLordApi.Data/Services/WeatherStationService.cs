@@ -114,11 +114,19 @@ public class WeatherStationService : IWeatherStationService
             var sql = $@"
                 INSERT INTO weather_stations (name, latitude, longitude, altitude, country, is_active, provider, updated_at, station_id, is_main)
                 VALUES {string.Join(", ", valueClauses)}
-                ON CONFLICT (station_id) DO NOTHING";
+                ON CONFLICT (station_id) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    latitude = EXCLUDED.latitude,
+                    longitude = EXCLUDED.longitude,
+                    altitude = EXCLUDED.altitude,
+                    country = EXCLUDED.country,
+                    provider = EXCLUDED.provider,
+                    updated_at = EXCLUDED.updated_at,
+                    is_main = EXCLUDED.is_main";
 
-            var inserted = await _dbContext.Database.ExecuteSqlRawAsync(sql, parameters.ToArray(), cancellationToken);
+            var affected = await _dbContext.Database.ExecuteSqlRawAsync(sql, parameters.ToArray(), cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            return inserted;
+            return affected;
         }
         catch (Exception ex)
         {
