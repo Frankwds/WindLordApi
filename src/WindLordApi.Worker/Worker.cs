@@ -29,6 +29,17 @@ public class Worker : BackgroundService
             _logger.LogError(ex, "Error in worker execution");
         }
 
+        // Sync new weather stations on startup
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
+            await syncService.SyncNewWeatherStationsAsync(stoppingToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in worker execution");
+        }
         while (!stoppingToken.IsCancellationRequested)
         {
             if (_logger.IsEnabled(LogLevel.Information))
