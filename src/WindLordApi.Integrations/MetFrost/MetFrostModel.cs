@@ -148,4 +148,146 @@ public record MetObservationsResponse
     public IReadOnlyList<MetObservationsData> Data { get; init; } = Array.Empty<MetObservationsData>();
 }
 
+/// <summary>
+/// Represents the geometry information for a MET weather station.
+/// Mirrors the Zod schema: metFrostGeometrySchema.
+/// </summary>
+public record MetFrostGeometry
+{
+    [JsonRequired]
+    [JsonPropertyName("@type")]
+    public string Type { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Coordinates as [longitude, latitude].
+    /// </summary>
+    [JsonRequired]
+    [JsonPropertyName("coordinates")]
+    public double[] Coordinates { get; init; } = Array.Empty<double>();
+
+    [JsonRequired]
+    [JsonPropertyName("nearest")]
+    public bool Nearest { get; init; }
+}
+
+/// <summary>
+/// Represents a single MET weather station.
+/// Mirrors the Zod schema: metFrostStationSchema.
+/// </summary>
+public record MetFrostStation
+{
+    [JsonRequired]
+    [JsonPropertyName("@type")]
+    public string Type { get; init; } = string.Empty;
+
+    [JsonRequired]
+    [JsonPropertyName("id")]
+    public string Id { get; init; } = string.Empty;
+
+    [JsonPropertyName("name")]
+    public string? Name { get; init; }
+
+    [JsonPropertyName("shortName")]
+    public string? ShortName { get; init; }
+
+    [JsonPropertyName("country")]
+    public string? Country { get; init; }
+
+    [JsonPropertyName("countryCode")]
+    public string? CountryCode { get; init; }
+
+    [JsonPropertyName("geometry")]
+    public MetFrostGeometry? Geometry { get; init; }
+
+    /// <summary>
+    /// Meters above sea level.
+    /// </summary>
+    [JsonPropertyName("masl")]
+    public double? Masl { get; init; }
+
+    [JsonPropertyName("validFrom")]
+    public string? ValidFrom { get; init; }
+
+    [JsonPropertyName("county")]
+    public string? County { get; init; }
+
+    [JsonPropertyName("countyId")]
+    public int? CountyId { get; init; }
+
+    [JsonPropertyName("municipality")]
+    public string? Municipality { get; init; }
+
+    [JsonPropertyName("municipalityId")]
+    public int? MunicipalityId { get; init; }
+
+    [JsonPropertyName("ontologyId")]
+    public int? OntologyId { get; init; }
+
+    [JsonPropertyName("stationHolders")]
+    public IReadOnlyList<string>? StationHolders { get; init; }
+
+    [JsonPropertyName("externalIds")]
+    public IReadOnlyList<string>? ExternalIds { get; init; }
+
+    [JsonPropertyName("wigosId")]
+    public string? WigosId { get; init; }
+
+    [JsonPropertyName("shipCodes")]
+    public IReadOnlyList<string>? ShipCodes { get; init; }
+}
+
+/// <summary>
+/// Root model for MET Frost stations API response.
+/// Mirrors the Zod schema: metFrostResponseSchema.
+/// </summary>
+public record MetFrostStationsResponse
+{
+    [JsonRequired]
+    [JsonPropertyName("@context")]
+    public string Context { get; init; } = string.Empty;
+
+    [JsonRequired]
+    [JsonPropertyName("@type")]
+    public string Type { get; init; } = string.Empty;
+
+    [JsonRequired]
+    [JsonPropertyName("apiVersion")]
+    public string ApiVersion { get; init; } = string.Empty;
+
+    [JsonRequired]
+    [JsonPropertyName("license")]
+    public string License { get; init; } = string.Empty;
+
+    [JsonRequired]
+    [JsonPropertyName("createdAt")]
+    public string CreatedAt { get; init; } = string.Empty;
+
+    [JsonRequired]
+    [JsonPropertyName("queryTime")]
+    public double QueryTime { get; init; }
+
+    [JsonRequired]
+    [JsonPropertyName("currentItemCount")]
+    public int CurrentItemCount { get; init; }
+
+    [JsonRequired]
+    [JsonPropertyName("itemsPerPage")]
+    public int ItemsPerPage { get; init; }
+
+    [JsonRequired]
+    [JsonPropertyName("offset")]
+    public int Offset { get; init; }
+
+    [JsonRequired]
+    [JsonPropertyName("totalItemCount")]
+    public int TotalItemCount { get; init; }
+
+    [JsonPropertyName("currentLink")]
+    public string? CurrentLink { get; init; }
+
+    [JsonRequired]
+    [JsonPropertyName("data")]
+    public IReadOnlyList<MetFrostStation> Data { get; init; } = Array.Empty<MetFrostStation>();
+}
+
 
