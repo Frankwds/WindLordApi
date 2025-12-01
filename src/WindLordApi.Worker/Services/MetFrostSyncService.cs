@@ -26,14 +26,24 @@ public class MetFrostSyncService : IMetFrostSyncService
 
     public async Task<int> SyncLatestStationDataAsync(CancellationToken cancellationToken = default)
     {
-        // 1. Fetch all active station IDs from database
-        var stationIds = (await _weatherStationService.GetActiveMETStationIdsAsync(cancellationToken)).ToList();
+        return await SyncStationDataAsync(isActive: true, cancellationToken);
+    }
 
+    private async Task<int> SyncStationDataAsync(bool isActive, CancellationToken cancellationToken = default)
+    {
+        // 1. Fetch station IDs based on active status
+        var stationIds = isActive
+            ? (await _weatherStationService.GetActiveMETStationIdsAsync(cancellationToken)).ToList()
+            : (await _weatherStationService.GetInactiveMETStationIdsAsync(cancellationToken)).ToList();
+
+        var statusLabel = isActive ? "active" : "inactive";
         if (stationIds.Count == 0)
         {
-            _logger.LogWarning("No active stations found to sync");
+            _logger.LogWarning("No {Status} stations found to sync", statusLabel);
             return 0;
         }
+
+        _logger.LogInformation("Syncing {Count} {Status} station(s)", stationIds.Count, statusLabel);
 
         var totalAttempted = 0;
         var totalInserted = 0;
@@ -46,8 +56,8 @@ public class MetFrostSyncService : IMetFrostSyncService
             batchNumber++;
             var processedCount = Math.Min(i + MaxStationsPerRequest, stationIds.Count);
 
-            _logger.LogInformation("Processing batch {BatchNumber}, {Processed}/{Total} station_ids",
-                batchNumber, processedCount, stationIds.Count);
+            _logger.LogInformation("Processing batch {BatchNumber}, {Processed}/{Total} {Status} station_ids",
+                batchNumber, processedCount, stationIds.Count, statusLabel);
 
             try
             {
@@ -67,14 +77,14 @@ public class MetFrostSyncService : IMetFrostSyncService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing batch {BatchNumber} with stations: {Stations}",
-                    batchNumber, string.Join(", ", batch));
+                _logger.LogError(ex, "Error processing batch {BatchNumber} with {Status} stations: {Stations}",
+                    batchNumber, statusLabel, string.Join(", ", batch));
                 // Continue with next batch instead of failing completely
             }
         }
 
-        _logger.LogInformation("Inserted {Inserted}/{Attempted} new records of station data",
-            totalInserted, totalAttempted);
+        _logger.LogInformation("Inserted {Inserted}/{Attempted} new records of station data for {Status} stations",
+            totalInserted, totalAttempted, statusLabel);
         return totalInserted;
     }
 
@@ -118,11 +128,15 @@ public class MetFrostSyncService : IMetFrostSyncService
         {
             _logger.LogInformation("Starting weather station active status sync...");
 
-            // 1. Set stations with data to active
+            // 1. First, sync data for all inactive stations to check if they now have data
+            _logger.LogInformation("Syncing station data for inactive stations before status update...");
+            await SyncStationDataAsync(isActive: false, cancellationToken);
+
+            // 2. Set stations with data to active
             var activatedCount = await _weatherStationService.SetActiveStationsWithDataAsync(cancellationToken);
             _logger.LogInformation("Activated {Count} stations with data", activatedCount);
 
-            // 2. Set stations without data to inactive
+            // 3. Set stations without data to inactive
             var deactivatedCount = await _weatherStationService.SetInactiveStationsWithoutDataAsync(cancellationToken);
             _logger.LogInformation("Deactivated {Count} stations without data", deactivatedCount);
 
@@ -138,4 +152,3 @@ public class MetFrostSyncService : IMetFrostSyncService
         }
     }
 }
-
