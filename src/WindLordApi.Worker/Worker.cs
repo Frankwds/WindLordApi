@@ -40,6 +40,18 @@ public class Worker : BackgroundService
         {
             _logger.LogError(ex, "Error in worker execution");
         }
+
+        // Sync weather station active status on startup
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
+            await syncService.SyncWeatherStationActiveStatusAsync(stoppingToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in worker execution");
+        }
         while (!stoppingToken.IsCancellationRequested)
         {
             if (_logger.IsEnabled(LogLevel.Information))

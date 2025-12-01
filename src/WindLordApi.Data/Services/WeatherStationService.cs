@@ -131,7 +131,8 @@ public class WeatherStationService : IWeatherStationService
     public async Task<int> SetActiveStationsWithDataAsync(CancellationToken cancellationToken = default)
     {
         // Use a direct SQL query with EXISTS to find stations with data
-        // This is more efficient than loading all station IDs into memory
+        // Only update stations that are currently inactive (is_active = false)
+        // This ensures we only count actual changes
         var sql = @"
             UPDATE weather_stations ws
             SET is_active = true
@@ -139,7 +140,8 @@ public class WeatherStationService : IWeatherStationService
                 SELECT 1 
                 FROM station_data sd 
                 WHERE sd.station_id = ws.station_id
-            )";
+            )
+            AND is_active = false";
 
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
@@ -160,8 +162,9 @@ public class WeatherStationService : IWeatherStationService
 
     public async Task<int> SetInactiveStationsWithoutDataAsync(CancellationToken cancellationToken = default)
     {
-        // Use a direct SQL query with LEFT JOIN to find stations without data
-        // This is more efficient than loading all station IDs into memory
+        // Use a direct SQL query with NOT EXISTS to find stations without data
+        // Only update stations that are currently active (is_active = true)
+        // This ensures we only count actual changes
         var sql = @"
             UPDATE weather_stations ws
             SET is_active = false
@@ -169,7 +172,8 @@ public class WeatherStationService : IWeatherStationService
                 SELECT 1 
                 FROM station_data sd 
                 WHERE sd.station_id = ws.station_id
-            )";
+            )
+            AND is_active = true";
 
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
