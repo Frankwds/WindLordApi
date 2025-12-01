@@ -17,6 +17,7 @@ public class MetFrostClient : IMetFrostClient
 
     // Query parameters constants
     private const string BaseUrl = "https://frost.met.no/observations/v0.jsonld";
+    private const string SourcesUrl = "https://frost.met.no/sources/v0.jsonld";
     private const string TimeRange = "latest";
     private static readonly string[] Elements =
     [
@@ -125,6 +126,52 @@ public class MetFrostClient : IMetFrostClient
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error while fetching MET Frost data");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Fetches all available weather stations from MET Frost API.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Raw JSON response as a string.</returns>
+    public async Task<string> FetchMetFrostStationsAsync(CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(_options.ClientId))
+        {
+            throw new InvalidOperationException("MET ClientId is not configured");
+        }
+
+        // Create Basic auth header
+        var authBytes = Encoding.UTF8.GetBytes($"{_options.ClientId}:");
+        var authHeader = Convert.ToBase64String(authBytes);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, SourcesUrl);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        request.Headers.Add("User-Agent", "WindAlert/1.0");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authHeader);
+
+        try
+        {
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                throw new HttpRequestException($"MET Frost API returned error status {response.StatusCode}. Response body: {errorContent}");
+            }
+
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            return content;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "HTTP error while fetching MET Frost stations: {ErrorMessage}", ex.Message);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while fetching MET Frost stations");
             throw;
         }
     }

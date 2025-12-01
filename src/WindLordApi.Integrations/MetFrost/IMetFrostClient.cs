@@ -9,4 +9,11 @@ public interface IMetFrostClient
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Deserialized MET observations response.</returns>
     Task<MetObservationsResponse> FetchMetStationDataAsync(string[] stationIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Fetches all available weather stations from MET Frost API.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Raw JSON response as a string.</returns>
+    Task<string> FetchMetFrostStationsAsync(CancellationToken cancellationToken = default);
 }

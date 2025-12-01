@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using WindLordApi.Data.Models;
 
 namespace WindLordApi.Data.Services;
 
