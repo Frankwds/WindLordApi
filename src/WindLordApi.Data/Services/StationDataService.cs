@@ -43,7 +43,7 @@ public class StationDataService : IStationDataService
         var records = stationDataArray.Where(sd => sd is not null).ToList();
         if (records.Count == 0)
         {
-            return 0;
+            throw new ArgumentException("Station data array cannot contain only null elements", nameof(stationDataArray));
         }
 
         var totalInserted = 0;

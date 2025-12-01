@@ -40,7 +40,7 @@ public class WeatherStationService : IWeatherStationService
         var records = weatherStations.Where(ws => ws is not null).ToList();
         if (records.Count == 0)
         {
-            return 0;
+            throw new ArgumentException("Weather stations array cannot contain only null elements", nameof(weatherStations));
         }
 
         var totalInserted = 0;
