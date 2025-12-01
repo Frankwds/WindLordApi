@@ -106,13 +106,13 @@ public class MetFrostSyncService : IMetFrostSyncService
             // 3. Upsert the mapped data to database
             if (weatherStations.Count > 0)
             {
-                var inserted = await _weatherStationService.UpsertManyAsync(weatherStations.ToArray(), cancellationToken);
-                _logger.LogInformation("Inserted {Inserted}/{Attempted} new weather station records",
-                    inserted, weatherStations.Count);
-                return inserted;
+                var affected = await _weatherStationService.UpsertManyAsync(weatherStations.ToArray(), cancellationToken);
+                _logger.LogInformation("Upserted {Affected}/{Attempted} weather station records (inserted new or updated existing)",
+                    affected, weatherStations.Count);
+                return affected;
             }
 
-            _logger.LogWarning("No valid weather stations to insert");
+            _logger.LogWarning("No valid weather stations to upsert");
             return 0;
         }
         catch (Exception ex)

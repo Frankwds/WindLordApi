@@ -55,16 +55,16 @@ public class WeatherStationService : IWeatherStationService
             throw new ArgumentException("Weather stations array cannot contain only null elements", nameof(weatherStations));
         }
 
-        var totalInserted = 0;
+        var totalAffected = 0;
 
         // Process in batches to avoid parameter limits
         for (int i = 0; i < records.Count; i += BatchSize)
         {
             var batch = records.Skip(i).Take(BatchSize).ToList();
-            totalInserted += await UpsertBatchAsync(batch, cancellationToken);
+            totalAffected += await UpsertBatchAsync(batch, cancellationToken);
         }
 
-        return totalInserted;
+        return totalAffected;
     }
 
     private async Task<int> UpsertBatchAsync(List<WeatherStation> batch, CancellationToken cancellationToken)
