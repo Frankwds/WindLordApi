@@ -134,8 +134,8 @@ public class MetFrostClient : IMetFrostClient
     /// Fetches all available weather stations from MET Frost API.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Raw JSON response as a string.</returns>
-    public async Task<string> FetchMetFrostStationsAsync(CancellationToken cancellationToken = default)
+    /// <returns>Deserialized MET stations response.</returns>
+    public async Task<MetFrostStationsResponse> FetchMetFrostStationsAsync(CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(_options.ClientId))
         {
@@ -162,11 +162,23 @@ public class MetFrostClient : IMetFrostClient
             }
 
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
-            return content;
+
+            var result = JsonSerializer.Deserialize<MetFrostStationsResponse>(content);
+            if (result is null)
+            {
+                throw new JsonException("Failed to deserialize MET Frost API response to MetFrostStationsResponse.");
+            }
+
+            return result;
         }
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "HTTP error while fetching MET Frost stations: {ErrorMessage}", ex.Message);
+            throw;
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Invalid JSON response received from MET Frost API");
             throw;
         }
         catch (Exception ex)

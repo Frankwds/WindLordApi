@@ -77,5 +77,39 @@ public class MetFrostSyncService : IMetFrostSyncService
             totalInserted, totalAttempted);
         return totalInserted;
     }
+
+    public async Task<int> SyncNewWeatherStationsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // 1. Fetch all stations from MetFrost API
+            _logger.LogInformation("Fetching weather stations from MetFrost API...");
+            var response = await _metFrostClient.FetchMetFrostStationsAsync(cancellationToken);
+
+            _logger.LogInformation("Received {Count} stations from MetFrost API", response.Data.Count);
+
+            // 2. Map MET stations to WeatherStation format
+            var weatherStations = MetFrostMapping.MapMetFrostToWeatherStation(response.Data);
+
+            _logger.LogInformation("Mapped {Count} valid weather stations", weatherStations.Count);
+
+            // 3. Upsert the mapped data to database
+            if (weatherStations.Count > 0)
+            {
+                var inserted = await _weatherStationService.UpsertManyAsync(weatherStations.ToArray(), cancellationToken);
+                _logger.LogInformation("Inserted {Inserted}/{Attempted} new weather station records",
+                    inserted, weatherStations.Count);
+                return inserted;
+            }
+
+            _logger.LogWarning("No valid weather stations to insert");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error syncing weather stations from MetFrost API");
+            throw;
+        }
+    }
 }
 

@@ -11,9 +11,9 @@ public interface IMetFrostClient
     Task<MetObservationsResponse> FetchMetStationDataAsync(string[] stationIds, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Fetches all available weather stations from MET Frost API.
+    /// Fetches all available weather stations from MET Frost API as a strongly-typed response.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Raw JSON response as a string.</returns>
-    Task<string> FetchMetFrostStationsAsync(CancellationToken cancellationToken = default);
+    /// <returns>Deserialized MET stations response.</returns>
+    Task<MetFrostStationsResponse> FetchMetFrostStationsAsync(CancellationToken cancellationToken = default);
 }
