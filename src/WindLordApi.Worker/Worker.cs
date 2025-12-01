@@ -17,6 +17,42 @@ public class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // Run all jobs once on startup
+        await RunStartupJobsAsync(stoppingToken);
+
+        // Create periodic timers for scheduled jobs
+        // Each timer must be unique - PeriodicTimer only supports a single concurrent consumer
+        var fiveMinuteTimer = new PeriodicTimer(TimeSpan.FromMinutes(5));
+        var twoWeekTimer = new PeriodicTimer(TimeSpan.FromDays(14)); // For SyncNewWeatherStationsAsync
+        var weeklyTimer = new PeriodicTimer(TimeSpan.FromDays(7)); // For SyncWeatherStationActiveStatusAsync
+
+        // Start all scheduled jobs concurrently
+        var syncDataTask = RunPeriodicJobAsync(
+            fiveMinuteTimer,
+            async (service, ct) => await service.SyncLatestStationDataAsync(ct),
+            "SyncLatestStationDataAsync",
+            stoppingToken);
+
+        var syncStationsTask = RunPeriodicJobAsync(
+            twoWeekTimer,
+            async (service, ct) => await service.SyncNewWeatherStationsAsync(ct),
+            "SyncNewWeatherStationsAsync",
+            stoppingToken);
+
+        var syncStatusTask = RunPeriodicJobAsync(
+            weeklyTimer,
+            async (service, ct) => await service.SyncWeatherStationActiveStatusAsync(ct),
+            "SyncWeatherStationActiveStatusAsync",
+            stoppingToken);
+
+        // Wait for all tasks (they will run until cancellation is requested)
+        await Task.WhenAll(syncDataTask, syncStationsTask, syncStatusTask);
+    }
+
+    private async Task RunStartupJobsAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("Running startup jobs...");
+
         // Sync all stations on startup
         try
         {
@@ -26,7 +62,7 @@ public class Worker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in worker execution");
+            _logger.LogError(ex, "Error running SyncLatestStationDataAsync on startup");
         }
 
         // Sync new weather stations on startup
@@ -38,7 +74,7 @@ public class Worker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in worker execution");
+            _logger.LogError(ex, "Error running SyncNewWeatherStationsAsync on startup");
         }
 
         // Sync weather station active status on startup
@@ -50,18 +86,53 @@ public class Worker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in worker execution");
+            _logger.LogError(ex, "Error running SyncWeatherStationActiveStatusAsync on startup");
         }
-        while (!stoppingToken.IsCancellationRequested)
+
+        _logger.LogInformation("Startup jobs completed");
+    }
+
+    private async Task RunPeriodicJobAsync(
+        PeriodicTimer timer,
+        Func<IMetFrostSyncService, CancellationToken, Task> jobAction,
+        string jobName,
+        CancellationToken stoppingToken)
+    {
+        try
         {
-            if (_logger.IsEnabled(LogLevel.Information))
+            while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                // Wait for the next timer tick
+                var hasNextTick = await timer.WaitForNextTickAsync(stoppingToken);
+                if (!hasNextTick)
+                {
+                    break; // Timer was disposed
+                }
+
+                _logger.LogInformation("Starting scheduled job: {JobName}", jobName);
+
+                try
+                {
+                    // Create a new scope for each job execution
+                    using var scope = _serviceProvider.CreateScope();
+                    var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
+                    await jobAction(syncService, stoppingToken);
+                    _logger.LogInformation("Completed scheduled job: {JobName}", jobName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error in scheduled job: {JobName}", jobName);
+                    // Continue to next iteration - don't stop the timer
+                }
             }
-
-            await Task.Delay(10000, stoppingToken);
-
-
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Scheduled job {JobName} was cancelled", jobName);
+        }
+        finally
+        {
+            timer.Dispose();
         }
     }
 }
