@@ -24,7 +24,7 @@ public class MetFrostSyncService : IMetFrostSyncService
         _logger = logger;
     }
 
-    public async Task<int> SyncAllStationsAsync(CancellationToken cancellationToken = default)
+    public async Task<int> SyncLatestStationDataAsync(CancellationToken cancellationToken = default)
     {
         // 1. Fetch all active station IDs from database
         var stationIds = (await _weatherStationService.GetActiveMETStationIdsAsync(cancellationToken)).ToList();

@@ -22,7 +22,7 @@ public class Worker : BackgroundService
         {
             using var scope = _serviceProvider.CreateScope();
             var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
-            await syncService.SyncAllStationsAsync(stoppingToken);
+            await syncService.SyncLatestStationDataAsync(stoppingToken);
         }
         catch (Exception ex)
         {
