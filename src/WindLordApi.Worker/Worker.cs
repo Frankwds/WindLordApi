@@ -49,17 +49,36 @@ public class Worker : BackgroundService
         // {
         //     _logger.LogError(ex, "Error connecting to database");
         // }
-        // Fetch data from MET Frost API
+        // Fetch data from MET Frost API, map it, and upsert to database
         try
         {
             using var scope = _serviceProvider.CreateScope();
             var metFrostClient = scope.ServiceProvider.GetRequiredService<IMetFrostClient>();
-            var data = await metFrostClient.FetchMetStationDataAsync(["SN97350", "SN246400"], stoppingToken);
-            _logger.LogInformation("Fetched {Data}", data.Data);
+            var stationDataService = scope.ServiceProvider.GetRequiredService<IStationDataService>();
+
+            // Fetch data from MET Frost API
+            var response = await metFrostClient.FetchMetStationDataAsync(["SN97350", "SN246400"], stoppingToken);
+            _logger.LogInformation("Fetched {Count} data points from MET Frost API", response.Data.Count);
+
+            // Map MET observations to StationData
+            var stationDataList = MetFrostMapping.MapMetObservationsToStationData(response.Data);
+            _logger.LogInformation("Mapped {Count} valid station data records from {DataPointCount} data points",
+                stationDataList.Count, response.Data.Count);
+
+            // Upsert the mapped data to database
+            if (stationDataList.Count > 0)
+            {
+                await stationDataService.UpsertManyAsync(stationDataList.ToArray(), stoppingToken);
+                _logger.LogInformation("Successfully upserted {Count} station data records", stationDataList.Count);
+            }
+            else
+            {
+                _logger.LogWarning("No valid station data records to upsert");
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching data from MET Frost API");
+            _logger.LogError(ex, "Error processing MET Frost data");
         }
 
 
