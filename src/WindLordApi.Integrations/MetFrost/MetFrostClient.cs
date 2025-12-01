@@ -42,14 +42,28 @@ public class MetFrostClient : IMetFrostClient
     /// </summary>
     /// <param name="stationIds">Array of station IDs to fetch data for (should be <= 100 stations)</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Raw JSON response as JsonDocument</returns>
-    public async Task<JsonDocument> FetchMetStationDataAsync(
+    /// <returns>Deserialized MET observations response</returns>
+    public async Task<MetObservationsResponse> FetchMetStationDataAsync(
         string[] stationIds,
         CancellationToken cancellationToken = default)
     {
         if (stationIds == null || stationIds.Length == 0)
         {
-            return JsonDocument.Parse("[]");
+            // Return an empty, but valid, response object when there are no station IDs.
+            return new MetObservationsResponse
+            {
+                Context = string.Empty,
+                Type = string.Empty,
+                ApiVersion = string.Empty,
+                License = new Uri("https://example.com"),
+                CreatedAt = DateTimeOffset.UtcNow,
+                QueryTime = 0,
+                CurrentItemCount = 0,
+                ItemsPerPage = 0,
+                Offset = 0,
+                TotalItemCount = 0,
+                Data = Array.Empty<MetObservationsData>()
+            };
         }
 
         if (string.IsNullOrWhiteSpace(_options.ClientId))
@@ -91,10 +105,15 @@ public class MetFrostClient : IMetFrostClient
             }
 
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
-            var jsonDocument = JsonDocument.Parse(content);
 
-            _logger.LogInformation("Successfully fetched MET Frost data");
-            return jsonDocument;
+            var result = JsonSerializer.Deserialize<MetObservationsResponse>(content);
+            if (result is null)
+            {
+                throw new JsonException("Failed to deserialize MET Frost API response to MetObservationsResponse.");
+            }
+
+            _logger.LogInformation("Successfully fetched and deserialized MET Frost data");
+            return result;
         }
         catch (HttpRequestException ex)
         {

@@ -55,7 +55,7 @@ public class Worker : BackgroundService
             using var scope = _serviceProvider.CreateScope();
             var metFrostClient = scope.ServiceProvider.GetRequiredService<IMetFrostClient>();
             var data = await metFrostClient.FetchMetStationDataAsync(["SN97350", "SN246400"], stoppingToken);
-            _logger.LogInformation("Fetched {Data}", data.RootElement.GetProperty("data"));
+            _logger.LogInformation("Fetched {Data}", data.Data);
         }
         catch (Exception ex)
         {
