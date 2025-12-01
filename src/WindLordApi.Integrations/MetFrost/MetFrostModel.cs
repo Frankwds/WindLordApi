@@ -8,12 +8,15 @@ namespace WindLordApi.Integrations.MetFrost;
 /// </summary>
 public record MetObservationLevel
 {
+    [JsonRequired]
     [JsonPropertyName("levelType")]
     public string LevelType { get; init; } = string.Empty;
 
+    [JsonRequired]
     [JsonPropertyName("unit")]
     public string Unit { get; init; } = string.Empty;
 
+    [JsonRequired]
     [JsonPropertyName("value")]
     public double Value { get; init; }
 }
@@ -24,9 +27,11 @@ public record MetObservationLevel
 /// </summary>
 public record MetObservation
 {
+    [JsonRequired]
     [JsonPropertyName("elementId")]
     public string ElementId { get; init; } = string.Empty;
 
+    [JsonRequired]
     [JsonPropertyName("value")]
     public double Value { get; init; }
 
@@ -67,15 +72,18 @@ public record MetObservation
 /// </summary>
 public record MetObservationsData
 {
+    [JsonRequired]
     [JsonPropertyName("sourceId")]
     public string SourceId { get; init; } = string.Empty;
 
     /// <summary>
     /// Reference time of the observations (ISO datetime).
     /// </summary>
+    [JsonRequired]
     [JsonPropertyName("referenceTime")]
     public DateTimeOffset ReferenceTime { get; init; }
 
+    [JsonRequired]
     [JsonPropertyName("observations")]
     public IReadOnlyList<MetObservation> Observations { get; init; } = Array.Empty<MetObservation>();
 }
@@ -87,35 +95,45 @@ public record MetObservationsData
 public record MetObservationsResponse
 {
     /// <summary>
-    /// JSON-LD context URL.
+    /// JSON-LD context URL (required).
     /// </summary>
+    [JsonRequired]
     [JsonPropertyName("@context")]
     public string Context { get; init; } = string.Empty;
 
+    [JsonRequired]
     [JsonPropertyName("@type")]
     public string Type { get; init; } = string.Empty;
 
+    [JsonRequired]
     [JsonPropertyName("apiVersion")]
     public string ApiVersion { get; init; } = string.Empty;
 
+    [JsonRequired]
     [JsonPropertyName("license")]
     public Uri License { get; init; } = new("https://example.com");
 
+    [JsonRequired]
     [JsonPropertyName("createdAt")]
     public DateTimeOffset CreatedAt { get; init; }
 
+    [JsonRequired]
     [JsonPropertyName("queryTime")]
     public double QueryTime { get; init; }
 
+    [JsonRequired]
     [JsonPropertyName("currentItemCount")]
     public int CurrentItemCount { get; init; }
 
+    [JsonRequired]
     [JsonPropertyName("itemsPerPage")]
     public int ItemsPerPage { get; init; }
 
+    [JsonRequired]
     [JsonPropertyName("offset")]
     public int Offset { get; init; }
 
+    [JsonRequired]
     [JsonPropertyName("totalItemCount")]
     public int TotalItemCount { get; init; }
 
@@ -125,6 +143,7 @@ public record MetObservationsResponse
     [JsonPropertyName("currentLink")]
     public Uri? CurrentLink { get; init; }
 
+    [JsonRequired]
     [JsonPropertyName("data")]
     public IReadOnlyList<MetObservationsData> Data { get; init; } = Array.Empty<MetObservationsData>();
 }
