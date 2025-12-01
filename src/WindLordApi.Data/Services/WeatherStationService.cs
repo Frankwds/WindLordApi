@@ -31,6 +31,18 @@ public class WeatherStationService : IWeatherStationService
         return stationIds;
     }
 
+    public async Task<IEnumerable<string>> GetInactiveMETStationIdsAsync(CancellationToken cancellationToken = default)
+    {
+        var stationIds = await _dbContext.WeatherStations
+            .Where(ws => !ws.IsActive)
+            .Where(ws => ws.Provider == "MET")
+            .Select(ws => ws.StationId)
+            .ToListAsync(cancellationToken);
+
+        _logger.LogInformation("Retrieved {Count} inactive station IDs", stationIds.Count);
+        return stationIds;
+    }
+
     public async Task<int> UpsertManyAsync(WeatherStation[] weatherStations, CancellationToken cancellationToken = default)
     {
         if (weatherStations == null || weatherStations.Length == 0)

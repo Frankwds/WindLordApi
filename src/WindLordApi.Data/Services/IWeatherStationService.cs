@@ -5,6 +5,7 @@ namespace WindLordApi.Data.Services;
 public interface IWeatherStationService
 {
     Task<IEnumerable<string>> GetActiveMETStationIdsAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<string>> GetInactiveMETStationIdsAsync(CancellationToken cancellationToken = default);
     Task<int> UpsertManyAsync(WeatherStation[] weatherStations, CancellationToken cancellationToken = default);
     Task<int> SetActiveStationsWithDataAsync(CancellationToken cancellationToken = default);
     Task<int> SetInactiveStationsWithoutDataAsync(CancellationToken cancellationToken = default);

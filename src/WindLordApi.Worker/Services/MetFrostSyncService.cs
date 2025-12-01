@@ -111,5 +111,31 @@ public class MetFrostSyncService : IMetFrostSyncService
             throw;
         }
     }
+
+    public async Task<int> SyncWeatherStationActiveStatusAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Starting weather station active status sync...");
+
+            // 1. Set stations with data to active
+            var activatedCount = await _weatherStationService.SetActiveStationsWithDataAsync(cancellationToken);
+            _logger.LogInformation("Activated {Count} stations with data", activatedCount);
+
+            // 2. Set stations without data to inactive
+            var deactivatedCount = await _weatherStationService.SetInactiveStationsWithoutDataAsync(cancellationToken);
+            _logger.LogInformation("Deactivated {Count} stations without data", deactivatedCount);
+
+            var totalUpdated = activatedCount + deactivatedCount;
+            _logger.LogInformation("Completed weather station active status sync. Total updated: {Total}", totalUpdated);
+
+            return totalUpdated;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error syncing weather station active status");
+            throw;
+        }
+    }
 }
 
