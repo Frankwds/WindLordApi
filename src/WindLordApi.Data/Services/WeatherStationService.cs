@@ -115,5 +115,66 @@ public class WeatherStationService : IWeatherStationService
             throw;
         }
     }
+
+    public async Task<int> SetActiveStationsWithDataAsync(CancellationToken cancellationToken = default)
+    {
+        // Use a direct SQL query with EXISTS to find stations with data
+        // This is more efficient than loading all station IDs into memory
+        var sql = @"
+            UPDATE weather_stations ws
+            SET is_active = true
+            WHERE EXISTS (
+                SELECT 1 
+                FROM station_data sd 
+                WHERE sd.station_id = ws.station_id
+            )";
+
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var updated = await _dbContext.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            _logger.LogInformation("Set {Count} stations to active (stations with data)", updated);
+            return updated;
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex, "Failed to set active stations with data");
+            throw;
+        }
+    }
+
+    public async Task<int> SetInactiveStationsWithoutDataAsync(CancellationToken cancellationToken = default)
+    {
+        // Use a direct SQL query with LEFT JOIN to find stations without data
+        // This is more efficient than loading all station IDs into memory
+        var sql = @"
+            UPDATE weather_stations ws
+            SET is_active = false
+            WHERE NOT EXISTS (
+                SELECT 1 
+                FROM station_data sd 
+                WHERE sd.station_id = ws.station_id
+            )";
+
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var updated = await _dbContext.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            _logger.LogInformation("Set {Count} stations to inactive (stations without data)", updated);
+            return updated;
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex, "Failed to set inactive stations without data");
+            throw;
+        }
+    }
+
 }
 
