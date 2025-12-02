@@ -1,9 +1,11 @@
 using WindLordApi.Worker;
 using WindLordApi.Worker.Services;
+using WindLordApi.Worker.Startup;
 using WindLordApi.Data;
 using WindLordApi.Data.Extensions;
 using WindLordApi.Data.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using WindLordApi.Integrations.MetFrost;
 
 static async Task CheckPendingMigrationsAsync(IHost host)
@@ -81,11 +83,25 @@ builder.Services.Configure<MetFrostOptions>(
 // 2. Register HttpClient + Service together (recommended)
 builder.Services.AddHttpClient<IMetFrostClient, MetFrostClient>();
 
+// Register Health Check Services
+builder.Services.AddScoped<DatabaseHealthCheck>();
+builder.Services.AddScoped<MetFrostHealthCheck>();
+
+// Register Health Checks
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "db", "database" })
+    .AddCheck<MetFrostHealthCheck>("metfrost", tags: new[] { "api", "metfrost" });
+
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
 
 // Check for pending migrations on startup
 await CheckPendingMigrationsAsync(host);
+
+// Run health checks on startup
+var loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
+var logger = loggerFactory.CreateLogger("Startup");
+await HealthCheck.RunHealthChecksAsync(host.Services, logger);
 
 host.Run();
