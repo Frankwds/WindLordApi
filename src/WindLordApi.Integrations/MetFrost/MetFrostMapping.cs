@@ -27,20 +27,22 @@ public static class MetFrostMapping
             var referenceTime = dataPoint.ReferenceTime;
 
             // Get or create station data entry
+            // Use UtcDateTime to ensure UTC Kind (required by PostgreSQL timestamp with time zone)
+            var utcDateTime = referenceTime.UtcDateTime;
             if (!stationDataMap.TryGetValue(stationId, out var stationData))
             {
                 stationData = new StationDataBuilder
                 {
                     StationId = stationId,
-                    UpdatedAt = referenceTime.DateTime
+                    UpdatedAt = utcDateTime
                 };
                 stationDataMap[stationId] = stationData;
             }
 
             // Update timestamp to the latest one
-            if (referenceTime.DateTime > stationData.UpdatedAt)
+            if (utcDateTime > stationData.UpdatedAt)
             {
-                stationData.UpdatedAt = referenceTime.DateTime;
+                stationData.UpdatedAt = utcDateTime;
             }
 
             // Process each observation in the data point

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Npgsql;
+using FlexLabs.EntityFrameworkCore.Upsert;
 using WindLordApi.Data.Models;
 
 namespace WindLordApi.Data.Services;
@@ -75,58 +75,25 @@ public class WeatherStationService : IWeatherStationService
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            var parameters = new List<object>();
-            var valueClauses = new List<string>();
+            var insertedOrUpdatedCount = await _dbContext.UpsertRange<WeatherStation>(batch)
+                .On(ws => ws.StationId)
+                .WhenMatched(ws => new WeatherStation
+                {
+                    Name = ws.Name,
+                    Latitude = ws.Latitude,
+                    Longitude = ws.Longitude,
+                    Altitude = ws.Altitude,
+                    Country = ws.Country,
+                    Provider = ws.Provider,
+                    UpdatedAt = ws.UpdatedAt,
+                    IsMain = ws.IsMain
+                    // is_active is intentionally excluded - managed separately
+                })
+                .RunAsync(cancellationToken);
 
-            for (int i = 0; i < batch.Count; i++)
-            {
-                var record = batch[i];
-                var paramIndex = i * 10; // 10 parameters per record
-
-                // Generate parameter names
-                var nameParam = $"@p{paramIndex}";
-                var latitudeParam = $"@p{paramIndex + 1}";
-                var longitudeParam = $"@p{paramIndex + 2}";
-                var altitudeParam = $"@p{paramIndex + 3}";
-                var countryParam = $"@p{paramIndex + 4}";
-                var isActiveParam = $"@p{paramIndex + 5}";
-                var providerParam = $"@p{paramIndex + 6}";
-                var updatedAtParam = $"@p{paramIndex + 7}";
-                var stationIdParam = $"@p{paramIndex + 8}";
-                var isMainParam = $"@p{paramIndex + 9}";
-
-                // Add parameters
-                parameters.Add(new NpgsqlParameter(nameParam, record.Name));
-                parameters.Add(new NpgsqlParameter(latitudeParam, record.Latitude));
-                parameters.Add(new NpgsqlParameter(longitudeParam, record.Longitude));
-                parameters.Add(new NpgsqlParameter(altitudeParam, (object?)record.Altitude ?? DBNull.Value));
-                parameters.Add(new NpgsqlParameter(countryParam, (object?)record.Country ?? DBNull.Value));
-                parameters.Add(new NpgsqlParameter(isActiveParam, record.IsActive));
-                parameters.Add(new NpgsqlParameter(providerParam, (object?)record.Provider ?? DBNull.Value));
-                parameters.Add(new NpgsqlParameter(updatedAtParam, (object?)record.UpdatedAt ?? DBNull.Value));
-                parameters.Add(new NpgsqlParameter(stationIdParam, record.StationId));
-                parameters.Add(new NpgsqlParameter(isMainParam, record.IsMain));
-
-                // Build VALUES clause
-                valueClauses.Add($"({nameParam}, {latitudeParam}, {longitudeParam}, {altitudeParam}, {countryParam}, {isActiveParam}, {providerParam}, {updatedAtParam}, {stationIdParam}, {isMainParam})");
-            }
-
-            var sql = $@"
-                INSERT INTO weather_stations (name, latitude, longitude, altitude, country, is_active, provider, updated_at, station_id, is_main)
-                VALUES {string.Join(", ", valueClauses)}
-                ON CONFLICT (station_id) DO UPDATE SET
-                    name = EXCLUDED.name,
-                    latitude = EXCLUDED.latitude,
-                    longitude = EXCLUDED.longitude,
-                    altitude = EXCLUDED.altitude,
-                    country = EXCLUDED.country,
-                    provider = EXCLUDED.provider,
-                    updated_at = EXCLUDED.updated_at,
-                    is_main = EXCLUDED.is_main";
-
-            var affected = await _dbContext.Database.ExecuteSqlRawAsync(sql, parameters.ToArray(), cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            return affected;
+
+            return insertedOrUpdatedCount;
         }
         catch (Exception ex)
         {

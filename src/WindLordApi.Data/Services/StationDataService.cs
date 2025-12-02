@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Npgsql;
+using FlexLabs.EntityFrameworkCore.Upsert;
 using WindLordApi.Data.Models;
 
 namespace WindLordApi.Data.Services;
@@ -66,46 +66,16 @@ public class StationDataService : IStationDataService
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            var parameters = new List<object>();
-            var valueClauses = new List<string>();
+            // Use FlexLabs upsert: ON CONFLICT (station_id, updated_at) DO NOTHING
+            // This is type-safe and eliminates SQL injection risks
+            var insertedCount = await _dbContext.UpsertRange<StationData>(batch)
+                .On(sd => new { sd.StationId, sd.UpdatedAt })
+                .NoUpdate()
+                .RunAsync(cancellationToken);
 
-            for (int i = 0; i < batch.Count; i++)
-            {
-                var record = batch[i];
-                var paramIndex = i * 8; // 8 parameters per record
-
-                // Generate parameter names
-                var windSpeedParam = $"@p{paramIndex}";
-                var windGustParam = $"@p{paramIndex + 1}";
-                var windMinSpeedParam = $"@p{paramIndex + 2}";
-                var directionParam = $"@p{paramIndex + 3}";
-                var temperatureParam = $"@p{paramIndex + 4}";
-                var updatedAtParam = $"@p{paramIndex + 5}";
-                var isCompressedParam = $"@p{paramIndex + 6}";
-                var stationIdParam = $"@p{paramIndex + 7}";
-
-                // Add parameters
-                parameters.Add(new NpgsqlParameter(windSpeedParam, record.WindSpeed));
-                parameters.Add(new NpgsqlParameter(windGustParam, (object?)record.WindGust ?? DBNull.Value));
-                parameters.Add(new NpgsqlParameter(windMinSpeedParam, (object?)record.WindMinSpeed ?? DBNull.Value));
-                parameters.Add(new NpgsqlParameter(directionParam, record.Direction));
-                parameters.Add(new NpgsqlParameter(temperatureParam, (object?)record.Temperature ?? DBNull.Value));
-                parameters.Add(new NpgsqlParameter(updatedAtParam, record.UpdatedAt));
-                parameters.Add(new NpgsqlParameter(isCompressedParam, record.IsCompressed));
-                parameters.Add(new NpgsqlParameter(stationIdParam, record.StationId));
-
-                // Build VALUES clause
-                valueClauses.Add($"({windSpeedParam}, {windGustParam}, {windMinSpeedParam}, {directionParam}, {temperatureParam}, {updatedAtParam}, {isCompressedParam}, {stationIdParam})");
-            }
-
-            var sql = $@"
-                INSERT INTO station_data (wind_speed, wind_gust, wind_min_speed, direction, temperature, updated_at, is_compressed, station_id)
-                VALUES {string.Join(", ", valueClauses)}
-                ON CONFLICT (station_id, updated_at) DO NOTHING";
-
-            var inserted = await _dbContext.Database.ExecuteSqlRawAsync(sql, parameters.ToArray(), cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            return inserted;
+
+            return insertedCount;
         }
         catch (Exception ex)
         {
