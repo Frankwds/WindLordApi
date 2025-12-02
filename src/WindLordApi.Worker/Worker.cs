@@ -35,13 +35,13 @@ public class Worker : BackgroundService
 
         var syncStationsTask = RunPeriodicJobAsync(
             twoWeekTimer,
-            async (service, ct) => await service.SyncNewWeatherStationsAsync(ct),
+            async (service, ct) => await service.SyncWeatherStationsAsync(ct),
             "SyncNewWeatherStationsAsync",
             stoppingToken);
 
         var syncStatusTask = RunPeriodicJobAsync(
             weeklyTimer,
-            async (service, ct) => await service.SyncWeatherStationActiveStatusAsync(ct),
+            async (service, ct) => await service.SyncWeatherStationsActiveStatusAsync(ct),
             "SyncWeatherStationActiveStatusAsync",
             stoppingToken);
 
@@ -70,7 +70,7 @@ public class Worker : BackgroundService
         {
             using var scope = _serviceProvider.CreateScope();
             var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
-            await syncService.SyncNewWeatherStationsAsync(stoppingToken);
+            await syncService.SyncWeatherStationsAsync(stoppingToken);
         }
         catch (Exception ex)
         {
@@ -82,7 +82,7 @@ public class Worker : BackgroundService
         {
             using var scope = _serviceProvider.CreateScope();
             var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
-            await syncService.SyncWeatherStationActiveStatusAsync(stoppingToken);
+            await syncService.SyncWeatherStationsActiveStatusAsync(stoppingToken);
         }
         catch (Exception ex)
         {

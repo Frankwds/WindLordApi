@@ -88,7 +88,7 @@ public class MetFrostSyncService : IMetFrostSyncService
         return totalInserted;
     }
 
-    public async Task<int> SyncNewWeatherStationsAsync(CancellationToken cancellationToken = default)
+    public async Task<int> SyncWeatherStationsAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -122,7 +122,7 @@ public class MetFrostSyncService : IMetFrostSyncService
         }
     }
 
-    public async Task<int> SyncWeatherStationActiveStatusAsync(CancellationToken cancellationToken = default)
+    public async Task<int> SyncWeatherStationsActiveStatusAsync(CancellationToken cancellationToken = default)
     {
         try
         {
