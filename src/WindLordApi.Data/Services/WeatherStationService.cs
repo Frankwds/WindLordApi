@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using FlexLabs.EntityFrameworkCore.Upsert;
 using WindLordApi.Data.Models;
+using WindLordApi.Data.Extensions;
 
 namespace WindLordApi.Data.Services;
 
@@ -71,36 +71,86 @@ public class WeatherStationService : IWeatherStationService
     {
         if (batch.Count == 0) return 0;
 
-        // Use explicit transaction for Supabase connection pooler compatibility
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-        try
+        const int maxAttempts = 2; // Original attempt + 1 retry
+        const int retryDelayMs = 3000; // 3 seconds
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            var insertedOrUpdatedCount = await _dbContext.UpsertRange<WeatherStation>(batch)
-                .On(ws => ws.StationId)
-                .WhenMatched((existing, incoming) => new WeatherStation
+            try
+            {
+                // Use explicit transaction for Supabase connection pooler compatibility
+                await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+                try
                 {
-                    Name = incoming.Name,
-                    Latitude = incoming.Latitude,
-                    Longitude = incoming.Longitude,
-                    Altitude = incoming.Altitude,
-                    Country = incoming.Country,
-                    Provider = incoming.Provider,
-                    UpdatedAt = incoming.UpdatedAt,
-                    IsMain = incoming.IsMain
-                    // is_active is intentionally excluded - managed separately
-                })
-                .RunAsync(cancellationToken);
+                    var insertedOrUpdatedCount = await _dbContext.UpsertRange<WeatherStation>(batch)
+                        .On(ws => ws.StationId)
+                        .WhenMatched((existing, incoming) => new WeatherStation
+                        {
+                            Name = incoming.Name,
+                            Latitude = incoming.Latitude,
+                            Longitude = incoming.Longitude,
+                            Altitude = incoming.Altitude,
+                            Country = incoming.Country,
+                            Provider = incoming.Provider,
+                            UpdatedAt = incoming.UpdatedAt,
+                            IsMain = incoming.IsMain
+                            // is_active is intentionally excluded - managed separately
+                        })
+                        .RunAsync(cancellationToken);
 
-            await transaction.CommitAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
 
-            return insertedOrUpdatedCount;
+                    if (attempt > 1)
+                    {
+                        _logger.LogInformation("Successfully upserted weather stations batch after retry (attempt {Attempt})", attempt);
+                    }
+
+                    return insertedOrUpdatedCount;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+
+                    // Only retry on transient errors and if we have attempts left
+                    if (RetryExtensions.IsRetryableError(ex) && attempt < maxAttempts)
+                    {
+                        _logger.LogWarning(ex,
+                            "Transient error on attempt {Attempt}/{MaxAttempts} for batch of {Count} records. Retrying after {Delay}ms...",
+                            attempt, maxAttempts, batch.Count, retryDelayMs);
+
+                        await Task.Delay(retryDelayMs, cancellationToken);
+                        continue; // Retry
+                    }
+
+                    // Not retryable or out of attempts - throw
+                    _logger.LogError(ex, "Failed to upsert weather stations batch of {Count} records after {Attempt} attempt(s)",
+                        batch.Count, attempt);
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle errors from BeginTransactionAsync or other operations outside the transaction
+                // Only retry on transient errors and if we have attempts left
+                if (RetryExtensions.IsRetryableError(ex) && attempt < maxAttempts)
+                {
+                    _logger.LogWarning(ex,
+                        "Transient error during transaction setup on attempt {Attempt}/{MaxAttempts} for batch of {Count} records. Retrying after {Delay}ms...",
+                        attempt, maxAttempts, batch.Count, retryDelayMs);
+
+                    await Task.Delay(retryDelayMs, cancellationToken);
+                    continue; // Retry
+                }
+
+                // Final attempt failed or non-retryable error
+                _logger.LogError(ex, "Failed to upsert weather stations batch of {Count} records after {Attempt} attempt(s)",
+                    batch.Count, attempt);
+                throw;
+            }
         }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            _logger.LogError(ex, "Failed to upsert weather stations batch of {Count} records", batch.Count);
-            throw;
-        }
+
+        // Should never reach here, but compiler needs it
+        throw new InvalidOperationException("Unexpected retry loop exit");
     }
 
     public async Task<int> SetActiveStationsWithDataAsync(CancellationToken cancellationToken = default)
