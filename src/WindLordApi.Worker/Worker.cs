@@ -1,4 +1,5 @@
 using WindLordApi.Worker.Services;
+using WindLordApi.Worker.Startup;
 
 namespace WindLordApi.Worker;
 
@@ -18,7 +19,7 @@ public class Worker : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Run all jobs once on startup
-        await RunStartupJobsAsync(stoppingToken);
+        await StartupJobs.RunStartupJobsAsync(_serviceProvider, _logger, stoppingToken);
 
         // Create periodic timers for scheduled jobs
         // Each timer must be unique - PeriodicTimer only supports a single concurrent consumer
@@ -47,49 +48,6 @@ public class Worker : BackgroundService
 
         // Wait for all tasks (they will run until cancellation is requested)
         await Task.WhenAll(syncDataTask, syncStationsTask, syncStatusTask);
-    }
-
-    private async Task RunStartupJobsAsync(CancellationToken stoppingToken)
-    {
-        _logger.LogInformation("Running startup jobs...");
-
-        // Sync all stations on startup
-        try
-        {
-            using var scope = _serviceProvider.CreateScope();
-            var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
-            await syncService.SyncLatestStationDataAsync(stoppingToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error running SyncLatestStationDataAsync on startup");
-        }
-
-        // Sync new weather stations on startup
-        try
-        {
-            using var scope = _serviceProvider.CreateScope();
-            var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
-            await syncService.SyncWeatherStationsAsync(stoppingToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error running SyncNewWeatherStationsAsync on startup");
-        }
-
-        // Sync weather station active status on startup
-        try
-        {
-            using var scope = _serviceProvider.CreateScope();
-            var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
-            await syncService.SyncWeatherStationsActiveStatusAsync(stoppingToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error running SyncWeatherStationActiveStatusAsync on startup");
-        }
-
-        _logger.LogInformation("Startup jobs completed");
     }
 
     private async Task RunPeriodicJobAsync(
