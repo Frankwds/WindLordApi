@@ -77,16 +77,16 @@ public class WeatherStationService : IWeatherStationService
         {
             var insertedOrUpdatedCount = await _dbContext.UpsertRange<WeatherStation>(batch)
                 .On(ws => ws.StationId)
-                .WhenMatched(ws => new WeatherStation
+                .WhenMatched((existing, incoming) => new WeatherStation
                 {
-                    Name = ws.Name,
-                    Latitude = ws.Latitude,
-                    Longitude = ws.Longitude,
-                    Altitude = ws.Altitude,
-                    Country = ws.Country,
-                    Provider = ws.Provider,
-                    UpdatedAt = ws.UpdatedAt,
-                    IsMain = ws.IsMain
+                    Name = incoming.Name,
+                    Latitude = incoming.Latitude,
+                    Longitude = incoming.Longitude,
+                    Altitude = incoming.Altitude,
+                    Country = incoming.Country,
+                    Provider = incoming.Provider,
+                    UpdatedAt = incoming.UpdatedAt,
+                    IsMain = incoming.IsMain
                     // is_active is intentionally excluded - managed separately
                 })
                 .RunAsync(cancellationToken);
