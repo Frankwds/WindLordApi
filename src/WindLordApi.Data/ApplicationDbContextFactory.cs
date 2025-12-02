@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using WindLordApi.Data.Extensions;
 
 namespace WindLordApi.Data;
 
@@ -21,8 +22,8 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
             .AddEnvironmentVariables()
             .Build();
 
-        var connectionString = configuration.GetConnectionString("SUPABASE_CONNECTION_STRING")
-            ?? throw new InvalidOperationException("SUPABASE_CONNECTION_STRING not found in configuration");
+        // Get connection string using extension method (handles environment detection automatically)
+        var connectionString = configuration.GetSupabaseConnectionString();
 
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
         optionsBuilder.UseNpgsql(connectionString);

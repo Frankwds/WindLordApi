@@ -75,7 +75,7 @@ namespace WindLordApi.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("unique_station_timestamp");
 
-                    b.ToTable("station_data", t =>
+                    b.ToTable("station_data", null, t =>
                         {
                             t.HasCheckConstraint("station_data_direction_check", "direction >= 0 AND direction <= 360");
                         });
@@ -146,7 +146,7 @@ namespace WindLordApi.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("weather_stations_station_id_unique");
 
-                    b.ToTable("weather_stations", t =>
+                    b.ToTable("weather_stations", null, t =>
                         {
                             t.HasCheckConstraint("check_provider_not_empty", "provider IS NOT NULL AND provider <> ''");
                         });

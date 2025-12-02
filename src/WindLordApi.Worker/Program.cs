@@ -1,6 +1,7 @@
 using WindLordApi.Worker;
 using WindLordApi.Worker.Services;
 using WindLordApi.Data;
+using WindLordApi.Data.Extensions;
 using WindLordApi.Data.Services;
 using Microsoft.EntityFrameworkCore;
 using WindLordApi.Integrations.MetFrost;
@@ -15,16 +16,16 @@ static async Task CheckPendingMigrationsAsync(IHost host)
     try
     {
         var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
-        
+
         if (pendingMigrations.Any())
         {
             logger.LogError(
                 "⚠️  PENDING MIGRATIONS DETECTED! The following migrations have not been applied: {PendingMigrations}",
                 string.Join(", ", pendingMigrations));
-            
+
             logger.LogError(
                 "Please run the following command to apply migrations: dotnet ef database update --project src/WindLordApi.Data/WindLordApi.Data.csproj");
-            
+
             // Optionally fail startup - uncomment the line below to prevent startup with pending migrations
             // throw new InvalidOperationException($"Cannot start application with {pendingMigrations.Count()} pending migration(s). Please apply migrations first.");
         }
@@ -44,6 +45,10 @@ static async Task CheckPendingMigrationsAsync(IHost host)
 
 var builder = Host.CreateApplicationBuilder(args);
 
+// Explicitly add user secrets (normally only loaded in Development)
+// This allows Production debugging to access user secrets
+builder.Configuration.AddUserSecrets(typeof(Program).Assembly);
+
 // Explicitly configure logging to prevent duplicates
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options =>
@@ -56,9 +61,8 @@ builder.Logging.AddSimpleConsole(options =>
 // Register DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("SUPABASE_CONNECTION_STRING")
-        ?? throw new InvalidOperationException("Supabase connection string not found");
-
+    // Get connection string using extension method (handles environment detection automatically)
+    var connectionString = builder.Configuration.GetSupabaseConnectionString(builder.Environment);
     options.UseNpgsql(connectionString);
 });
 

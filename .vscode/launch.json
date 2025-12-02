@@ -18,6 +18,7 @@
       "stopAtEntry": false,
       "env": {
         "DOTNET_ENVIRONMENT": "Development"
+        // "DOTNET_ENVIRONMENT": "Production"
       }
     },
     {

@@ -116,7 +116,8 @@ public class WeatherStationService : IWeatherStationService
                 FROM station_data sd 
                 WHERE sd.station_id = ws.station_id
             )
-            AND is_active = false";
+            AND is_active = false
+            AND provider = 'MET'";
 
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
@@ -148,7 +149,8 @@ public class WeatherStationService : IWeatherStationService
                 FROM station_data sd 
                 WHERE sd.station_id = ws.station_id
             )
-            AND is_active = true";
+            AND is_active = true
+            AND provider = 'MET'";
 
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
