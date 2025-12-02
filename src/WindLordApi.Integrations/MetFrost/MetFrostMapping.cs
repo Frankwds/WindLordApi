@@ -94,14 +94,7 @@ public static class MetFrostMapping
             {
                 // Normalize wind direction to ensure it's within 0-360 range
                 var direction = data.Direction!.Value;
-                if (direction < 0)
-                {
-                    direction = direction + 360;
-                }
-                if (direction > 360)
-                {
-                    direction = direction - 360;
-                }
+                direction = ((direction % 360) + 360) % 360;
 
                 return new StationData
                 {
