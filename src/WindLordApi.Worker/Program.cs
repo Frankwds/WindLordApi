@@ -5,6 +5,42 @@ using WindLordApi.Data.Services;
 using Microsoft.EntityFrameworkCore;
 using WindLordApi.Integrations.MetFrost;
 
+static async Task CheckPendingMigrationsAsync(IHost host)
+{
+    using var scope = host.Services.CreateScope();
+    var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+    var logger = loggerFactory.CreateLogger("MigrationHealthCheck");
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+    try
+    {
+        var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
+        
+        if (pendingMigrations.Any())
+        {
+            logger.LogError(
+                "⚠️  PENDING MIGRATIONS DETECTED! The following migrations have not been applied: {PendingMigrations}",
+                string.Join(", ", pendingMigrations));
+            
+            logger.LogError(
+                "Please run the following command to apply migrations: dotnet ef database update --project src/WindLordApi.Data/WindLordApi.Data.csproj");
+            
+            // Optionally fail startup - uncomment the line below to prevent startup with pending migrations
+            // throw new InvalidOperationException($"Cannot start application with {pendingMigrations.Count()} pending migration(s). Please apply migrations first.");
+        }
+        else
+        {
+            logger.LogInformation("✅ Database migrations are up to date.");
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "❌ Failed to check for pending migrations. The application will continue, but please verify database connectivity.");
+        // Don't throw - allow application to start even if migration check fails
+        // This prevents connection issues from blocking startup
+    }
+}
+
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -44,4 +80,8 @@ builder.Services.AddHttpClient<IMetFrostClient, MetFrostClient>();
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
+
+// Check for pending migrations on startup
+await CheckPendingMigrationsAsync(host);
+
 host.Run();
