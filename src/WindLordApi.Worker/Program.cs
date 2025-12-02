@@ -7,6 +7,8 @@ using WindLordApi.Data.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using WindLordApi.Integrations.MetFrost;
+using Serilog;
+using Serilog.Events;
 
 static async Task CheckPendingMigrationsAsync(IHost host)
 {
@@ -45,20 +47,34 @@ static async Task CheckPendingMigrationsAsync(IHost host)
 }
 
 
+// Configure Serilog before building the host
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .Enrich.WithMachineName()
+    .Enrich.WithEnvironmentName()
+    .Enrich.WithProperty("Application", "WindLordApi.Worker")
+    .WriteTo.Console(
+        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .WriteTo.File(
+        path: "logs/windlordapi-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 30,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .CreateLogger();
+
 var builder = Host.CreateApplicationBuilder(args);
 
 // Explicitly add user secrets (normally only loaded in Development)
 // This allows Production debugging to access user secrets
 builder.Configuration.AddUserSecrets(typeof(Program).Assembly);
 
-// Explicitly configure logging to prevent duplicates
+// Use Serilog for logging
 builder.Logging.ClearProviders();
-builder.Logging.AddSimpleConsole(options =>
-{
-    options.IncludeScopes = false;
-    options.SingleLine = false;
-    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
-});
+builder.Logging.AddSerilog();
 
 // Register DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -96,12 +112,26 @@ builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
 
-// Check for pending migrations on startup
-await CheckPendingMigrationsAsync(host);
+try
+{
+    Log.Information("Starting WindLordApi.Worker application");
 
-// Run health checks on startup
-var loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
-var logger = loggerFactory.CreateLogger("Startup");
-await HealthCheck.RunHealthChecksAsync(host.Services, logger);
+    // Check for pending migrations on startup
+    await CheckPendingMigrationsAsync(host);
 
-host.Run();
+    // Run health checks on startup
+    var loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
+    var logger = loggerFactory.CreateLogger("Startup");
+    await HealthCheck.RunHealthChecksAsync(host.Services, logger);
+
+    await host.RunAsync();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
