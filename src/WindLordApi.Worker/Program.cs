@@ -87,6 +87,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Register Data Services
 builder.Services.AddScoped<IStationDataService, StationDataService>();
 builder.Services.AddScoped<IWeatherStationService, WeatherStationService>();
+builder.Services.AddScoped<ILatestStationDataService, LatestStationDataService>();
 
 // Register Worker Services
 builder.Services.AddScoped<IMetFrostSyncService, MetFrostSyncService>();

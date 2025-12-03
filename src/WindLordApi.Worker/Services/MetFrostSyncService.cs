@@ -9,6 +9,7 @@ public class MetFrostSyncService : IMetFrostSyncService
     private readonly IWeatherStationService _weatherStationService;
     private readonly IMetFrostClient _metFrostClient;
     private readonly IStationDataService _stationDataService;
+    private readonly ILatestStationDataService _latestStationDataService;
     private readonly ILogger<MetFrostSyncService> _logger;
     private const int MaxStationsPerRequest = 100; // Based on MetFrost API limit
 
@@ -16,11 +17,13 @@ public class MetFrostSyncService : IMetFrostSyncService
         IWeatherStationService weatherStationService,
         IMetFrostClient metFrostClient,
         IStationDataService stationDataService,
+        ILatestStationDataService latestStationDataService,
         ILogger<MetFrostSyncService> logger)
     {
         _weatherStationService = weatherStationService;
         _metFrostClient = metFrostClient;
         _stationDataService = stationDataService;
+        _latestStationDataService = latestStationDataService;
         _logger = logger;
     }
 
@@ -70,9 +73,17 @@ public class MetFrostSyncService : IMetFrostSyncService
                 // 5. Upsert the mapped data to database
                 if (stationDataList.Count > 0)
                 {
-                    var inserted = await _stationDataService.UpsertManyAsync(stationDataList.ToArray(), cancellationToken);
+                    var stationDataArray = stationDataList.ToArray();
+                    var inserted = await _stationDataService.UpsertManyAsync(stationDataArray, cancellationToken);
                     totalAttempted += stationDataList.Count;
                     totalInserted += inserted;
+
+                    // 6. Upsert to LatestStationData table (maintains latest observation per station)
+                    var latestStationDataArray = LatestStationDataService.ConvertFromStationData(stationDataArray);
+                    if (latestStationDataArray.Length > 0)
+                    {
+                        await _latestStationDataService.UpsertManyAsync(latestStationDataArray, cancellationToken);
+                    }
                 }
             }
             catch (Exception ex)
