@@ -13,5 +13,12 @@ jobs:
       - name: Check .NET Version
         run: dotnet --info
 
-      - name: Build Worker
+      - name: Build and Publish
         run: dotnet publish -c Release -o ./publish
+
+      - name: Deploy to /opt/windlord-worker 
+        # rsync is safer than cp; it only copies changed files
+        run: rsync -av --delete ./publish/ /opt/windlord-worker/
+
+      - name: Restart Service
+        run: sudo systemctl restart windlord-worker.service
