@@ -1,0 +1,19 @@
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build-and-deploy:
+    # Use the labels currently assigned to your self-hosted runner
+    runs-on: [self-hosted, Linux, arm64]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Build Worker
+        run: dotnet publish -c Release -o ./publish

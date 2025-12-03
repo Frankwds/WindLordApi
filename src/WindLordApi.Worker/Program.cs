@@ -105,8 +105,8 @@ builder.Services.AddScoped<MetFrostHealthCheck>();
 
 // Register Health Checks
 builder.Services.AddHealthChecks()
-    .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "db", "database" })
-    .AddCheck<MetFrostHealthCheck>("metfrost", tags: new[] { "api", "metfrost" });
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["db", "database"])
+    .AddCheck<MetFrostHealthCheck>("metfrost", tags: ["api", "metfrost"]);
 
 builder.Services.AddHostedService<Worker>();
 
