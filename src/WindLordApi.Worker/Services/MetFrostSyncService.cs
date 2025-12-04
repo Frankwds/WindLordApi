@@ -42,11 +42,11 @@ public class MetFrostSyncService : IMetFrostSyncService
         var statusLabel = isActive ? "active" : "inactive";
         if (stationIds.Count == 0)
         {
-            _logger.LogWarning("No {Status} stations found to sync", statusLabel);
+            _logger.LogWarning("MetFrost: No {Status} stations found to sync", statusLabel);
             return 0;
         }
 
-        _logger.LogInformation("Syncing {Count} {Status} station(s)", stationIds.Count, statusLabel);
+        _logger.LogInformation("MetFrost: Syncing {Count} {Status} station(s)", stationIds.Count, statusLabel);
 
         var totalAttempted = 0;
         var totalInserted = 0;
@@ -59,7 +59,7 @@ public class MetFrostSyncService : IMetFrostSyncService
             batchNumber++;
             var processedCount = Math.Min(i + MaxStationsPerRequest, stationIds.Count);
 
-            _logger.LogInformation("Processing batch {BatchNumber}, {Processed}/{Total} {Status} station_ids",
+            _logger.LogInformation("MetFrost: Processing batch {BatchNumber}, {Processed}/{Total} {Status} station_ids",
                 batchNumber, processedCount, stationIds.Count, statusLabel);
 
             try
@@ -88,13 +88,13 @@ public class MetFrostSyncService : IMetFrostSyncService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing batch {BatchNumber} with {Status} stations: {Stations}",
+                _logger.LogError(ex, "MetFrost: Error processing batch {BatchNumber} with {Status} stations: {Stations}",
                     batchNumber, statusLabel, string.Join(", ", batch));
                 // Continue with next batch instead of failing completely
             }
         }
 
-        _logger.LogInformation("Inserted {Inserted}/{Attempted} new records of station data for {Status} stations",
+        _logger.LogInformation("MetFrost: Inserted {Inserted}/{Attempted} new records of station data for {Status} stations",
             totalInserted, totalAttempted, statusLabel);
         return totalInserted;
     }
@@ -104,30 +104,30 @@ public class MetFrostSyncService : IMetFrostSyncService
         try
         {
             // 1. Fetch all stations from MetFrost API
-            _logger.LogInformation("Fetching weather stations from MetFrost API...");
+            _logger.LogInformation("MetFrost: Fetching weather stations...");
             var response = await _metFrostClient.FetchMetFrostStationsAsync(cancellationToken);
 
-            _logger.LogInformation("Received {Count} stations from MetFrost API", response.Data.Count);
+            _logger.LogInformation("MetFrost: Received {Count} stations", response.Data.Count);
 
             // 2. Map MET stations to WeatherStation format
             var weatherStations = MetFrostMapping.MapMetFrostToWeatherStation(response.Data);
 
-            _logger.LogInformation("Mapped {Count} valid weather stations", weatherStations.Count);
+            _logger.LogInformation("MetFrost: Mapped {Count} valid weather stations", weatherStations.Count);
 
             // 3. Upsert the mapped data to database (always updates, so count is not meaningful)
             if (weatherStations.Count > 0)
             {
                 await _weatherStationService.UpsertManyAsync(weatherStations.ToArray(), cancellationToken);
-                _logger.LogInformation("Upserted {Count} weather station records", weatherStations.Count);
+                _logger.LogInformation("MetFrost: Upserted {Count} weather station records", weatherStations.Count);
                 return weatherStations.Count;
             }
 
-            _logger.LogWarning("No valid weather stations to upsert");
+            _logger.LogWarning("MetFrost: No valid weather stations to upsert");
             return 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error syncing weather stations from MetFrost API");
+            _logger.LogError(ex, "MetFrost: Error syncing weather stations");
             throw;
         }
     }
@@ -136,28 +136,28 @@ public class MetFrostSyncService : IMetFrostSyncService
     {
         try
         {
-            _logger.LogInformation("Starting weather station active status sync...");
+            _logger.LogInformation("MetFrost: Starting weather station active status sync...");
 
             // 1. First, sync data for all inactive stations to check if they now have data
-            _logger.LogInformation("Syncing station data for inactive stations before status update...");
+            _logger.LogInformation("MetFrost: Syncing station data for inactive stations before status update...");
             var stationDataInserted = await SyncStationDataAsync(isActive: false, cancellationToken);
 
             // 2. Set stations with data to active
             var activatedCount = await _weatherStationService.SetActiveStationsWithDataAsync(cancellationToken);
-            _logger.LogInformation("Activated {Count} stations with data", activatedCount);
+            _logger.LogInformation("MetFrost: Activated {Count} stations with data", activatedCount);
 
             // 3. Set stations without data to inactive
             var deactivatedCount = await _weatherStationService.SetInactiveStationsWithoutDataAsync(cancellationToken);
-            _logger.LogInformation("Deactivated {Count} stations without data", deactivatedCount);
+            _logger.LogInformation("MetFrost: Deactivated {Count} stations without data", deactivatedCount);
 
-            _logger.LogInformation("Completed weather station active status sync. New station data inserted: {Inserted}, Status updates: {Activated} activated, {Deactivated} deactivated",
+            _logger.LogInformation("MetFrost: Completed weather station active status sync. New station data inserted: {Inserted}, Status updates: {Activated} activated, {Deactivated} deactivated",
                 stationDataInserted, activatedCount, deactivatedCount);
 
             return stationDataInserted;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error syncing weather station active status");
+            _logger.LogError(ex, "MetFrost: Error syncing weather station active status");
             throw;
         }
     }

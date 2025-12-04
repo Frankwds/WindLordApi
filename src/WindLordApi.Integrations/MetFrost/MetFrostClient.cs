@@ -69,6 +69,7 @@ public class MetFrostClient : IMetFrostClient
 
         if (string.IsNullOrWhiteSpace(_options.ClientId))
         {
+            _logger.LogError("MetFrost: ClientId is not configured");
             throw new InvalidOperationException("MET ClientId is not configured");
         }
 
@@ -93,6 +94,7 @@ public class MetFrostClient : IMetFrostClient
         request.Headers.Add("User-Agent", "WindAlert/1.0");
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authHeader);
 
+        _logger.LogInformation("MetFrost: Fetching station data for {StationCount} station(s)", stationIds.Length);
         try
         {
             using var response = await _httpClient.SendAsync(request, cancellationToken);
@@ -100,6 +102,7 @@ public class MetFrostClient : IMetFrostClient
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("MetFrost: Returned error status {StatusCode}. Response body: {ErrorContent}", response.StatusCode, errorContent);
                 throw new HttpRequestException($"MET Frost API returned error status {response.StatusCode}. Response body: {errorContent}");
             }
 
@@ -108,24 +111,26 @@ public class MetFrostClient : IMetFrostClient
             var result = JsonSerializer.Deserialize<MetObservationsResponse>(content);
             if (result is null)
             {
+                _logger.LogError("MetFrost: Failed to deserialize response to MetObservationsResponse");
                 throw new JsonException("Failed to deserialize MET Frost API response to MetObservationsResponse.");
             }
 
+            _logger.LogInformation("MetFrost: Successfully fetched station data with {DataCount} observation data points", result.Data.Count);
             return result;
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "HTTP error while fetching MET Frost data: {ErrorMessage}", ex.Message);
+            _logger.LogError(ex, "MetFrost: HTTP error while fetching station data: {ErrorMessage}", ex.Message);
             throw;
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Invalid JSON response received from MET Frost API");
+            _logger.LogError(ex, "MetFrost: Invalid JSON response received");
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while fetching MET Frost data");
+            _logger.LogError(ex, "MetFrost: Unexpected error while fetching station data");
             throw;
         }
     }
@@ -139,6 +144,7 @@ public class MetFrostClient : IMetFrostClient
     {
         if (string.IsNullOrWhiteSpace(_options.ClientId))
         {
+            _logger.LogError("MetFrost: ClientId is not configured");
             throw new InvalidOperationException("MET ClientId is not configured");
         }
 
@@ -151,6 +157,7 @@ public class MetFrostClient : IMetFrostClient
         request.Headers.Add("User-Agent", "WindAlert/1.0");
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authHeader);
 
+        _logger.LogInformation("MetFrost: Fetching weather stations");
         try
         {
             using var response = await _httpClient.SendAsync(request, cancellationToken);
@@ -158,6 +165,7 @@ public class MetFrostClient : IMetFrostClient
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("MetFrost: Returned error status {StatusCode} while fetching stations. Response body: {ErrorContent}", response.StatusCode, errorContent);
                 throw new HttpRequestException($"MET Frost API returned error status {response.StatusCode}. Response body: {errorContent}");
             }
 
@@ -166,24 +174,26 @@ public class MetFrostClient : IMetFrostClient
             var result = JsonSerializer.Deserialize<MetFrostStationsResponse>(content);
             if (result is null)
             {
+                _logger.LogError("MetFrost: Failed to deserialize response to MetFrostStationsResponse");
                 throw new JsonException("Failed to deserialize MET Frost API response to MetFrostStationsResponse.");
             }
 
+            _logger.LogInformation("MetFrost: Successfully fetched {StationCount} weather stations", result.Data.Count);
             return result;
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "HTTP error while fetching MET Frost stations: {ErrorMessage}", ex.Message);
+            _logger.LogError(ex, "MetFrost: HTTP error while fetching stations: {ErrorMessage}", ex.Message);
             throw;
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Invalid JSON response received from MET Frost API");
+            _logger.LogError(ex, "MetFrost: Invalid JSON response received");
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while fetching MET Frost stations");
+            _logger.LogError(ex, "MetFrost: Unexpected error while fetching stations");
             throw;
         }
     }

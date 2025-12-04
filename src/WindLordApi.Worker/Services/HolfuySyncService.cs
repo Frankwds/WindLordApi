@@ -34,10 +34,10 @@ public class HolfuySyncService : IHolfuySyncService
         try
         {
             // 1. Fetch all data from Holfuy API
-            _logger.LogInformation("Fetching weather stations and station data from Holfuy API...");
+            _logger.LogInformation("Holfuy: Fetching weather stations and station data...");
             var holfuyData = await _holfuyClient.FetchHolfuyDataAsync(cancellationToken);
 
-            _logger.LogInformation("Received {StationCount} weather stations and {DataCount} station data records from Holfuy API",
+            _logger.LogInformation("Holfuy: Received {StationCount} weather stations and {DataCount} station data records",
                 holfuyData.WeatherStations.Count, holfuyData.StationData.Count);
 
             // 2. Upsert WeatherStations
@@ -45,11 +45,11 @@ public class HolfuySyncService : IHolfuySyncService
             {
                 var weatherStationsArray = holfuyData.WeatherStations.ToArray();
                 await _weatherStationService.UpsertManyAsync(weatherStationsArray, cancellationToken);
-                _logger.LogInformation("Upserted {Count} weather station records", weatherStationsArray.Length);
+                _logger.LogInformation("Holfuy: Upserted {Count} weather station records", weatherStationsArray.Length);
             }
             else
             {
-                _logger.LogWarning("No weather stations to upsert");
+                _logger.LogWarning("Holfuy: No weather stations to upsert");
             }
 
             // 3. Upsert StationData
@@ -58,7 +58,7 @@ public class HolfuySyncService : IHolfuySyncService
             {
                 var stationDataArray = holfuyData.StationData.ToArray();
                 stationDataInserted = await _stationDataService.UpsertManyAsync(stationDataArray, cancellationToken);
-                _logger.LogInformation("Inserted {Inserted}/{Attempted} new station data records",
+                _logger.LogInformation("Holfuy: Inserted {Inserted}/{Attempted} new station data records",
                     stationDataInserted, stationDataArray.Length);
 
                 // 4. Convert StationData to LatestStationData and upsert
@@ -66,20 +66,20 @@ public class HolfuySyncService : IHolfuySyncService
                 if (latestStationDataArray.Length > 0)
                 {
                     await _latestStationDataService.UpsertManyAsync(latestStationDataArray, cancellationToken);
-                    _logger.LogInformation("Upserted {Count} latest station data records", latestStationDataArray.Length);
+                    _logger.LogInformation("Holfuy: Upserted {Count} latest station data records", latestStationDataArray.Length);
                 }
             }
             else
             {
-                _logger.LogWarning("No station data to upsert");
+                _logger.LogWarning("Holfuy: No station data to upsert");
             }
 
-            _logger.LogInformation("Completed Holfuy sync. New station data records inserted: {Inserted}", stationDataInserted);
+            _logger.LogInformation("Holfuy: Completed sync. New station data records inserted: {Inserted}", stationDataInserted);
             return stationDataInserted;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error syncing data from Holfuy API");
+            _logger.LogError(ex, "Holfuy: Error syncing data");
             throw;
         }
     }

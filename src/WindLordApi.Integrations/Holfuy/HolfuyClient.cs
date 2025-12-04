@@ -36,6 +36,7 @@ public class HolfuyClient : IHolfuyClient
     {
         if (string.IsNullOrWhiteSpace(_options.ApiKey))
         {
+            _logger.LogError("Holfuy: ApiKey is not configured");
             throw new InvalidOperationException("Holfuy ApiKey is not configured");
         }
 
@@ -59,6 +60,7 @@ public class HolfuyClient : IHolfuyClient
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         request.Headers.Add("User-Agent", "WindLordApi/1.0");
 
+        _logger.LogInformation("Holfuy: Fetching weather station data");
         try
         {
             using var response = await _httpClient.SendAsync(request, cancellationToken);
@@ -66,6 +68,7 @@ public class HolfuyClient : IHolfuyClient
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Holfuy: Returned error status {StatusCode}. Response body: {ErrorContent}", response.StatusCode, errorContent);
                 throw new HttpRequestException($"Holfuy API returned error status {response.StatusCode}. Response body: {errorContent}");
             }
 
@@ -74,6 +77,7 @@ public class HolfuyClient : IHolfuyClient
             var holfuyResponse = JsonSerializer.Deserialize<HolfuyResponse>(content);
             if (holfuyResponse == null || holfuyResponse.Measurements == null)
             {
+                _logger.LogError("Holfuy: Failed to deserialize response to HolfuyResponse");
                 throw new JsonException("Failed to deserialize Holfuy API response to HolfuyResponse.");
             }
 
@@ -100,6 +104,9 @@ public class HolfuyClient : IHolfuyClient
             var stationData = HolfuyMapping.MapHolfuyToStationData(validStations);
             var weatherStations = HolfuyMapping.MapHolfuyToWeatherStation(validStations);
 
+            _logger.LogInformation("Holfuy: Successfully fetched {StationCount} weather stations and {DataCount} station data records",
+                weatherStations.Count, stationData.Count);
+
             return new HolfuyDataResult
             {
                 StationData = stationData,
@@ -108,17 +115,17 @@ public class HolfuyClient : IHolfuyClient
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "HTTP error while fetching Holfuy data: {ErrorMessage}", ex.Message);
+            _logger.LogError(ex, "Holfuy: HTTP error while fetching data: {ErrorMessage}", ex.Message);
             throw;
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Invalid JSON response received from Holfuy API");
+            _logger.LogError(ex, "Holfuy: Invalid JSON response received");
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while fetching Holfuy data");
+            _logger.LogError(ex, "Holfuy: Unexpected error while fetching data");
             throw;
         }
     }
