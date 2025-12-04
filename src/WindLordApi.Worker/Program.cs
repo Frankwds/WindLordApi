@@ -99,8 +99,8 @@ builder.Services.AddScoped<IHolfuySyncService, HolfuySyncService>();
 builder.Services.AddScoped<IMetFrostSyncService, MetFrostSyncService>();
 
 // Register Schedulers (singleton since Worker is singleton)
-builder.Services.AddSingleton<PeriodicJobScheduler>();
-builder.Services.AddSingleton<ClockAlignedScheduler>();
+builder.Services.AddSingleton<PeriodicJobScheduler<IMetFrostSyncService>>();
+builder.Services.AddSingleton<ClockAlignedScheduler<IHolfuySyncService>>();
 
 // Register MET Frost Client
 // 1. Configure Options (binds from appsettings)

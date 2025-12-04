@@ -1,4 +1,5 @@
 using WindLordApi.Worker.Schedulers;
+using WindLordApi.Worker.Services;
 using WindLordApi.Worker.Startup;
 
 namespace WindLordApi.Worker;
@@ -7,14 +8,14 @@ public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
     private readonly IServiceProvider _serviceProvider;
-    private readonly PeriodicJobScheduler _periodicJobScheduler;
-    private readonly ClockAlignedScheduler _clockAlignedScheduler;
+    private readonly PeriodicJobScheduler<IMetFrostSyncService> _periodicJobScheduler;
+    private readonly ClockAlignedScheduler<IHolfuySyncService> _clockAlignedScheduler;
 
     public Worker(
         ILogger<Worker> logger,
         IServiceProvider serviceProvider,
-        PeriodicJobScheduler periodicJobScheduler,
-        ClockAlignedScheduler clockAlignedScheduler)
+        PeriodicJobScheduler<IMetFrostSyncService> periodicJobScheduler,
+        ClockAlignedScheduler<IHolfuySyncService> clockAlignedScheduler)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
@@ -25,7 +26,7 @@ public class Worker : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Run all jobs once on startup
-        await StartupJobs.RunStartupJobsAsync(_serviceProvider, _logger, stoppingToken);
+        // await StartupJobs.RunStartupJobsAsync(_serviceProvider, _logger, stoppingToken);
 
         // Create periodic timers for scheduled jobs
         // Each timer must be unique - PeriodicTimer only supports a single concurrent consumer
@@ -36,19 +37,19 @@ public class Worker : BackgroundService
         // Start all scheduled jobs concurrently
         var syncDataTask = _periodicJobScheduler.RunAsync(
             metFrostObservationDataInterval,
-            async (service, ct) => await service.SyncLatestStationDataAsync(ct),
+            async (service, ct) => { await service.SyncLatestStationDataAsync(ct); },
             "SyncLatestStationDataAsync",
             stoppingToken);
 
         var syncStationsTask = _periodicJobScheduler.RunAsync(
             metFrostNewStationsInterval,
-            async (service, ct) => await service.SyncWeatherStationsAsync(ct),
+            async (service, ct) => { await service.SyncWeatherStationsAsync(ct); },
             "SyncNewWeatherStationsAsync",
             stoppingToken);
 
         var syncStatusTask = _periodicJobScheduler.RunAsync(
             metFrostStationsActiveStatusInterval,
-            async (service, ct) => await service.SyncWeatherStationsActiveStatusAsync(ct),
+            async (service, ct) => { await service.SyncWeatherStationsActiveStatusAsync(ct); },
             "SyncWeatherStationActiveStatusAsync",
             stoppingToken);
 
@@ -56,7 +57,7 @@ public class Worker : BackgroundService
             TimeSpan.FromMinutes(15),
             TimeSpan.FromSeconds(30),
             "SyncHolfuyDataAsync",
-            async (service, ct) => await service.SyncHolfuyDataAsync(ct),
+            async (service, ct) => { await service.SyncHolfuyDataAsync(ct); },
             stoppingToken);
 
         // Wait for all tasks (they will run until cancellation is requested)

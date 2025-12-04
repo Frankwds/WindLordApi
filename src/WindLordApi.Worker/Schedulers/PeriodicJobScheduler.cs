@@ -1,20 +1,20 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using WindLordApi.Worker.Services;
 
 namespace WindLordApi.Worker.Schedulers;
 
 /// <summary>
 /// Scheduler that runs jobs at regular periodic intervals using a PeriodicTimer.
 /// </summary>
-public class PeriodicJobScheduler
+/// <typeparam name="TService">The service type to resolve from dependency injection.</typeparam>
+public class PeriodicJobScheduler<TService> where TService : class
 {
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<PeriodicJobScheduler> _logger;
+    private readonly ILogger<PeriodicJobScheduler<TService>> _logger;
 
     public PeriodicJobScheduler(
         IServiceScopeFactory scopeFactory,
-        ILogger<PeriodicJobScheduler> logger)
+        ILogger<PeriodicJobScheduler<TService>> logger)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
@@ -29,7 +29,7 @@ public class PeriodicJobScheduler
     /// <param name="stoppingToken">Cancellation token</param>
     public async Task RunAsync(
         PeriodicTimer timer,
-        Func<IMetFrostSyncService, CancellationToken, Task> jobAction,
+        Func<TService, CancellationToken, Task> jobAction,
         string jobName,
         CancellationToken stoppingToken)
     {
@@ -50,8 +50,8 @@ public class PeriodicJobScheduler
                 {
                     // Create a new scope for each job execution
                     using var scope = _scopeFactory.CreateScope();
-                    var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
-                    await jobAction(syncService, stoppingToken);
+                    var service = scope.ServiceProvider.GetRequiredService<TService>();
+                    await jobAction(service, stoppingToken);
                     _logger.LogInformation("Completed scheduled job: {JobName}", jobName);
                 }
                 catch (Exception ex)

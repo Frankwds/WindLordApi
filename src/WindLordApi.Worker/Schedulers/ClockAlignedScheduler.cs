@@ -1,22 +1,21 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using WindLordApi.Worker.Services;
 
 namespace WindLordApi.Worker.Schedulers;
 
 /// <summary>
 /// Scheduler that runs jobs at clock-aligned intervals (e.g., :00, :15, :30, :45) 
 /// with a specified offset delay after each interval mark.
-/// Used for Holfuy sync which releases data at these intervals.
 /// </summary>
-public class ClockAlignedScheduler
+/// <typeparam name="TService">The service type to resolve from dependency injection.</typeparam>
+public class ClockAlignedScheduler<TService> where TService : class
 {
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<ClockAlignedScheduler> _logger;
+    private readonly ILogger<ClockAlignedScheduler<TService>> _logger;
 
     public ClockAlignedScheduler(
         IServiceScopeFactory scopeFactory,
-        ILogger<ClockAlignedScheduler> logger)
+        ILogger<ClockAlignedScheduler<TService>> logger)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
@@ -38,7 +37,7 @@ public class ClockAlignedScheduler
         TimeSpan interval,
         TimeSpan offset,
         string jobName,
-        Func<IHolfuySyncService, CancellationToken, Task<int>> jobAction,
+        Func<TService, CancellationToken, Task> jobAction,
         CancellationToken stoppingToken)
     {
         try
@@ -84,7 +83,7 @@ public class ClockAlignedScheduler
 
     private async Task ExecuteJobOnceAsync(
         string jobName,
-        Func<IHolfuySyncService, CancellationToken, Task<int>> jobAction,
+        Func<TService, CancellationToken, Task> jobAction,
         CancellationToken stoppingToken)
     {
         _logger.LogInformation("Starting scheduled job: {JobName}", jobName);
@@ -92,9 +91,9 @@ public class ClockAlignedScheduler
         try
         {
             using var scope = _scopeFactory.CreateScope();
-            var syncService = scope.ServiceProvider.GetRequiredService<IHolfuySyncService>();
-            var count = await jobAction(syncService, stoppingToken);
-            _logger.LogInformation("Completed scheduled job: {JobName} (inserted {Count} new records)", jobName, count);
+            var service = scope.ServiceProvider.GetRequiredService<TService>();
+            await jobAction(service, stoppingToken);
+            _logger.LogInformation("Completed scheduled job: {JobName}", jobName);
         }
         catch (Exception ex)
         {
