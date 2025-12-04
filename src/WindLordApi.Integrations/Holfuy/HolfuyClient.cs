@@ -29,29 +29,26 @@ public class HolfuyClient : IHolfuyClient, IDisposable
         _options = options.Value;
         _logger = logger;
 
-        // Configure proxy if FIXIE_URL is available
+        // Proxy is required for Holfuy API - fail early if not configured
         var proxyUrl = configuration.GetConnectionString("FIXIE_URL");
-        if (!string.IsNullOrWhiteSpace(proxyUrl))
+        if (string.IsNullOrWhiteSpace(proxyUrl))
         {
-            try
-            {
-                var proxyHandler = CreateProxyHandler(proxyUrl);
-                // Create a new HttpClient with proxy support
-                _httpClient = new HttpClient(proxyHandler, disposeHandler: true);
-                _ownsHttpClient = true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to configure proxy. Using injected HttpClient without proxy.");
-                _httpClient = httpClient;
-                _ownsHttpClient = false;
-            }
+            throw new InvalidOperationException(
+                "FIXIE_URL connection string is not configured. Holfuy API requires a proxy connection.");
         }
-        else
+
+        try
         {
-            _logger.LogWarning("FIXIE_URL connection string is not configured. Requests will not use a proxy.");
-            _httpClient = httpClient;
-            _ownsHttpClient = false;
+            var proxyHandler = CreateProxyHandler(proxyUrl);
+            // Create a new HttpClient with proxy support
+            _httpClient = new HttpClient(proxyHandler, disposeHandler: true);
+            _ownsHttpClient = true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to configure proxy for Holfuy API.");
+            throw new InvalidOperationException(
+                "Failed to configure proxy for Holfuy API. Proxy is required for API access.", ex);
         }
     }
 
