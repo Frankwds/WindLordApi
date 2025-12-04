@@ -46,8 +46,13 @@ public class Worker : BackgroundService
             "SyncWeatherStationActiveStatusAsync",
             stoppingToken);
 
+        var holfuySyncTask = RunHolfuySyncAtClockIntervalsAsync(
+            TimeSpan.FromMinutes(15),
+            TimeSpan.FromSeconds(15),
+            stoppingToken);
+
         // Wait for all tasks (they will run until cancellation is requested)
-        await Task.WhenAll(syncDataTask, syncStationsTask, syncStatusTask);
+        await Task.WhenAll(syncDataTask, syncStationsTask, syncStatusTask, holfuySyncTask);
     }
 
     private async Task RunPeriodicJobAsync(
@@ -91,6 +96,93 @@ public class Worker : BackgroundService
         finally
         {
             timer.Dispose();
+        }
+    }
+
+    private async Task RunHolfuySyncAtClockIntervalsAsync(
+        TimeSpan interval,
+        TimeSpan offset,
+        CancellationToken stoppingToken)
+    {
+        const string jobName = "SyncHolfuyDataAsync";
+
+        try
+        {
+            // Calculate delay until next scheduled time (15 seconds past next 15-minute mark)
+            var now = DateTimeOffset.UtcNow;
+            var intervalMinutes = (int)interval.TotalMinutes;
+            var minutes = now.Minute;
+
+            // Calculate minutes until next interval mark
+            var minutesToNext = intervalMinutes - (minutes % intervalMinutes);
+
+            // If exactly on the mark, wait for the next interval
+            if (minutesToNext == intervalMinutes)
+            {
+                minutesToNext = 0;
+            }
+
+            var nextRun = now.AddMinutes(minutesToNext);
+            // Round down to the exact minute and add the offset (15 seconds)
+            nextRun = new DateTimeOffset(
+                nextRun.Year, nextRun.Month, nextRun.Day,
+                nextRun.Hour, nextRun.Minute, 0, nextRun.Offset)
+                .Add(offset);
+
+            var delay = nextRun - now;
+
+            if (delay.TotalMilliseconds > 0)
+            {
+                _logger.LogInformation(
+                    "Job {JobName} will start at {ScheduledTime} (in {DelaySeconds:F1} seconds)",
+                    jobName,
+                    nextRun.ToString("HH:mm:ss"),
+                    delay.TotalSeconds);
+
+                await Task.Delay(delay, stoppingToken);
+            }
+
+            // Now create the periodic timer - it will tick every 15 minutes from this point
+            using var timer = new PeriodicTimer(interval);
+
+            // Run the job immediately (we're now at a scheduled time)
+            await ExecuteHolfuyJobOnceAsync(jobName, stoppingToken);
+
+            // Continue with periodic execution
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                var hasNextTick = await timer.WaitForNextTickAsync(stoppingToken);
+                if (!hasNextTick)
+                {
+                    break;
+                }
+
+                await ExecuteHolfuyJobOnceAsync(jobName, stoppingToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Scheduled job {JobName} was cancelled", jobName);
+        }
+    }
+
+    private async Task ExecuteHolfuyJobOnceAsync(
+        string jobName,
+        CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("Starting scheduled job: {JobName}", jobName);
+
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var syncService = scope.ServiceProvider.GetRequiredService<IHolfuySyncService>();
+            var count = await syncService.SyncHolfuyDataAsync(stoppingToken);
+            _logger.LogInformation("Completed scheduled job: {JobName} (inserted {Count} new records)", jobName, count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in scheduled job: {JobName}", jobName);
+            // Continue to next iteration - don't stop the timer
         }
     }
 }
