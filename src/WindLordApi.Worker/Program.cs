@@ -116,11 +116,13 @@ builder.Services.AddHolfuyClient(builder.Configuration);
 // Register Health Check Services
 builder.Services.AddScoped<DatabaseHealthCheck>();
 builder.Services.AddScoped<MetFrostHealthCheck>();
+builder.Services.AddScoped<HolfuyHealthCheck>();
 
 // Register Health Checks
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database", tags: ["db", "database"])
-    .AddCheck<MetFrostHealthCheck>("metfrost", tags: ["api", "metfrost"]);
+    .AddCheck<MetFrostHealthCheck>("metfrost", tags: ["api", "metfrost"])
+    .AddCheck<HolfuyHealthCheck>("holfuy", tags: ["api", "holfuy"]);
 
 builder.Services.AddHostedService<Worker>();
 
