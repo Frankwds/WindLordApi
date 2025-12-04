@@ -92,6 +92,7 @@ builder.Services.AddScoped<ILatestStationDataService, LatestStationDataService>(
 
 // Register Mapping Services
 builder.Services.AddScoped<IMetFrostMapping, MetFrostMappingService>();
+builder.Services.AddScoped<IHolfuyMapping, HolfuyMappingService>();
 
 // Register Worker Services
 builder.Services.AddScoped<IHolfuySyncService, HolfuySyncService>();

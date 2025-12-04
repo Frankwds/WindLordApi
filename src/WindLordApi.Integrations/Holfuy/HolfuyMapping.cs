@@ -3,16 +3,16 @@ using WindLordApi.Data.Models;
 namespace WindLordApi.Integrations.Holfuy;
 
 /// <summary>
-/// Maps Holfuy API response data to StationData and WeatherStation formats for database storage.
+/// Maps Holfuy API response data to domain models for database storage.
 /// </summary>
-public static class HolfuyMapping
+public class HolfuyMappingService : IHolfuyMapping
 {
     /// <summary>
     /// Maps Holfuy API response data to StationData format for database storage.
     /// </summary>
     /// <param name="holfuyData">Array of Holfuy station data</param>
     /// <returns>Array of StationData objects (without Id) ready for database insertion</returns>
-    public static List<StationData> MapHolfuyToStationData(
+    public List<StationData> MapHolfuyToStationData(
         IReadOnlyList<HolfuyStationData> holfuyData)
     {
         return holfuyData
@@ -64,7 +64,7 @@ public static class HolfuyMapping
     /// </summary>
     /// <param name="holfuyData">Array of Holfuy station data</param>
     /// <returns>Array of WeatherStation objects (without Id and UpdatedAt) ready for database insertion</returns>
-    public static List<WeatherStation> MapHolfuyToWeatherStation(
+    public List<WeatherStation> MapHolfuyToWeatherStation(
         IReadOnlyList<HolfuyStationData> holfuyData)
     {
         return holfuyData

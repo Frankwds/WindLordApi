@@ -13,6 +13,7 @@ public class HolfuyClient : IHolfuyClient
 {
     private readonly HttpClient _httpClient;
     private readonly HolfuyOptions _options;
+    private readonly IHolfuyMapping _holfuyMapping;
     private readonly ILogger<HolfuyClient> _logger;
 
     private const string BaseUrl = "https://api.holfuy.com/live/";
@@ -20,10 +21,12 @@ public class HolfuyClient : IHolfuyClient
     public HolfuyClient(
         HttpClient httpClient,
         IOptions<HolfuyOptions> options,
+        IHolfuyMapping holfuyMapping,
         ILogger<HolfuyClient> logger)
     {
         _httpClient = httpClient;
         _options = options.Value;
+        _holfuyMapping = holfuyMapping;
         _logger = logger;
     }
 
@@ -100,8 +103,8 @@ public class HolfuyClient : IHolfuyClient
                 .ToList();
             _logger.LogInformation("Holfuy: Fetched data for {StationCount} stations", validStations.Count);
             // Map to database models
-            var stationData = HolfuyMapping.MapHolfuyToStationData(validStations);
-            var weatherStations = HolfuyMapping.MapHolfuyToWeatherStation(validStations);
+            var stationData = _holfuyMapping.MapHolfuyToStationData(validStations);
+            var weatherStations = _holfuyMapping.MapHolfuyToWeatherStation(validStations);
 
             _logger.LogInformation("Holfuy: Successfully mapped {StationCount} weather stations and {DataCount} station data records",
                 weatherStations.Count, stationData.Count);
