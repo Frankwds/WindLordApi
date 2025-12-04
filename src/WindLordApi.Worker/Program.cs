@@ -5,10 +5,8 @@ using WindLordApi.Data;
 using WindLordApi.Data.Extensions;
 using WindLordApi.Data.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using WindLordApi.Integrations.MetFrost;
 using WindLordApi.Integrations.Holfuy;
-using System.Net;
 using Serilog;
 using Serilog.Events;
 
@@ -103,52 +101,7 @@ builder.Services.Configure<MetFrostOptions>(
 builder.Services.AddHttpClient<IMetFrostClient, MetFrostClient>();
 
 // Register Holfuy Client
-// 1. Configure Options (binds from appsettings)
-builder.Services.Configure<HolfuyOptions>(
-    builder.Configuration.GetSection(HolfuyOptions.SectionName));
-
-// 2. Register HttpClient + Service with proxy configuration
-builder.Services.AddHttpClient<IHolfuyClient, HolfuyClient>()
-    .ConfigurePrimaryHttpMessageHandler(() =>
-    {
-        var proxyUrl = builder.Configuration.GetConnectionString("FIXIE_URL");
-        if (string.IsNullOrWhiteSpace(proxyUrl))
-        {
-            throw new InvalidOperationException(
-                "FIXIE_URL connection string is not configured. Holfuy API requires a proxy connection.");
-        }
-
-        var proxyUri = new Uri(proxyUrl);
-        if (string.IsNullOrWhiteSpace(proxyUri.Host) || proxyUri.Port == -1)
-        {
-            throw new InvalidOperationException("Invalid proxy URL: missing hostname or port");
-        }
-
-        var credentials = proxyUri.UserInfo;
-        if (string.IsNullOrWhiteSpace(credentials))
-        {
-            throw new InvalidOperationException("Invalid proxy URL: missing authentication credentials");
-        }
-
-        var credentialParts = credentials.Split(':');
-        if (credentialParts.Length != 2)
-        {
-            throw new InvalidOperationException(
-                "Invalid proxy URL: authentication credentials must be in format username:password");
-        }
-
-        var proxy = new WebProxy
-        {
-            Address = new Uri($"http://{proxyUri.Host}:{proxyUri.Port}"),
-            Credentials = new NetworkCredential(credentialParts[0], credentialParts[1])
-        };
-
-        return new HttpClientHandler
-        {
-            Proxy = proxy,
-            UseProxy = true
-        };
-    });
+builder.Services.AddHolfuyClient(builder.Configuration);
 
 // Register Health Check Services
 builder.Services.AddScoped<DatabaseHealthCheck>();
