@@ -23,25 +23,25 @@ public class Worker : BackgroundService
 
         // Create periodic timers for scheduled jobs
         // Each timer must be unique - PeriodicTimer only supports a single concurrent consumer
-        var fiveMinuteTimer = new PeriodicTimer(TimeSpan.FromMinutes(5));
-        var twoWeekTimer = new PeriodicTimer(TimeSpan.FromDays(14)); // For SyncNewWeatherStationsAsync
-        var weeklyTimer = new PeriodicTimer(TimeSpan.FromDays(7)); // For SyncWeatherStationActiveStatusAsync
+        var metFrostObservationInterval = new PeriodicTimer(TimeSpan.FromMinutes(5));
+        var metFrostStationInterval = new PeriodicTimer(TimeSpan.FromDays(7)); // For SyncNewWeatherStationsAsync
+        var metFrostStationActiveStatusInterval = new PeriodicTimer(TimeSpan.FromDays(7)); // For SyncWeatherStationActiveStatusAsync
 
         // Start all scheduled jobs concurrently
         var syncDataTask = RunPeriodicJobAsync(
-            fiveMinuteTimer,
+            metFrostObservationInterval,
             async (service, ct) => await service.SyncLatestStationDataAsync(ct),
             "SyncLatestStationDataAsync",
             stoppingToken);
 
         var syncStationsTask = RunPeriodicJobAsync(
-            twoWeekTimer,
+            metFrostStationInterval,
             async (service, ct) => await service.SyncWeatherStationsAsync(ct),
             "SyncNewWeatherStationsAsync",
             stoppingToken);
 
         var syncStatusTask = RunPeriodicJobAsync(
-            weeklyTimer,
+            metFrostStationActiveStatusInterval,
             async (service, ct) => await service.SyncWeatherStationsActiveStatusAsync(ct),
             "SyncWeatherStationActiveStatusAsync",
             stoppingToken);
