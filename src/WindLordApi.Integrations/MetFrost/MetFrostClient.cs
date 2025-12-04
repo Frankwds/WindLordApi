@@ -114,7 +114,6 @@ public class MetFrostClient : IMetFrostClient
                 throw new JsonException("Failed to deserialize MET Frost API response to MetObservationsResponse.");
             }
 
-            _logger.LogInformation("MetFrost: Successfully fetched station data with {DataCount} observation data points", result.Data.Count);
             return result;
         }
         catch (HttpRequestException ex)

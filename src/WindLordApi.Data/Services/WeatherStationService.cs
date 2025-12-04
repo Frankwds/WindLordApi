@@ -125,13 +125,13 @@ public class WeatherStationService : IWeatherStationService
             var updated = await _dbContext.Database.ExecuteSqlRawAsync(sql, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            _logger.LogInformation("Set {Count} stations to active (stations with data)", updated);
+            _logger.LogInformation("MetFrost: Set {Count} stations to active (stations with data)", updated);
             return updated;
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
-            _logger.LogError(ex, "Failed to set active stations with data");
+            _logger.LogError(ex, "MetFrost: Failed to set active stations with data");
             throw;
         }
     }
@@ -158,7 +158,7 @@ public class WeatherStationService : IWeatherStationService
             var updated = await _dbContext.Database.ExecuteSqlRawAsync(sql, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            _logger.LogInformation("Set {Count} stations to inactive (stations without data)", updated);
+            _logger.LogInformation("MetFrost: Set {Count} stations to inactive (stations without data)", updated);
             return updated;
         }
         catch (Exception ex)
