@@ -1,7 +1,5 @@
-using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WindLordApi.Data.Models;
@@ -11,91 +9,22 @@ namespace WindLordApi.Integrations.Holfuy;
 /// <summary>
 /// Client for fetching weather station data from Holfuy API
 /// </summary>
-public class HolfuyClient : IHolfuyClient, IDisposable
+public class HolfuyClient : IHolfuyClient
 {
     private readonly HttpClient _httpClient;
     private readonly HolfuyOptions _options;
     private readonly ILogger<HolfuyClient> _logger;
-    private readonly bool _ownsHttpClient;
 
     private const string BaseUrl = "https://api.holfuy.com/live/";
 
     public HolfuyClient(
         HttpClient httpClient,
         IOptions<HolfuyOptions> options,
-        IConfiguration configuration,
         ILogger<HolfuyClient> logger)
     {
+        _httpClient = httpClient;
         _options = options.Value;
         _logger = logger;
-
-        // Proxy is required for Holfuy API - fail early if not configured
-        var proxyUrl = configuration.GetConnectionString("FIXIE_URL");
-        if (string.IsNullOrWhiteSpace(proxyUrl))
-        {
-            throw new InvalidOperationException(
-                "FIXIE_URL connection string is not configured. Holfuy API requires a proxy connection.");
-        }
-
-        try
-        {
-            var proxyHandler = CreateProxyHandler(proxyUrl);
-            // Create a new HttpClient with proxy support
-            _httpClient = new HttpClient(proxyHandler, disposeHandler: true);
-            _ownsHttpClient = true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to configure proxy for Holfuy API.");
-            throw new InvalidOperationException(
-                "Failed to configure proxy for Holfuy API. Proxy is required for API access.", ex);
-        }
-    }
-
-    /// <summary>
-    /// Creates an HttpClientHandler configured with proxy support using FIXIE_URL.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown when the proxy URL is invalid.</exception>
-    private HttpClientHandler CreateProxyHandler(string proxyUrl)
-    {
-        var proxyUri = new Uri(proxyUrl);
-        if (string.IsNullOrWhiteSpace(proxyUri.Host) || proxyUri.Port == -1)
-        {
-            throw new InvalidOperationException("Invalid proxy URL: missing hostname or port");
-        }
-
-        // Extract credentials from the proxy URL
-        var credentials = proxyUri.UserInfo;
-        if (string.IsNullOrWhiteSpace(credentials))
-        {
-            throw new InvalidOperationException("Invalid proxy URL: missing authentication credentials");
-        }
-
-        var credentialParts = credentials.Split(':');
-        if (credentialParts.Length != 2)
-        {
-            throw new InvalidOperationException("Invalid proxy URL: authentication credentials must be in format username:password");
-        }
-
-        var proxy = new WebProxy
-        {
-            Address = new Uri($"http://{proxyUri.Host}:{proxyUri.Port}"),
-            Credentials = new NetworkCredential(credentialParts[0], credentialParts[1])
-        };
-
-        return new HttpClientHandler
-        {
-            Proxy = proxy,
-            UseProxy = true
-        };
-    }
-
-    public void Dispose()
-    {
-        if (_ownsHttpClient)
-        {
-            _httpClient?.Dispose();
-        }
     }
 
     /// <summary>
