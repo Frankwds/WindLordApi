@@ -78,7 +78,7 @@ public class MetFrostSyncService : IMetFrostSyncService
                     totalAttempted += stationDataList.Count;
                     totalInserted += inserted;
 
-                    // 6. Upsert to LatestStationData table (maintains latest observation per station)
+                    // 6. Upsert to LatestStationData table
                     var latestStationDataArray = LatestStationDataService.ConvertFromStationData(stationDataArray);
                     if (latestStationDataArray.Length > 0)
                     {
@@ -114,13 +114,12 @@ public class MetFrostSyncService : IMetFrostSyncService
 
             _logger.LogInformation("Mapped {Count} valid weather stations", weatherStations.Count);
 
-            // 3. Upsert the mapped data to database
+            // 3. Upsert the mapped data to database (always updates, so count is not meaningful)
             if (weatherStations.Count > 0)
             {
-                var affected = await _weatherStationService.UpsertManyAsync(weatherStations.ToArray(), cancellationToken);
-                _logger.LogInformation("Upserted {Affected}/{Attempted} weather station records (inserted new or updated existing)",
-                    affected, weatherStations.Count);
-                return affected;
+                await _weatherStationService.UpsertManyAsync(weatherStations.ToArray(), cancellationToken);
+                _logger.LogInformation("Upserted {Count} weather station records", weatherStations.Count);
+                return weatherStations.Count;
             }
 
             _logger.LogWarning("No valid weather stations to upsert");
@@ -141,7 +140,7 @@ public class MetFrostSyncService : IMetFrostSyncService
 
             // 1. First, sync data for all inactive stations to check if they now have data
             _logger.LogInformation("Syncing station data for inactive stations before status update...");
-            await SyncStationDataAsync(isActive: false, cancellationToken);
+            var stationDataInserted = await SyncStationDataAsync(isActive: false, cancellationToken);
 
             // 2. Set stations with data to active
             var activatedCount = await _weatherStationService.SetActiveStationsWithDataAsync(cancellationToken);
@@ -151,10 +150,10 @@ public class MetFrostSyncService : IMetFrostSyncService
             var deactivatedCount = await _weatherStationService.SetInactiveStationsWithoutDataAsync(cancellationToken);
             _logger.LogInformation("Deactivated {Count} stations without data", deactivatedCount);
 
-            var totalUpdated = activatedCount + deactivatedCount;
-            _logger.LogInformation("Completed weather station active status sync. Total updated: {Total}", totalUpdated);
+            _logger.LogInformation("Completed weather station active status sync. New station data inserted: {Inserted}, Status updates: {Activated} activated, {Deactivated} deactivated",
+                stationDataInserted, activatedCount, deactivatedCount);
 
-            return totalUpdated;
+            return stationDataInserted;
         }
         catch (Exception ex)
         {

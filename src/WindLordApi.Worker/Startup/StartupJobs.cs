@@ -28,8 +28,8 @@ public static class StartupJobs
         {
             using var holfuyScope = serviceProvider.CreateScope();
             var holfuySyncService = holfuyScope.ServiceProvider.GetRequiredService<IHolfuySyncService>();
-            var holfuyRecordsUpserted = await holfuySyncService.SyncHolfuyDataAsync(cancellationToken);
-            logger.LogInformation("Completed startup job: SyncHolfuyDataAsync - {RecordsUpserted} records upserted", holfuyRecordsUpserted);
+            await holfuySyncService.SyncHolfuyDataAsync(cancellationToken);
+            logger.LogInformation("Completed startup job: SyncHolfuyDataAsync");
         }
         catch (Exception ex)
         {

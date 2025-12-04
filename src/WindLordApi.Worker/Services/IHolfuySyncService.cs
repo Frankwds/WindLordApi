@@ -10,7 +10,7 @@ public interface IHolfuySyncService
     /// Upserts WeatherStations, StationData, and LatestStationData in sequence.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Total count of records processed/upserted.</returns>
+    /// <returns>Count of new StationData records inserted (only meaningful metric, as other upserts always update existing records).</returns>
     Task<int> SyncHolfuyDataAsync(CancellationToken cancellationToken = default);
 }
 
