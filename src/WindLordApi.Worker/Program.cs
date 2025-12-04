@@ -90,6 +90,7 @@ builder.Services.AddScoped<IWeatherStationService, WeatherStationService>();
 builder.Services.AddScoped<ILatestStationDataService, LatestStationDataService>();
 
 // Register Worker Services
+builder.Services.AddScoped<IHolfuySyncService, HolfuySyncService>();
 builder.Services.AddScoped<IMetFrostSyncService, MetFrostSyncService>();
 
 // Register MET Frost Client

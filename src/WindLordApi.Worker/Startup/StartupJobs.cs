@@ -23,6 +23,19 @@ public static class StartupJobs
     {
         logger.LogInformation("Running startup jobs...");
 
+        // Sync Holfuy data on startup (first)
+        try
+        {
+            using var holfuyScope = serviceProvider.CreateScope();
+            var holfuySyncService = holfuyScope.ServiceProvider.GetRequiredService<IHolfuySyncService>();
+            var holfuyRecordsUpserted = await holfuySyncService.SyncHolfuyDataAsync(cancellationToken);
+            logger.LogInformation("Completed startup job: SyncHolfuyDataAsync - {RecordsUpserted} records upserted", holfuyRecordsUpserted);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error running SyncHolfuyDataAsync on startup");
+        }
+
         // Sync all stations on startup
         try
         {
