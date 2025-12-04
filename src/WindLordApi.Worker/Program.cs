@@ -1,4 +1,5 @@
 using WindLordApi.Worker;
+using WindLordApi.Worker.Schedulers;
 using WindLordApi.Worker.Services;
 using WindLordApi.Worker.Startup;
 using WindLordApi.Data;
@@ -92,6 +93,10 @@ builder.Services.AddScoped<ILatestStationDataService, LatestStationDataService>(
 // Register Worker Services
 builder.Services.AddScoped<IHolfuySyncService, HolfuySyncService>();
 builder.Services.AddScoped<IMetFrostSyncService, MetFrostSyncService>();
+
+// Register Schedulers (singleton since Worker is singleton)
+builder.Services.AddSingleton<PeriodicJobScheduler>();
+builder.Services.AddSingleton<ClockAlignedScheduler>();
 
 // Register MET Frost Client
 // 1. Configure Options (binds from appsettings)
