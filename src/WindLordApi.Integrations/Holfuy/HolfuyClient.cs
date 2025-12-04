@@ -60,7 +60,6 @@ public class HolfuyClient : IHolfuyClient
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         request.Headers.Add("User-Agent", "WindLordApi/1.0");
 
-        _logger.LogInformation("Holfuy: Fetching weather station data");
         try
         {
             using var response = await _httpClient.SendAsync(request, cancellationToken);
@@ -99,12 +98,12 @@ public class HolfuyClient : IHolfuyClient
                         && lng <= 180;
                 })
                 .ToList();
-
+            _logger.LogInformation("Holfuy: Fetched data for {StationCount} stations", validStations.Count);
             // Map to database models
             var stationData = HolfuyMapping.MapHolfuyToStationData(validStations);
             var weatherStations = HolfuyMapping.MapHolfuyToWeatherStation(validStations);
 
-            _logger.LogInformation("Holfuy: Successfully fetched {StationCount} weather stations and {DataCount} station data records",
+            _logger.LogInformation("Holfuy: Successfully mapped {StationCount} weather stations and {DataCount} station data records",
                 weatherStations.Count, stationData.Count);
 
             return new HolfuyDataResult

@@ -37,15 +37,14 @@ public class HolfuySyncService : IHolfuySyncService
             _logger.LogInformation("Holfuy: Fetching weather stations and station data...");
             var holfuyData = await _holfuyClient.FetchHolfuyDataAsync(cancellationToken);
 
-            _logger.LogInformation("Holfuy: Received {StationCount} weather stations and {DataCount} station data records",
-                holfuyData.WeatherStations.Count, holfuyData.StationData.Count);
-
-            // 2. Upsert WeatherStations
+            // 2. Upsert WeatherStations - 
+            // Do this first in case holfuy just added a new station, 
+            // to make sure there is a weather station to match the station data that follows
             if (holfuyData.WeatherStations.Count > 0)
             {
                 var weatherStationsArray = holfuyData.WeatherStations.ToArray();
                 await _weatherStationService.UpsertManyAsync(weatherStationsArray, cancellationToken);
-                _logger.LogInformation("Holfuy: Upserted {Count} weather station records", weatherStationsArray.Length);
+                _logger.LogInformation("Holfuy: Upserted {Count} weather station records (Perhaps with no changes)", weatherStationsArray.Length);
             }
             else
             {
@@ -58,7 +57,7 @@ public class HolfuySyncService : IHolfuySyncService
             {
                 var stationDataArray = holfuyData.StationData.ToArray();
                 stationDataInserted = await _stationDataService.UpsertManyAsync(stationDataArray, cancellationToken);
-                _logger.LogInformation("Holfuy: Inserted {Inserted}/{Attempted} new station data records",
+                _logger.LogInformation("Holfuy: Successfully inserted {Inserted}/{Attempted} new station data records",
                     stationDataInserted, stationDataArray.Length);
 
                 // 4. Convert StationData to LatestStationData and upsert
@@ -66,7 +65,7 @@ public class HolfuySyncService : IHolfuySyncService
                 if (latestStationDataArray.Length > 0)
                 {
                     await _latestStationDataService.UpsertManyAsync(latestStationDataArray, cancellationToken);
-                    _logger.LogInformation("Holfuy: Upserted {Count} latest station data records", latestStationDataArray.Length);
+                    _logger.LogInformation("Holfuy: Upserted {Count} latest station data records (Perhaps with no changes)", latestStationDataArray.Length);
                 }
             }
             else
