@@ -87,6 +87,14 @@ public record HolfuyStationData
     public double? Temperature { get; init; }
 }
 
-// Note: The Holfuy API response is directly an array of HolfuyStationData
-// No wrapper object needed - deserialize directly to List<HolfuyStationData>
+/// <summary>
+/// Root model for Holfuy API response.
+/// The API returns an object with a measurements property containing an array of station data.
+/// </summary>
+public record HolfuyResponse
+{
+    [JsonRequired]
+    [JsonPropertyName("measurements")]
+    public IReadOnlyList<HolfuyStationData> Measurements { get; init; } = Array.Empty<HolfuyStationData>();
+}
 

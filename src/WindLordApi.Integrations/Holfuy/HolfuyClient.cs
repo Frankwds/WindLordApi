@@ -71,21 +71,14 @@ public class HolfuyClient : IHolfuyClient
 
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
-            // Configure JSON deserialization options
-            var jsonOptions = new JsonSerializerOptions
+            var holfuyResponse = JsonSerializer.Deserialize<HolfuyResponse>(content);
+            if (holfuyResponse == null || holfuyResponse.Measurements == null)
             {
-                PropertyNameCaseInsensitive = true
-            };
-
-            // Deserialize directly to array (the API returns an array directly)
-            var holfuyData = JsonSerializer.Deserialize<List<HolfuyStationData>>(content, jsonOptions);
-            if (holfuyData == null)
-            {
-                throw new JsonException("Failed to deserialize Holfuy API response to List<HolfuyStationData>.");
+                throw new JsonException("Failed to deserialize Holfuy API response to HolfuyResponse.");
             }
 
             // Validate and filter stations with valid coordinates
-            var validStations = holfuyData
+            var validStations = holfuyResponse.Measurements
                 .Where(station =>
                 {
                     if (!double.TryParse(station.Location.Latitude, out var lat) ||
