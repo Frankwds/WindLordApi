@@ -94,7 +94,6 @@ public class MetFrostClient : IMetFrostClient
         request.Headers.Add("User-Agent", "WindAlert/1.0");
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authHeader);
 
-        _logger.LogInformation("MetFrost: Fetching station data for {StationCount} station(s)", stationIds.Length);
         try
         {
             using var response = await _httpClient.SendAsync(request, cancellationToken);
@@ -157,7 +156,6 @@ public class MetFrostClient : IMetFrostClient
         request.Headers.Add("User-Agent", "WindAlert/1.0");
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authHeader);
 
-        _logger.LogInformation("MetFrost: Fetching weather stations");
         try
         {
             using var response = await _httpClient.SendAsync(request, cancellationToken);
@@ -178,7 +176,6 @@ public class MetFrostClient : IMetFrostClient
                 throw new JsonException("Failed to deserialize MET Frost API response to MetFrostStationsResponse.");
             }
 
-            _logger.LogInformation("MetFrost: Successfully fetched {StationCount} weather stations", result.Data.Count);
             return result;
         }
         catch (HttpRequestException ex)

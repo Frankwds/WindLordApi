@@ -27,7 +27,7 @@ public class WeatherStationService : IWeatherStationService
             .Select(ws => ws.StationId)
             .ToListAsync(cancellationToken);
 
-        _logger.LogInformation("Retrieved {Count} active station IDs", stationIds.Count);
+        _logger.LogInformation("MetFrost: Retrieved {Count} active station IDs", stationIds.Count);
         return stationIds;
     }
 
@@ -39,7 +39,7 @@ public class WeatherStationService : IWeatherStationService
             .Select(ws => ws.StationId)
             .ToListAsync(cancellationToken);
 
-        _logger.LogInformation("Retrieved {Count} inactive station IDs", stationIds.Count);
+        _logger.LogInformation("MetFrost: Retrieved {Count} inactive station IDs", stationIds.Count);
         return stationIds;
     }
 
