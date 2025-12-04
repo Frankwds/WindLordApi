@@ -90,6 +90,9 @@ builder.Services.AddScoped<IStationDataService, StationDataService>();
 builder.Services.AddScoped<IWeatherStationService, WeatherStationService>();
 builder.Services.AddScoped<ILatestStationDataService, LatestStationDataService>();
 
+// Register Mapping Services
+builder.Services.AddScoped<IMetFrostMapping, MetFrostMappingService>();
+
 // Register Worker Services
 builder.Services.AddScoped<IHolfuySyncService, HolfuySyncService>();
 builder.Services.AddScoped<IMetFrostSyncService, MetFrostSyncService>();

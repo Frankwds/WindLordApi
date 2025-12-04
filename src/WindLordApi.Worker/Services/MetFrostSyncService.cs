@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using WindLordApi.Data.Services;
 using WindLordApi.Integrations.MetFrost;
 
@@ -10,6 +9,7 @@ public class MetFrostSyncService : IMetFrostSyncService
     private readonly IMetFrostClient _metFrostClient;
     private readonly IStationDataService _stationDataService;
     private readonly ILatestStationDataService _latestStationDataService;
+    private readonly IMetFrostMapping _metFrostMapping;
     private readonly ILogger<MetFrostSyncService> _logger;
     private const int MaxStationsPerRequest = 100; // Based on MetFrost API limit
 
@@ -18,12 +18,14 @@ public class MetFrostSyncService : IMetFrostSyncService
         IMetFrostClient metFrostClient,
         IStationDataService stationDataService,
         ILatestStationDataService latestStationDataService,
+        IMetFrostMapping metFrostMapping,
         ILogger<MetFrostSyncService> logger)
     {
         _weatherStationService = weatherStationService;
         _metFrostClient = metFrostClient;
         _stationDataService = stationDataService;
         _latestStationDataService = latestStationDataService;
+        _metFrostMapping = metFrostMapping;
         _logger = logger;
     }
 
@@ -68,7 +70,7 @@ public class MetFrostSyncService : IMetFrostSyncService
                 var response = await _metFrostClient.FetchMetStationDataAsync(batch, cancellationToken);
 
                 // 4. Map MET observations to StationData
-                var stationDataList = MetFrostMapping.MapMetObservationsToStationData(response.Data);
+                var stationDataList = _metFrostMapping.MapMetObservationsToStationData(response.Data);
 
                 // 5. Upsert the mapped data to database
                 if (stationDataList.Count > 0)
@@ -110,7 +112,7 @@ public class MetFrostSyncService : IMetFrostSyncService
             _logger.LogInformation("MetFrost: Received {Count} stations", response.Data.Count);
 
             // 2. Map MET stations to WeatherStation format
-            var weatherStations = MetFrostMapping.MapMetFrostToWeatherStation(response.Data);
+            var weatherStations = _metFrostMapping.MapMetFrostToWeatherStation(response.Data);
 
             _logger.LogInformation("MetFrost: Mapped {Count} valid weather stations", weatherStations.Count);
 
