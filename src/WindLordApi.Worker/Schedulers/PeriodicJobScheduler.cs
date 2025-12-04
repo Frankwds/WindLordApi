@@ -9,14 +9,14 @@ namespace WindLordApi.Worker.Schedulers;
 /// </summary>
 public class PeriodicJobScheduler
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<PeriodicJobScheduler> _logger;
 
     public PeriodicJobScheduler(
-        IServiceProvider serviceProvider,
+        IServiceScopeFactory scopeFactory,
         ILogger<PeriodicJobScheduler> logger)
     {
-        _serviceProvider = serviceProvider;
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
@@ -49,7 +49,7 @@ public class PeriodicJobScheduler
                 try
                 {
                     // Create a new scope for each job execution
-                    using var scope = _serviceProvider.CreateScope();
+                    using var scope = _scopeFactory.CreateScope();
                     var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
                     await jobAction(syncService, stoppingToken);
                     _logger.LogInformation("Completed scheduled job: {JobName}", jobName);

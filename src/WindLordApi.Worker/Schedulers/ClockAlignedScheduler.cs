@@ -11,14 +11,14 @@ namespace WindLordApi.Worker.Schedulers;
 /// </summary>
 public class ClockAlignedScheduler
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ClockAlignedScheduler> _logger;
 
     public ClockAlignedScheduler(
-        IServiceProvider serviceProvider,
+        IServiceScopeFactory scopeFactory,
         ILogger<ClockAlignedScheduler> logger)
     {
-        _serviceProvider = serviceProvider;
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
@@ -91,7 +91,7 @@ public class ClockAlignedScheduler
 
         try
         {
-            using var scope = _serviceProvider.CreateScope();
+            using var scope = _scopeFactory.CreateScope();
             var syncService = scope.ServiceProvider.GetRequiredService<IHolfuySyncService>();
             var count = await jobAction(syncService, stoppingToken);
             _logger.LogInformation("Completed scheduled job: {JobName} (inserted {Count} new records)", jobName, count);
