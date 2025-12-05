@@ -5,6 +5,7 @@ using WindLordApi.Worker.Startup;
 using WindLordApi.Data;
 using WindLordApi.Data.Extensions;
 using WindLordApi.Data.Services;
+using WindLordApi.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 using WindLordApi.Integrations.MetFrost;
 using WindLordApi.Integrations.Holfuy;
@@ -84,6 +85,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     var connectionString = builder.Configuration.GetSupabaseConnectionString(builder.Environment);
     options.UseNpgsql(connectionString);
 });
+
+// Register Unit of Work
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Register Data Services
 builder.Services.AddScoped<IStationDataService, StationDataService>();

@@ -2,18 +2,19 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using FlexLabs.EntityFrameworkCore.Upsert;
 using WindLordApi.Data.Models;
+using WindLordApi.Data.Repositories;
 
 namespace WindLordApi.Data.Services;
 
 public class LatestStationDataService : ILatestStationDataService
 {
-    private readonly ApplicationDbContext _dbContext;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<LatestStationDataService> _logger;
     private const int BatchSize = 1000; // Process in batches to avoid parameter limits
 
-    public LatestStationDataService(ApplicationDbContext dbContext, ILogger<LatestStationDataService> logger)
+    public LatestStationDataService(IUnitOfWork unitOfWork, ILogger<LatestStationDataService> logger)
     {
-        _dbContext = dbContext;
+        _unitOfWork = unitOfWork;
         _logger = logger;
     }
 
@@ -46,12 +47,12 @@ public class LatestStationDataService : ILatestStationDataService
         if (batch.Count == 0) return 0;
 
         // Use explicit transaction for Supabase connection pooler compatibility
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
             // Use FlexLabs upsert: ON CONFLICT (station_id) DO UPDATE
             // This is type-safe and eliminates SQL injection risks
-            var upsertedCount = await _dbContext.UpsertRange<LatestStationData>(batch)
+            var upsertedCount = await _unitOfWork.Context.UpsertRange<LatestStationData>(batch)
                 .On(lsd => lsd.StationId)
                 .WhenMatched((existing, incoming) => new LatestStationData
                 {
@@ -66,13 +67,13 @@ public class LatestStationDataService : ILatestStationDataService
                 })
                 .RunAsync(cancellationToken);
 
-            await transaction.CommitAsync(cancellationToken);
+            await _unitOfWork.CommitTransactionAsync(transaction, cancellationToken);
 
             return upsertedCount;
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync(cancellationToken);
+            await _unitOfWork.RollbackTransactionAsync(transaction, cancellationToken);
             _logger.LogError(ex, "Failed to upsert latest station data batch of {Count} records", batch.Count);
             throw;
         }

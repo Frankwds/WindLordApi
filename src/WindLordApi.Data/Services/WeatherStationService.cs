@@ -2,45 +2,32 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using FlexLabs.EntityFrameworkCore.Upsert;
 using WindLordApi.Data.Models;
+using WindLordApi.Data.Repositories;
 
 namespace WindLordApi.Data.Services;
 
 public class WeatherStationService : IWeatherStationService
 {
-    private readonly ApplicationDbContext _dbContext;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<WeatherStationService> _logger;
     private const int BatchSize = 1000; // Process in batches to avoid parameter limits
 
     public WeatherStationService(
-        ApplicationDbContext dbContext,
+        IUnitOfWork unitOfWork,
         ILogger<WeatherStationService> logger)
     {
-        _dbContext = dbContext;
+        _unitOfWork = unitOfWork;
         _logger = logger;
     }
 
     public async Task<IEnumerable<string>> GetActiveMETStationIdsAsync(CancellationToken cancellationToken = default)
     {
-        var stationIds = await _dbContext.WeatherStations
-            .Where(ws => ws.IsActive)
-            .Where(ws => ws.Provider == "MET")
-            .Select(ws => ws.StationId)
-            .ToListAsync(cancellationToken);
-
-        _logger.LogInformation("MetFrost: Retrieved {Count} active station IDs", stationIds.Count);
-        return stationIds;
+        return await _unitOfWork.WeatherStations.GetActiveMETStationIdsAsync(cancellationToken);
     }
 
     public async Task<IEnumerable<string>> GetInactiveMETStationIdsAsync(CancellationToken cancellationToken = default)
     {
-        var stationIds = await _dbContext.WeatherStations
-            .Where(ws => !ws.IsActive)
-            .Where(ws => ws.Provider == "MET")
-            .Select(ws => ws.StationId)
-            .ToListAsync(cancellationToken);
-
-        _logger.LogInformation("MetFrost: Retrieved {Count} inactive station IDs", stationIds.Count);
-        return stationIds;
+        return await _unitOfWork.WeatherStations.GetInactiveMETStationIdsAsync(cancellationToken);
     }
 
     public async Task<int> UpsertManyAsync(WeatherStation[] weatherStations, CancellationToken cancellationToken = default)
@@ -72,10 +59,10 @@ public class WeatherStationService : IWeatherStationService
         if (batch.Count == 0) return 0;
 
         // Use explicit transaction for Supabase connection pooler compatibility
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
-            var insertedOrUpdatedCount = await _dbContext.UpsertRange<WeatherStation>(batch)
+            var insertedOrUpdatedCount = await _unitOfWork.Context.UpsertRange<WeatherStation>(batch)
                 .On(ws => ws.StationId)
                 .WhenMatched((existing, incoming) => new WeatherStation
                 {
@@ -91,13 +78,13 @@ public class WeatherStationService : IWeatherStationService
                 })
                 .RunAsync(cancellationToken);
 
-            await transaction.CommitAsync(cancellationToken);
+            await _unitOfWork.CommitTransactionAsync(transaction, cancellationToken);
 
             return insertedOrUpdatedCount;
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync(cancellationToken);
+            await _unitOfWork.RollbackTransactionAsync(transaction, cancellationToken);
             _logger.LogError(ex, "Failed to upsert weather stations batch of {Count} records", batch.Count);
             throw;
         }
@@ -105,68 +92,12 @@ public class WeatherStationService : IWeatherStationService
 
     public async Task<int> SetActiveStationsWithDataAsync(CancellationToken cancellationToken = default)
     {
-        // Use a direct SQL query with EXISTS to find stations with data
-        // Only update stations that are currently inactive (is_active = false)
-        // This ensures we only count actual changes
-        var sql = @"
-            UPDATE weather_stations ws
-            SET is_active = true
-            WHERE EXISTS (
-                SELECT 1 
-                FROM station_data sd 
-                WHERE sd.station_id = ws.station_id
-            )
-            AND is_active = false
-            AND provider = 'MET'";
-
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-        try
-        {
-            var updated = await _dbContext.Database.ExecuteSqlRawAsync(sql, cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-
-            _logger.LogInformation("MetFrost: Set {Count} stations to active (stations with data)", updated);
-            return updated;
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            _logger.LogError(ex, "MetFrost: Failed to set active stations with data");
-            throw;
-        }
+        return await _unitOfWork.WeatherStations.SetActiveStationsWithDataAsync(cancellationToken);
     }
 
     public async Task<int> SetInactiveStationsWithoutDataAsync(CancellationToken cancellationToken = default)
     {
-        // Use a direct SQL query with NOT EXISTS to find stations without data
-        // Only update stations that are currently active (is_active = true)
-        // This ensures we only count actual changes
-        var sql = @"
-            UPDATE weather_stations ws
-            SET is_active = false
-            WHERE NOT EXISTS (
-                SELECT 1 
-                FROM station_data sd 
-                WHERE sd.station_id = ws.station_id
-            )
-            AND is_active = true
-            AND provider = 'MET'";
-
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-        try
-        {
-            var updated = await _dbContext.Database.ExecuteSqlRawAsync(sql, cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-
-            _logger.LogInformation("MetFrost: Set {Count} stations to inactive (stations without data)", updated);
-            return updated;
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            _logger.LogError(ex, "Failed to set inactive stations without data");
-            throw;
-        }
+        return await _unitOfWork.WeatherStations.SetInactiveStationsWithoutDataAsync(cancellationToken);
     }
 
 }

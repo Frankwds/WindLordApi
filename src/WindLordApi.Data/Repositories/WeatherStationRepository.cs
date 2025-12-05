@@ -1,0 +1,88 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using WindLordApi.Data.Models;
+
+namespace WindLordApi.Data.Repositories;
+
+/// <summary>
+/// Repository implementation for WeatherStation entity.
+/// </summary>
+public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStationRepository
+{
+    private readonly ILogger<WeatherStationRepository> _logger;
+
+    public WeatherStationRepository(ApplicationDbContext context, ILogger<WeatherStationRepository> logger)
+        : base(context)
+    {
+        _logger = logger;
+    }
+
+    public async Task<IEnumerable<string>> GetActiveMETStationIdsAsync(CancellationToken cancellationToken = default)
+    {
+        var stationIds = await _dbSet
+            .Where(ws => ws.IsActive)
+            .Where(ws => ws.Provider == "MET")
+            .Select(ws => ws.StationId)
+            .ToListAsync(cancellationToken);
+
+        _logger.LogInformation("MetFrost: Retrieved {Count} active station IDs", stationIds.Count);
+        return stationIds;
+    }
+
+    public async Task<IEnumerable<string>> GetInactiveMETStationIdsAsync(CancellationToken cancellationToken = default)
+    {
+        var stationIds = await _dbSet
+            .Where(ws => !ws.IsActive)
+            .Where(ws => ws.Provider == "MET")
+            .Select(ws => ws.StationId)
+            .ToListAsync(cancellationToken);
+
+        _logger.LogInformation("MetFrost: Retrieved {Count} inactive station IDs", stationIds.Count);
+        return stationIds;
+    }
+
+    public async Task<int> SetActiveStationsWithDataAsync(CancellationToken cancellationToken = default)
+    {
+        // Use a direct SQL query with EXISTS to find stations with data
+        // Only update stations that are currently inactive (is_active = false)
+        // This ensures we only count actual changes
+        var sql = @"
+            UPDATE weather_stations ws
+            SET is_active = true
+            WHERE EXISTS (
+                SELECT 1 
+                FROM station_data sd 
+                WHERE sd.station_id = ws.station_id
+            )
+            AND is_active = false
+            AND provider = 'MET'";
+
+        var updated = await _context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+
+        _logger.LogInformation("MetFrost: Set {Count} stations to active (stations with data)", updated);
+        return updated;
+    }
+
+    public async Task<int> SetInactiveStationsWithoutDataAsync(CancellationToken cancellationToken = default)
+    {
+        // Use a direct SQL query with NOT EXISTS to find stations without data
+        // Only update stations that are currently active (is_active = true)
+        // This ensures we only count actual changes
+        var sql = @"
+            UPDATE weather_stations ws
+            SET is_active = false
+            WHERE NOT EXISTS (
+                SELECT 1 
+                FROM station_data sd 
+                WHERE sd.station_id = ws.station_id
+            )
+            AND is_active = true
+            AND provider = 'MET'";
+
+        var updated = await _context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+
+        _logger.LogInformation("MetFrost: Set {Count} stations to inactive (stations without data)", updated);
+        return updated;
+    }
+}
+
