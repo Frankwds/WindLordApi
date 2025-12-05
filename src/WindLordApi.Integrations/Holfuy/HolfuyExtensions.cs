@@ -10,12 +10,13 @@ namespace WindLordApi.Integrations.Holfuy;
 public static class HolfuyExtensions
 {
     /// <summary>
-    /// Registers the Holfuy API client with proxy configuration.
+    /// Registers the Holfuy API client with conditional proxy configuration.
+    /// Uses proxy when IS_LOCAL=true, connects directly when IS_LOCAL=false or not set.
     /// </summary>
     /// <param name="services">The service collection to add services to.</param>
     /// <param name="configuration">The configuration instance to read settings from.</param>
     /// <returns>The service collection for chaining.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when proxy configuration is missing or invalid.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when proxy configuration is missing or invalid (only when IS_LOCAL=true).</exception>
     public static IServiceCollection AddHolfuyClient(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -24,15 +25,24 @@ public static class HolfuyExtensions
         services.Configure<HolfuyOptions>(
             configuration.GetSection(HolfuyOptions.SectionName));
 
-        // Register HttpClient + Service with proxy configuration
-        services.AddHttpClient<IHolfuyClient, HolfuyClient>()
-            .ConfigurePrimaryHttpMessageHandler(() =>
+        // Check IS_LOCAL environment variable (defaults to false if not set)
+        var isLocalValue = configuration["IS_LOCAL"];
+        var isLocal = !string.IsNullOrWhiteSpace(isLocalValue) &&
+                     (isLocalValue.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                      isLocalValue == "1");
+
+        var httpClientBuilder = services.AddHttpClient<IHolfuyClient, HolfuyClient>();
+
+        // Only configure proxy when IS_LOCAL=true
+        if (isLocal)
+        {
+            httpClientBuilder.ConfigurePrimaryHttpMessageHandler(() =>
             {
                 var proxyUrl = configuration.GetConnectionString("FIXIE_URL");
                 if (string.IsNullOrWhiteSpace(proxyUrl))
                 {
                     throw new InvalidOperationException(
-                        "FIXIE_URL connection string is not configured. Holfuy API requires a proxy connection.");
+                        "FIXIE_URL connection string is not configured. Holfuy API requires a proxy connection when IS_LOCAL=true.");
                 }
 
                 var proxyUri = new Uri(proxyUrl);
@@ -66,6 +76,7 @@ public static class HolfuyExtensions
                     UseProxy = true
                 };
             });
+        }
 
         return services;
     }
