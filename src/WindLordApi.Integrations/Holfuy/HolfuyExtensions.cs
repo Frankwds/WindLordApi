@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using System.Net;
 
 namespace WindLordApi.Integrations.Holfuy;
@@ -21,9 +22,11 @@ public static class HolfuyExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // Configure Options (binds from appsettings)
-        services.Configure<HolfuyOptions>(
-            configuration.GetSection(HolfuyOptions.SectionName));
+        // Configure Options (binds from appsettings) with validation
+        services.AddOptions<HolfuyOptions>()
+            .Bind(configuration.GetSection(HolfuyOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         // Check IS_LOCAL environment variable (defaults to false if not set)
         var isLocalValue = configuration["IS_LOCAL"];

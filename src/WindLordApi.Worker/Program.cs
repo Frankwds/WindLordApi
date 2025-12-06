@@ -107,9 +107,11 @@ builder.Services.AddSingleton<PeriodicJobScheduler<IMetFrostSyncService>>();
 builder.Services.AddSingleton<ClockAlignedScheduler<IHolfuySyncService>>();
 
 // Register MET Frost Client
-// 1. Configure Options (binds from appsettings)
-builder.Services.Configure<MetFrostOptions>(
-    builder.Configuration.GetSection(MetFrostOptions.SectionName));
+// 1. Configure Options (binds from appsettings) with validation
+builder.Services.AddOptions<MetFrostOptions>()
+    .Bind(builder.Configuration.GetSection(MetFrostOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 // 2. Register HttpClient + Service together (recommended)
 builder.Services.AddHttpClient<IMetFrostClient, MetFrostClient>();

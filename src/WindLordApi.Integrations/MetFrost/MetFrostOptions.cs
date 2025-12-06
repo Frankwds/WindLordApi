@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace WindLordApi.Integrations.MetFrost;
 
 /// <summary>
@@ -10,6 +12,7 @@ public class MetFrostOptions
     /// <summary>
     /// MET Frost API Client ID
     /// </summary>
+    [Required(ErrorMessage = "MetFrost ClientId is required")]
     public string ClientId { get; set; } = string.Empty;
 
     /// <summary>

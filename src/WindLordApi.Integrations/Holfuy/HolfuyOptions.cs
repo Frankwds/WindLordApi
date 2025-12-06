@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace WindLordApi.Integrations.Holfuy;
 
 /// <summary>
@@ -10,6 +12,7 @@ public class HolfuyOptions
     /// <summary>
     /// Holfuy API Key
     /// </summary>
+    [Required(ErrorMessage = "Holfuy ApiKey is required")]
     public string ApiKey { get; set; } = string.Empty;
 }
 
