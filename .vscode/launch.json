@@ -17,7 +17,8 @@
       "console": "internalConsole",
       "stopAtEntry": false,
       "env": {
-        "DOTNET_ENVIRONMENT": "Development"
+        "DOTNET_ENVIRONMENT": "Development",
+        "IS_LOCAL": "true"
         // "DOTNET_ENVIRONMENT": "Production"
       }
     },

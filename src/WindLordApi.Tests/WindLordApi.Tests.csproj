@@ -35,4 +35,8 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\WindLordApi.Data\WindLordApi.Data.csproj" />
+  </ItemGroup>
+
 </Project>
