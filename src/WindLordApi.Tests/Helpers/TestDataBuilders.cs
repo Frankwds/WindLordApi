@@ -16,6 +16,11 @@ public static class TestDataBuilders
     /// Creates a StationData builder with default test values.
     /// </summary>
     public static StationDataBuilder StationData() => new();
+
+    /// <summary>
+    /// Creates a LatestStationData builder with default test values.
+    /// </summary>
+    public static LatestStationDataBuilder LatestStationData() => new();
 }
 
 /// <summary>
@@ -197,6 +202,84 @@ public class StationDataBuilder
             UpdatedAt = _updatedAt,
             IsCompressed = _isCompressed,
             StationId = _stationId
+        };
+    }
+}
+
+/// <summary>
+/// Builder for creating LatestStationData test data.
+/// </summary>
+public class LatestStationDataBuilder
+{
+    private Guid _id = Guid.NewGuid();
+    private string _stationId = "TEST-001";
+    private decimal _windSpeed = 10.5m;
+    private decimal? _windGust = 15.2m;
+    private int _direction = 180;
+    private decimal? _temperature = 20.5m;
+    private DateTime _updatedAt = DateTime.UtcNow;
+    private decimal? _windMinSpeed = 5.0m;
+
+    public LatestStationDataBuilder WithId(Guid id)
+    {
+        _id = id;
+        return this;
+    }
+
+    public LatestStationDataBuilder WithStationId(string stationId)
+    {
+        _stationId = stationId;
+        return this;
+    }
+
+    public LatestStationDataBuilder WithWindSpeed(decimal windSpeed)
+    {
+        _windSpeed = windSpeed;
+        return this;
+    }
+
+    public LatestStationDataBuilder WithWindGust(decimal? windGust)
+    {
+        _windGust = windGust;
+        return this;
+    }
+
+    public LatestStationDataBuilder WithDirection(int direction)
+    {
+        _direction = direction;
+        return this;
+    }
+
+    public LatestStationDataBuilder WithTemperature(decimal? temperature)
+    {
+        _temperature = temperature;
+        return this;
+    }
+
+    public LatestStationDataBuilder WithUpdatedAt(DateTime updatedAt)
+    {
+        _updatedAt = updatedAt;
+        return this;
+    }
+
+    public LatestStationDataBuilder WithWindMinSpeed(decimal? windMinSpeed)
+    {
+        _windMinSpeed = windMinSpeed;
+        return this;
+    }
+
+    public LatestStationData Build()
+    {
+        return new LatestStationData
+        {
+            Id = _id,
+            StationId = _stationId,
+            WindSpeed = _windSpeed,
+            WindGust = _windGust,
+            Direction = _direction,
+            Temperature = _temperature,
+            UpdatedAt = _updatedAt,
+            WindMinSpeed = _windMinSpeed
         };
     }
 }
