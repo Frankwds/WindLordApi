@@ -1,6 +1,4 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using FlexLabs.EntityFrameworkCore.Upsert;
 using WindLordApi.Data.Models;
 using WindLordApi.Data.Repositories;
 
@@ -50,22 +48,7 @@ public class LatestStationDataService : ILatestStationDataService
         await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
-            // Use FlexLabs upsert: ON CONFLICT (station_id) DO UPDATE
-            // This is type-safe and eliminates SQL injection risks
-            var upsertedCount = await _unitOfWork.Context.UpsertRange<LatestStationData>(batch)
-                .On(lsd => lsd.StationId)
-                .WhenMatched((existing, incoming) => new LatestStationData
-                {
-                    // Id is not set - primary key is preserved automatically
-                    StationId = incoming.StationId,
-                    WindSpeed = incoming.WindSpeed,
-                    WindGust = incoming.WindGust,
-                    Direction = incoming.Direction,
-                    Temperature = incoming.Temperature,
-                    UpdatedAt = incoming.UpdatedAt,
-                    WindMinSpeed = incoming.WindMinSpeed
-                })
-                .RunAsync(cancellationToken);
+            var upsertedCount = await _unitOfWork.LatestStationData.UpsertRangeAsync(batch, cancellationToken);
 
             await _unitOfWork.CommitTransactionAsync(transaction, cancellationToken);
 

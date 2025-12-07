@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using FlexLabs.EntityFrameworkCore.Upsert;
 using WindLordApi.Data.Models;
 
 namespace WindLordApi.Data.Repositories;
@@ -83,6 +84,30 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
 
         _logger.LogInformation("MetFrost: Set {Count} stations to inactive (stations without data)", updated);
         return updated;
+    }
+
+    public async Task<int> UpsertRangeAsync(IEnumerable<WeatherStation> entities, CancellationToken cancellationToken = default)
+    {
+        var entitiesList = entities.ToList();
+        if (entitiesList.Count == 0) return 0;
+
+        // Use FlexLabs upsert: ON CONFLICT (station_id) DO UPDATE
+        // This is type-safe and eliminates SQL injection risks
+        return await _context.UpsertRange<WeatherStation>(entitiesList)
+            .On(ws => ws.StationId)
+            .WhenMatched((existing, incoming) => new WeatherStation
+            {
+                Name = incoming.Name,
+                Latitude = incoming.Latitude,
+                Longitude = incoming.Longitude,
+                Altitude = incoming.Altitude,
+                Country = incoming.Country,
+                Provider = incoming.Provider,
+                UpdatedAt = incoming.UpdatedAt,
+                IsMain = incoming.IsMain
+                // is_active is intentionally excluded - managed separately
+            })
+            .RunAsync(cancellationToken);
     }
 }
 

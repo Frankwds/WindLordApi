@@ -1,6 +1,4 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using FlexLabs.EntityFrameworkCore.Upsert;
 using WindLordApi.Data.Models;
 using WindLordApi.Data.Repositories;
 
@@ -62,21 +60,7 @@ public class WeatherStationService : IWeatherStationService
         await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
-            var insertedOrUpdatedCount = await _unitOfWork.Context.UpsertRange<WeatherStation>(batch)
-                .On(ws => ws.StationId)
-                .WhenMatched((existing, incoming) => new WeatherStation
-                {
-                    Name = incoming.Name,
-                    Latitude = incoming.Latitude,
-                    Longitude = incoming.Longitude,
-                    Altitude = incoming.Altitude,
-                    Country = incoming.Country,
-                    Provider = incoming.Provider,
-                    UpdatedAt = incoming.UpdatedAt,
-                    IsMain = incoming.IsMain
-                    // is_active is intentionally excluded - managed separately
-                })
-                .RunAsync(cancellationToken);
+            var insertedOrUpdatedCount = await _unitOfWork.WeatherStations.UpsertRangeAsync(batch, cancellationToken);
 
             await _unitOfWork.CommitTransactionAsync(transaction, cancellationToken);
 

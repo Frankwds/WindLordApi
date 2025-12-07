@@ -21,11 +21,6 @@ public interface IUnitOfWork : IAsyncDisposable, IDisposable
     ILatestStationDataRepository LatestStationData { get; }
 
     /// <summary>
-    /// Gets the underlying DbContext (needed for FlexLabs upsert operations).
-    /// </summary>
-    ApplicationDbContext Context { get; }
-
-    /// <summary>
     /// Saves all changes made in this unit of work.
     /// </summary>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

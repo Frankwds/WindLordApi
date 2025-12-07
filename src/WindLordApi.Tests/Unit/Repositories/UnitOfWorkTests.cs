@@ -1,12 +1,9 @@
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using WindLordApi.Data;
-using WindLordApi.Data.Models;
 using WindLordApi.Data.Repositories;
 using WindLordApi.Tests.Helpers;
-using Xunit;
 
 namespace WindLordApi.Tests.Unit.Repositories;
 
@@ -74,17 +71,6 @@ public class UnitOfWorkTests : IDisposable
     }
 
     [Fact]
-    public void Context_Property_ReturnsDbContext()
-    {
-        // Act
-        var context = _unitOfWork.Context;
-
-        // Assert
-        context.Should().NotBeNull();
-        context.Should().BeSameAs(_context);
-    }
-
-    [Fact]
     public async Task SaveChangesAsync_WithChanges_SavesChanges()
     {
         // Arrange
@@ -138,7 +124,7 @@ public class UnitOfWorkTests : IDisposable
         await _unitOfWork.CommitTransactionAsync(transaction, TestContext.Current.CancellationToken);
 
         // Assert
-        var savedStation = await _context.WeatherStations.FindAsync(new object[] { station.Id }, TestContext.Current.CancellationToken);
+        var savedStation = await _context.WeatherStations.FindAsync([station.Id], TestContext.Current.CancellationToken);
         savedStation.Should().NotBeNull();
     }
 

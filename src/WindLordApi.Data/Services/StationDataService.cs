@@ -1,6 +1,4 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using FlexLabs.EntityFrameworkCore.Upsert;
 using WindLordApi.Data.Models;
 using WindLordApi.Data.Repositories;
 
@@ -51,12 +49,7 @@ public class StationDataService : IStationDataService
         await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
-            // Use FlexLabs upsert: ON CONFLICT (station_id, updated_at) DO NOTHING
-            // This is type-safe and eliminates SQL injection risks
-            var insertedCount = await _unitOfWork.Context.UpsertRange<StationData>(batch)
-                .On(sd => new { sd.StationId, sd.UpdatedAt })
-                .NoUpdate()
-                .RunAsync(cancellationToken);
+            var insertedCount = await _unitOfWork.StationData.UpsertRangeAsync(batch, cancellationToken);
 
             await _unitOfWork.CommitTransactionAsync(transaction, cancellationToken);
 
