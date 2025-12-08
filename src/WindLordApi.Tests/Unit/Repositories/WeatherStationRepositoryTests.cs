@@ -138,7 +138,7 @@ public class WeatherStationRepositoryTests : IDisposable
         result.Should().BeEmpty();
     }
 
-    [Fact(Skip = "Requires relational database provider - raw SQL not supported by in-memory database")]
+    [Fact(Skip = "ExecuteUpdateAsync is not supported by in-memory database provider")]
     public async Task SetActiveStationsWithDataAsync_WithInactiveStationsHavingData_ActivatesStations()
     {
         // Arrange
@@ -190,7 +190,7 @@ public class WeatherStationRepositoryTests : IDisposable
         updatedStation3!.IsActive.Should().BeTrue();
     }
 
-    [Fact(Skip = "Requires relational database provider - raw SQL not supported by in-memory database")]
+    [Fact(Skip = "ExecuteUpdateAsync is not supported by in-memory database provider")]
     public async Task SetActiveStationsWithDataAsync_WithNoInactiveStationsHavingData_ReturnsZero()
     {
         // Arrange
@@ -209,7 +209,7 @@ public class WeatherStationRepositoryTests : IDisposable
         result.Should().Be(0);
     }
 
-    [Fact(Skip = "Requires relational database provider - raw SQL not supported by in-memory database")]
+    [Fact(Skip = "ExecuteUpdateAsync is not supported by in-memory database provider")]
     public async Task SetInactiveStationsWithoutDataAsync_WithActiveStationsWithoutData_DeactivatesStations()
     {
         // Arrange
@@ -258,7 +258,7 @@ public class WeatherStationRepositoryTests : IDisposable
         updatedStation3!.IsActive.Should().BeFalse();
     }
 
-    [Fact(Skip = "Requires relational database provider - raw SQL not supported by in-memory database")]
+    [Fact(Skip = "ExecuteUpdateAsync is not supported by in-memory database provider")]
     public async Task SetInactiveStationsWithoutDataAsync_WithNoActiveStationsWithoutData_ReturnsZero()
     {
         // Arrange

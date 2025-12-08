@@ -44,21 +44,16 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
 
     public async Task<int> SetActiveStationsWithDataAsync(CancellationToken cancellationToken = default)
     {
-        // Use a direct SQL query with EXISTS to find stations with data
+        // Use ExecuteUpdateAsync for type-safe bulk update without loading entities
         // Only update stations that are currently inactive (is_active = false)
         // This ensures we only count actual changes
-        var sql = @"
-            UPDATE weather_stations ws
-            SET is_active = true
-            WHERE EXISTS (
-                SELECT 1 
-                FROM station_data sd 
-                WHERE sd.station_id = ws.station_id
-            )
-            AND is_active = false
-            AND provider = 'MET'";
-
-        var updated = await _context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+        var updated = await _dbSet
+            .Where(ws => !ws.IsActive)
+            .Where(ws => ws.Provider == "MET")
+            .Where(ws => _context.Set<StationData>().Any(sd => sd.StationId == ws.StationId))
+            .ExecuteUpdateAsync(
+                setter => setter.SetProperty(ws => ws.IsActive, true),
+                cancellationToken);
 
         _logger.LogInformation("MetFrost: Set {Count} stations to active (stations with data)", updated);
         return updated;
@@ -66,21 +61,16 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
 
     public async Task<int> SetInactiveStationsWithoutDataAsync(CancellationToken cancellationToken = default)
     {
-        // Use a direct SQL query with NOT EXISTS to find stations without data
+        // Use ExecuteUpdateAsync for type-safe bulk update without loading entities
         // Only update stations that are currently active (is_active = true)
         // This ensures we only count actual changes
-        var sql = @"
-            UPDATE weather_stations ws
-            SET is_active = false
-            WHERE NOT EXISTS (
-                SELECT 1 
-                FROM station_data sd 
-                WHERE sd.station_id = ws.station_id
-            )
-            AND is_active = true
-            AND provider = 'MET'";
-
-        var updated = await _context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+        var updated = await _dbSet
+            .Where(ws => ws.IsActive)
+            .Where(ws => ws.Provider == "MET")
+            .Where(ws => !_context.Set<StationData>().Any(sd => sd.StationId == ws.StationId))
+            .ExecuteUpdateAsync(
+                setter => setter.SetProperty(ws => ws.IsActive, false),
+                cancellationToken);
 
         _logger.LogInformation("MetFrost: Set {Count} stations to inactive (stations without data)", updated);
         return updated;
