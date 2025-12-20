@@ -36,7 +36,7 @@ public class WeatherStationBuilder
     private string? _country = "Norway";
     private bool _isActive = true;
     private string? _provider = "MET";
-    private DateTime? _updatedAt = DateTime.UtcNow;
+    private DateTime? _updatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
     private string _stationId = "TEST-001";
     private bool _isMain = false;
 
@@ -85,7 +85,10 @@ public class WeatherStationBuilder
 
     public WeatherStationBuilder WithUpdatedAt(DateTime? updatedAt)
     {
-        _updatedAt = updatedAt;
+        // Convert to Unspecified kind for PostgreSQL 'timestamp without time zone'
+        _updatedAt = updatedAt.HasValue 
+            ? DateTime.SpecifyKind(updatedAt.Value, DateTimeKind.Unspecified)
+            : null;
         return this;
     }
 

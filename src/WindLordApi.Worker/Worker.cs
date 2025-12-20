@@ -26,7 +26,7 @@ public class Worker : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Run all jobs once on startup
-        // await StartupJobs.RunStartupJobsAsync(_serviceProvider, _logger, stoppingToken);
+        await StartupJobs.RunStartupJobsAsync(_serviceProvider, _logger, stoppingToken);
 
         // Create periodic timers for scheduled jobs
         // Each timer must be unique - PeriodicTimer only supports a single concurrent consumer
