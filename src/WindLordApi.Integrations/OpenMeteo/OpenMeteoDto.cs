@@ -4,7 +4,7 @@ namespace WindLordApi.Integrations.OpenMeteo;
 /// Weather data point from OpenMeteo forecast.
 /// Mirrors the TypeScript interface: WeatherDataPoint.
 /// </summary>
-public record WeatherDataPoint
+public record OpenMeteoDto
 {
     // Basic identification
     public required string Time { get; init; }

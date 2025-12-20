@@ -11,17 +11,17 @@ namespace WindLordApi.Worker.Services;
 public class ForecastCombinationService : IForecastCombinationService
 {
     /// <summary>
-    /// Combines hourly weather data from OpenMeteo and MetYr APIs into a unified ForecastCache1hr structure.
+    /// Combines hourly weather data from OpenMeteo and MetYr APIs into a unified ForecastCache structure.
     /// </summary>
     /// <param name="meteoData">Hourly weather data points from OpenMeteo API.</param>
     /// <param name="yrData">Hourly weather data points from MetYr API.</param>
     /// <returns>Combined hourly forecast data points.</returns>
-    public IReadOnlyList<ForecastCache1hr> CombineDataSources(
-        IReadOnlyList<WeatherDataPoint> meteoData,
-        IReadOnlyList<WeatherDataPointYr1h> yrData)
+    public IReadOnlyList<ForecastCache> CombineDataSources(
+        IReadOnlyList<OpenMeteoDto> meteoData,
+        IReadOnlyList<MetYrDto> yrData)
     {
         // Create a dictionary from Yr data keyed by time (first 16 characters, removing timezone)
-        var yrDataMap = new Dictionary<string, WeatherDataPointYr1h>();
+        var yrDataMap = new Dictionary<string, MetYrDto>();
         foreach (var yrDp in yrData)
         {
             // Remove the last 4 characters indicating timezone (e.g., ":00Z" or "+00:00")
@@ -32,7 +32,7 @@ public class ForecastCombinationService : IForecastCombinationService
             }
         }
 
-        var result = new List<ForecastCache1hr>();
+        var result = new List<ForecastCache>();
         var currentTime = DateTime.UtcNow;
 
         foreach (var meteoDp in meteoData)
@@ -52,9 +52,9 @@ public class ForecastCombinationService : IForecastCombinationService
     /// Combines a single OpenMeteo data point with an optional MetYr data point.
     /// Implements the combineWeatherData logic from Next.js.
     /// </summary>
-    private static ForecastCache1hr CombineWeatherData(
-        WeatherDataPoint meteoDataPoint,
-        WeatherDataPointYr1h? yrDataPoint,
+    private static ForecastCache CombineWeatherData(
+        OpenMeteoDto meteoDataPoint,
+        MetYrDto? yrDataPoint,
         DateTime currentTime)
     {
         // Determine isDay: if Yr symbol_code includes 'night', set to 0, otherwise use OpenMeteo's IsDay
@@ -68,7 +68,7 @@ public class ForecastCombinationService : IForecastCombinationService
             isDay = meteoDataPoint.IsDay;
         }
 
-        return new ForecastCache1hr
+        return new ForecastCache
         {
             // Basic identification
             Time = meteoDataPoint.Time + ":00Z",

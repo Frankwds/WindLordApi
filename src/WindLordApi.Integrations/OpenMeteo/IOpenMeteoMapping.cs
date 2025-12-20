@@ -11,7 +11,7 @@ public interface IOpenMeteoMapping
     /// </summary>
     /// <param name="validatedData">Raw API response from OpenMeteo forecast API.</param>
     /// <returns>Array of WeatherDataPoint DTOs with hourly forecast data.</returns>
-    IReadOnlyList<WeatherDataPoint> MapOpenMeteoData(OpenMeteoResponse validatedData);
+    IReadOnlyList<OpenMeteoDto> MapOpenMeteoData(OpenMeteoResponse validatedData);
 
     /// <summary>
     /// Maps WMO weather code to Yr weather code string.

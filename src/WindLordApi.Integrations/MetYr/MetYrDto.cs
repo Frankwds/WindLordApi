@@ -1,10 +1,10 @@
 namespace WindLordApi.Integrations.MetYr;
 
 /// <summary>
-/// Base weather data point with common properties.
-/// Mirrors the TypeScript interface: BaseWeatherDataPoint.
+/// Weather data point from Met.no forecast.
+/// Mirrors the TypeScript interface: MetYrDto.
 /// </summary>
-public record BaseWeatherDataPoint
+public record MetYrDto
 {
     public required string Time { get; init; }
     public required double AirPressureAtSeaLevel { get; init; }
@@ -24,31 +24,11 @@ public record BaseWeatherDataPoint
     public double? PrecipitationAmountMin { get; init; }
     public double? ProbabilityOfPrecipitation { get; init; }
     public required string SymbolCode { get; init; }
-}
-
-/// <summary>
-/// Weather data point for 1-hour forecast.
-/// Mirrors the TypeScript interface: WeatherDataPointYr1h.
-/// </summary>
-public record WeatherDataPointYr1h : BaseWeatherDataPoint
-{
     public required double FogAreaFraction { get; init; }
     public required double UltravioletIndexClearSky { get; init; }
     public double? WindSpeedOfGust { get; init; }
     public double? ProbabilityOfThunder { get; init; }
     public required string Next6HoursSymbolCode { get; init; }
-}
-
-/// <summary>
-/// Weather data point for 6-hour forecast.
-/// Mirrors the TypeScript interface: WeatherDataPointYr6h.
-/// </summary>
-public record WeatherDataPointYr6h : BaseWeatherDataPoint
-{
-    public double? WindSpeedPercentile10 { get; init; }
-    public double? WindSpeedPercentile90 { get; init; }
-    public required double AirTemperatureMax { get; init; }
-    public required double AirTemperatureMin { get; init; }
 }
 
 /// <summary>
@@ -66,8 +46,7 @@ public record LocationInfo
 /// </summary>
 public record WeatherDataYr
 {
-    public required IReadOnlyList<WeatherDataPointYr1h> WeatherDataYrHourly { get; init; }
-    public required IReadOnlyList<WeatherDataPointYr6h> WeatherDataYrSixHourly { get; init; }
+    public required IReadOnlyList<MetYrDto> MetYrDto { get; init; }
     public required string UpdatedAt { get; init; }
     public required double Elevation { get; init; }
     public required LocationInfo Location { get; init; }

@@ -44,15 +44,15 @@ public class OpenMeteoMappingService : IOpenMeteoMapping
     /// </summary>
     /// <param name="validatedData">Raw API response from OpenMeteo forecast API.</param>
     /// <returns>Array of WeatherDataPoint DTOs with hourly forecast data.</returns>
-    public IReadOnlyList<WeatherDataPoint> MapOpenMeteoData(OpenMeteoResponse validatedData)
+    public IReadOnlyList<OpenMeteoDto> MapOpenMeteoData(OpenMeteoResponse validatedData)
     {
         var hourlyData = validatedData.Hourly;
         var timePoints = hourlyData.Time.Count;
-        var transformedData = new List<WeatherDataPoint>();
+        var transformedData = new List<OpenMeteoDto>();
 
         for (var i = 0; i < timePoints; i++)
         {
-            var dataPoint = new WeatherDataPoint
+            var dataPoint = new OpenMeteoDto
             {
                 Time = hourlyData.Time[i],
                 WindSpeed1000hPa = hourlyData.WindSpeed1000hPa[i],

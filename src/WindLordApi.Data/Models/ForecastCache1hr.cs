@@ -2,9 +2,9 @@ namespace WindLordApi.Data.Models;
 
 /// <summary>
 /// Combined hourly forecast data from OpenMeteo and MetYr APIs.
-/// Mirrors the TypeScript interface: ForecastCache1hr.
+/// Mirrors the TypeScript interface: ForecastCache.
 /// </summary>
-public record ForecastCache1hr
+public record ForecastCache
 {
     // Basic identification
     public required string Time { get; init; }
