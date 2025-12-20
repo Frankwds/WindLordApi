@@ -57,7 +57,7 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task SetActiveStationsWithDataAsync_WithInactiveStationsHavingData_ActivatesStations()
+    public async Task SetAllStationsWithDataToActiveAsync_WithInactiveStationsHavingData_ActivatesStations()
     {
         // Arrange
         var inactiveStationWithData = TestDataBuilders.WeatherStation()
@@ -91,7 +91,7 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.SetActiveStationsWithDataAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.SetAllStationsWithDataToActiveAsync(TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Be(1); // Only MET-001 should be activated (MET-003 is already active)
@@ -107,7 +107,7 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task SetActiveStationsWithDataAsync_WithNoInactiveStationsHavingData_ReturnsZero()
+    public async Task SetAllStationsWithDataToActiveAsync_WithNoInactiveStationsHavingData_ReturnsZero()
     {
         // Arrange
         var inactiveStationWithoutData = TestDataBuilders.WeatherStation()
@@ -119,14 +119,14 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.SetActiveStationsWithDataAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.SetAllStationsWithDataToActiveAsync(TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Be(0);
     }
 
     [Fact]
-    public async Task SetInactiveStationsWithoutDataAsync_WithActiveStationsWithoutData_DeactivatesStations()
+    public async Task SetAllStationsWithoutDataToInactiveAsync_WithActiveStationsWithoutData_DeactivatesStations()
     {
         // Arrange
         var activeStationWithoutData = TestDataBuilders.WeatherStation()
@@ -157,7 +157,7 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.SetInactiveStationsWithoutDataAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.SetAllStationsWithoutDataToInactiveAsync(TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Be(1); // Only MET-001 should be deactivated
@@ -173,7 +173,7 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task SetInactiveStationsWithoutDataAsync_WithNoActiveStationsWithoutData_ReturnsZero()
+    public async Task SetAllStationsWithoutDataToInactiveAsync_WithNoActiveStationsWithoutData_ReturnsZero()
     {
         // Arrange
         var activeStationWithData = TestDataBuilders.WeatherStation()
@@ -191,7 +191,7 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.SetInactiveStationsWithoutDataAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.SetAllStationsWithoutDataToInactiveAsync(TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Be(0);

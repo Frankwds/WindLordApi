@@ -42,7 +42,7 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
         return stationIds;
     }
 
-    public async Task<int> SetActiveStationsWithDataAsync(CancellationToken cancellationToken = default)
+    public async Task<int> SetAllStationsWithDataToActiveAsync(CancellationToken cancellationToken = default)
     {
         // Use ExecuteUpdateAsync for type-safe bulk update without loading entities
         // Only update stations that are currently inactive (is_active = false)
@@ -59,7 +59,7 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
         return updated;
     }
 
-    public async Task<int> SetInactiveStationsWithoutDataAsync(CancellationToken cancellationToken = default)
+    public async Task<int> SetAllStationsWithoutDataToInactiveAsync(CancellationToken cancellationToken = default)
     {
         // Use ExecuteUpdateAsync for type-safe bulk update without loading entities
         // Only update stations that are currently active (is_active = true)

@@ -173,7 +173,7 @@ public class WeatherStationRepositoryTests : IDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.SetActiveStationsWithDataAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.SetAllStationsWithDataToActiveAsync(TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Be(1); // Only MET-001 should be activated (MET-003 is already active)
@@ -203,7 +203,7 @@ public class WeatherStationRepositoryTests : IDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.SetActiveStationsWithDataAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.SetAllStationsWithDataToActiveAsync(TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Be(0);
@@ -241,7 +241,7 @@ public class WeatherStationRepositoryTests : IDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.SetInactiveStationsWithoutDataAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.SetAllStationsWithoutDataToInactiveAsync(TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Be(1); // Only MET-001 should be deactivated
@@ -277,7 +277,7 @@ public class WeatherStationRepositoryTests : IDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.SetInactiveStationsWithoutDataAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.SetAllStationsWithoutDataToInactiveAsync(TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Be(0);

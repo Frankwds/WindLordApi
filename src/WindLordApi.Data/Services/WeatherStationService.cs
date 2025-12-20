@@ -76,12 +76,12 @@ public class WeatherStationService : IWeatherStationService
 
     public async Task<int> SetActiveStationsWithDataAsync(CancellationToken cancellationToken = default)
     {
-        return await _unitOfWork.WeatherStations.SetActiveStationsWithDataAsync(cancellationToken);
+        return await _unitOfWork.WeatherStations.SetAllStationsWithDataToActiveAsync(cancellationToken);
     }
 
     public async Task<int> SetInactiveStationsWithoutDataAsync(CancellationToken cancellationToken = default)
     {
-        return await _unitOfWork.WeatherStations.SetInactiveStationsWithoutDataAsync(cancellationToken);
+        return await _unitOfWork.WeatherStations.SetAllStationsWithoutDataToInactiveAsync(cancellationToken);
     }
 
 }

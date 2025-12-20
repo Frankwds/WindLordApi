@@ -20,12 +20,12 @@ public interface IWeatherStationRepository : IRepository<WeatherStation>
     /// <summary>
     /// Sets stations with data to active status (raw SQL).
     /// </summary>
-    Task<int> SetActiveStationsWithDataAsync(CancellationToken cancellationToken = default);
+    Task<int> SetAllStationsWithDataToActiveAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Sets stations without data to inactive status (raw SQL).
     /// </summary>
-    Task<int> SetInactiveStationsWithoutDataAsync(CancellationToken cancellationToken = default);
+    Task<int> SetAllStationsWithoutDataToInactiveAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Upserts a range of weather stations using FlexLabs upsert.
