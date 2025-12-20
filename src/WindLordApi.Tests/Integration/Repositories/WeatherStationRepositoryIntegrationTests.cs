@@ -181,13 +181,22 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
             .WithProvider("MET")
             .WithIsActive(true)
             .Build();
-        await _context.WeatherStations.AddAsync(activeStationWithData, TestContext.Current.CancellationToken);
+
+        var activeStationWithData2 = TestDataBuilders.WeatherStation()
+            .WithStationId("MET-002")
+            .WithProvider("MET")
+            .WithIsActive(true)
+            .Build();
+        _context.WeatherStations.AddRange(activeStationWithData, activeStationWithData2);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var stationData = TestDataBuilders.StationData()
             .WithStationId("MET-001")
             .Build();
-        await _context.StationData.AddAsync(stationData, TestContext.Current.CancellationToken);
+        var stationData2 = TestDataBuilders.StationData()
+            .WithStationId("MET-002")
+            .Build();
+        _context.StationData.AddRange(stationData, stationData2);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act

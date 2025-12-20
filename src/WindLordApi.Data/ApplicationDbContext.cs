@@ -46,6 +46,13 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.IsMain)
                 .HasDefaultValue(false);
 
+            // Convert DateTime to Unspecified kind when writing to 'timestamp without time zone'
+            // This allows UTC DateTime values to be used in code while PostgreSQL stores them correctly
+            entity.Property(e => e.UpdatedAt)
+                .HasConversion(
+                    v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Unspecified) : v,
+                    v => v);
+
             entity.HasMany(e => e.StationData)
                 .WithOne(e => e.WeatherStation)
                 .HasPrincipalKey(e => e.StationId)
