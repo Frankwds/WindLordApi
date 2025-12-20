@@ -1,4 +1,6 @@
 using WindLordApi.Data.Models;
+using WindLordApi.Integrations.MetYr;
+using WindLordApi.Integrations.OpenMeteo;
 
 namespace WindLordApi.Tests.Helpers;
 
@@ -21,6 +23,16 @@ public static class TestDataBuilders
     /// Creates a LatestStationData builder with default test values.
     /// </summary>
     public static LatestStationDataBuilder LatestStationData() => new();
+
+    /// <summary>
+    /// Creates an OpenMeteoDto builder with default test values.
+    /// </summary>
+    public static OpenMeteoDtoBuilder OpenMeteoDto() => new();
+
+    /// <summary>
+    /// Creates a MetYrDto builder with default test values.
+    /// </summary>
+    public static MetYrDtoBuilder MetYrDto() => new();
 }
 
 /// <summary>
@@ -280,6 +292,498 @@ public class LatestStationDataBuilder
             Temperature = _temperature,
             UpdatedAt = _updatedAt,
             WindMinSpeed = _windMinSpeed
+        };
+    }
+}
+
+/// <summary>
+/// Builder for creating OpenMeteoDto test data.
+/// </summary>
+public class OpenMeteoDtoBuilder
+{
+    private string _time = "2024-01-01T12:00";
+    private double _temperature2m = 15.5;
+    private double _windSpeed10m = 10.0;
+    private double _windDirection10m = 180.0;
+    private double _windGusts10m = 15.0;
+    private double _precipitation = 0.0;
+    private double _precipitationProbability = 0.0;
+    private double _pressureMsl = 1013.25;
+    private string _weatherCode = "clear_sky";
+    private int _isDay = 1;
+    private double _windSpeed1000hPa = 12.0;
+    private double _windDirection1000hPa = 180.0;
+    private double _windSpeed925hPa = 14.0;
+    private double _windDirection925hPa = 180.0;
+    private double _windSpeed850hPa = 16.0;
+    private double _windDirection850hPa = 180.0;
+    private double _windSpeed700hPa = 18.0;
+    private double _windDirection700hPa = 180.0;
+    private double _temperature1000hPa = 10.0;
+    private double _temperature925hPa = 8.0;
+    private double _temperature850hPa = 5.0;
+    private double _temperature700hPa = 0.0;
+    private double _cloudCover = 0.0;
+    private double _cloudCoverLow = 0.0;
+    private double _cloudCoverMid = 0.0;
+    private double _cloudCoverHigh = 0.0;
+    private double _cape = 0.0;
+    private double _convectiveInhibition = 0.0;
+    private double _liftedIndex = 0.0;
+    private double _boundaryLayerHeight = 1000.0;
+    private double _freezingLevelHeight = 2000.0;
+    private double _geopotentialHeight1000hPa = 100.0;
+    private double _geopotentialHeight925hPa = 800.0;
+    private double _geopotentialHeight850hPa = 1500.0;
+    private double _geopotentialHeight700hPa = 3000.0;
+
+    public OpenMeteoDtoBuilder WithTime(string time)
+    {
+        _time = time;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithTemperature2m(double temperature)
+    {
+        _temperature2m = temperature;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithWindSpeed10m(double windSpeed)
+    {
+        _windSpeed10m = windSpeed;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithWindDirection10m(double windDirection)
+    {
+        _windDirection10m = windDirection;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithWindGusts10m(double windGusts)
+    {
+        _windGusts10m = windGusts;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithPrecipitation(double precipitation)
+    {
+        _precipitation = precipitation;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithPrecipitationProbability(double probability)
+    {
+        _precipitationProbability = probability;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithPressureMsl(double pressure)
+    {
+        _pressureMsl = pressure;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithWeatherCode(string weatherCode)
+    {
+        _weatherCode = weatherCode;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithIsDay(int isDay)
+    {
+        _isDay = isDay;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithWindSpeed1000hPa(double windSpeed)
+    {
+        _windSpeed1000hPa = windSpeed;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithWindDirection1000hPa(double windDirection)
+    {
+        _windDirection1000hPa = windDirection;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithWindSpeed925hPa(double windSpeed)
+    {
+        _windSpeed925hPa = windSpeed;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithWindDirection925hPa(double windDirection)
+    {
+        _windDirection925hPa = windDirection;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithWindSpeed850hPa(double windSpeed)
+    {
+        _windSpeed850hPa = windSpeed;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithWindDirection850hPa(double windDirection)
+    {
+        _windDirection850hPa = windDirection;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithWindSpeed700hPa(double windSpeed)
+    {
+        _windSpeed700hPa = windSpeed;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithWindDirection700hPa(double windDirection)
+    {
+        _windDirection700hPa = windDirection;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithTemperature1000hPa(double temperature)
+    {
+        _temperature1000hPa = temperature;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithTemperature925hPa(double temperature)
+    {
+        _temperature925hPa = temperature;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithTemperature850hPa(double temperature)
+    {
+        _temperature850hPa = temperature;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithTemperature700hPa(double temperature)
+    {
+        _temperature700hPa = temperature;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithCloudCover(double cloudCover)
+    {
+        _cloudCover = cloudCover;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithCloudCoverLow(double cloudCover)
+    {
+        _cloudCoverLow = cloudCover;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithCloudCoverMid(double cloudCover)
+    {
+        _cloudCoverMid = cloudCover;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithCloudCoverHigh(double cloudCover)
+    {
+        _cloudCoverHigh = cloudCover;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithCape(double cape)
+    {
+        _cape = cape;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithConvectiveInhibition(double convectiveInhibition)
+    {
+        _convectiveInhibition = convectiveInhibition;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithLiftedIndex(double liftedIndex)
+    {
+        _liftedIndex = liftedIndex;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithBoundaryLayerHeight(double height)
+    {
+        _boundaryLayerHeight = height;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithFreezingLevelHeight(double height)
+    {
+        _freezingLevelHeight = height;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithGeopotentialHeight1000hPa(double height)
+    {
+        _geopotentialHeight1000hPa = height;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithGeopotentialHeight925hPa(double height)
+    {
+        _geopotentialHeight925hPa = height;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithGeopotentialHeight850hPa(double height)
+    {
+        _geopotentialHeight850hPa = height;
+        return this;
+    }
+
+    public OpenMeteoDtoBuilder WithGeopotentialHeight700hPa(double height)
+    {
+        _geopotentialHeight700hPa = height;
+        return this;
+    }
+
+    public OpenMeteoDto Build()
+    {
+        return new OpenMeteoDto
+        {
+            Time = _time,
+            Temperature2m = _temperature2m,
+            WindSpeed10m = _windSpeed10m,
+            WindDirection10m = _windDirection10m,
+            WindGusts10m = _windGusts10m,
+            Precipitation = _precipitation,
+            PrecipitationProbability = _precipitationProbability,
+            PressureMsl = _pressureMsl,
+            WeatherCode = _weatherCode,
+            IsDay = _isDay,
+            WindSpeed1000hPa = _windSpeed1000hPa,
+            WindDirection1000hPa = _windDirection1000hPa,
+            WindSpeed925hPa = _windSpeed925hPa,
+            WindDirection925hPa = _windDirection925hPa,
+            WindSpeed850hPa = _windSpeed850hPa,
+            WindDirection850hPa = _windDirection850hPa,
+            WindSpeed700hPa = _windSpeed700hPa,
+            WindDirection700hPa = _windDirection700hPa,
+            Temperature1000hPa = _temperature1000hPa,
+            Temperature925hPa = _temperature925hPa,
+            Temperature850hPa = _temperature850hPa,
+            Temperature700hPa = _temperature700hPa,
+            CloudCover = _cloudCover,
+            CloudCoverLow = _cloudCoverLow,
+            CloudCoverMid = _cloudCoverMid,
+            CloudCoverHigh = _cloudCoverHigh,
+            Cape = _cape,
+            ConvectiveInhibition = _convectiveInhibition,
+            LiftedIndex = _liftedIndex,
+            BoundaryLayerHeight = _boundaryLayerHeight,
+            FreezingLevelHeight = _freezingLevelHeight,
+            GeopotentialHeight1000hPa = _geopotentialHeight1000hPa,
+            GeopotentialHeight925hPa = _geopotentialHeight925hPa,
+            GeopotentialHeight850hPa = _geopotentialHeight850hPa,
+            GeopotentialHeight700hPa = _geopotentialHeight700hPa
+        };
+    }
+}
+
+/// <summary>
+/// Builder for creating MetYrDto test data.
+/// </summary>
+public class MetYrDtoBuilder
+{
+    private string _time = "2024-01-01T12:00:00Z";
+    private double _airPressureAtSeaLevel = 1013.25;
+    private double _airTemperature = 15.5;
+    private double? _airTemperaturePercentile10 = null;
+    private double? _airTemperaturePercentile90 = null;
+    private double _cloudAreaFraction = 0.0;
+    private double _cloudAreaFractionHigh = 0.0;
+    private double _cloudAreaFractionLow = 0.0;
+    private double _cloudAreaFractionMedium = 0.0;
+    private double _dewPointTemperature = 10.0;
+    private double _relativeHumidity = 60.0;
+    private double _windFromDirection = 180.0;
+    private double _windSpeed = 10.0;
+    private double _precipitationAmount = 0.0;
+    private double? _precipitationAmountMax = null;
+    private double? _precipitationAmountMin = null;
+    private double? _probabilityOfPrecipitation = null;
+    private string _symbolCode = "clearsky_day";
+    private double _fogAreaFraction = 0.0;
+    private double _ultravioletIndexClearSky = 3.0;
+    private double? _windSpeedOfGust = null;
+    private double? _probabilityOfThunder = null;
+    private string _next6HoursSymbolCode = "clearsky_day";
+
+    public MetYrDtoBuilder WithTime(string time)
+    {
+        _time = time;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithAirPressureAtSeaLevel(double pressure)
+    {
+        _airPressureAtSeaLevel = pressure;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithAirTemperature(double temperature)
+    {
+        _airTemperature = temperature;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithAirTemperaturePercentile10(double? percentile)
+    {
+        _airTemperaturePercentile10 = percentile;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithAirTemperaturePercentile90(double? percentile)
+    {
+        _airTemperaturePercentile90 = percentile;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithCloudAreaFraction(double fraction)
+    {
+        _cloudAreaFraction = fraction;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithCloudAreaFractionHigh(double fraction)
+    {
+        _cloudAreaFractionHigh = fraction;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithCloudAreaFractionLow(double fraction)
+    {
+        _cloudAreaFractionLow = fraction;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithCloudAreaFractionMedium(double fraction)
+    {
+        _cloudAreaFractionMedium = fraction;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithDewPointTemperature(double temperature)
+    {
+        _dewPointTemperature = temperature;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithRelativeHumidity(double humidity)
+    {
+        _relativeHumidity = humidity;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithWindFromDirection(double direction)
+    {
+        _windFromDirection = direction;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithWindSpeed(double windSpeed)
+    {
+        _windSpeed = windSpeed;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithPrecipitationAmount(double amount)
+    {
+        _precipitationAmount = amount;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithPrecipitationAmountMax(double? max)
+    {
+        _precipitationAmountMax = max;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithPrecipitationAmountMin(double? min)
+    {
+        _precipitationAmountMin = min;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithProbabilityOfPrecipitation(double? probability)
+    {
+        _probabilityOfPrecipitation = probability;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithSymbolCode(string symbolCode)
+    {
+        _symbolCode = symbolCode;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithFogAreaFraction(double fraction)
+    {
+        _fogAreaFraction = fraction;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithUltravioletIndexClearSky(double index)
+    {
+        _ultravioletIndexClearSky = index;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithWindSpeedOfGust(double? gust)
+    {
+        _windSpeedOfGust = gust;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithProbabilityOfThunder(double? probability)
+    {
+        _probabilityOfThunder = probability;
+        return this;
+    }
+
+    public MetYrDtoBuilder WithNext6HoursSymbolCode(string symbolCode)
+    {
+        _next6HoursSymbolCode = symbolCode;
+        return this;
+    }
+
+    public MetYrDto Build()
+    {
+        return new MetYrDto
+        {
+            Time = _time,
+            AirPressureAtSeaLevel = _airPressureAtSeaLevel,
+            AirTemperature = _airTemperature,
+            AirTemperaturePercentile10 = _airTemperaturePercentile10,
+            AirTemperaturePercentile90 = _airTemperaturePercentile90,
+            CloudAreaFraction = _cloudAreaFraction,
+            CloudAreaFractionHigh = _cloudAreaFractionHigh,
+            CloudAreaFractionLow = _cloudAreaFractionLow,
+            CloudAreaFractionMedium = _cloudAreaFractionMedium,
+            DewPointTemperature = _dewPointTemperature,
+            RelativeHumidity = _relativeHumidity,
+            WindFromDirection = _windFromDirection,
+            WindSpeed = _windSpeed,
+            PrecipitationAmount = _precipitationAmount,
+            PrecipitationAmountMax = _precipitationAmountMax,
+            PrecipitationAmountMin = _precipitationAmountMin,
+            ProbabilityOfPrecipitation = _probabilityOfPrecipitation,
+            SymbolCode = _symbolCode,
+            FogAreaFraction = _fogAreaFraction,
+            UltravioletIndexClearSky = _ultravioletIndexClearSky,
+            WindSpeedOfGust = _windSpeedOfGust,
+            ProbabilityOfThunder = _probabilityOfThunder,
+            Next6HoursSymbolCode = _next6HoursSymbolCode
         };
     }
 }
