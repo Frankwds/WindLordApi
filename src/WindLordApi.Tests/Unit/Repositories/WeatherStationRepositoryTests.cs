@@ -139,7 +139,7 @@ public class WeatherStationRepositoryTests : IDisposable
     }
 
     [Fact(Skip = "ExecuteUpdateAsync is not supported by in-memory database provider")]
-    public async Task SetActiveStationsWithDataAsync_WithInactiveStationsHavingData_ActivatesStations()
+    public async Task SetAllStationsWithDataToActiveAsync_WithInactiveStationsHavingData_ActivatesStations()
     {
         // Arrange
         var inactiveStationWithData = TestDataBuilders.WeatherStation()
@@ -191,7 +191,7 @@ public class WeatherStationRepositoryTests : IDisposable
     }
 
     [Fact(Skip = "ExecuteUpdateAsync is not supported by in-memory database provider")]
-    public async Task SetActiveStationsWithDataAsync_WithNoInactiveStationsHavingData_ReturnsZero()
+    public async Task SetAllStationsWithDataToActiveAsync_WithNoInactiveStationsHavingData_ReturnsZero()
     {
         // Arrange
         var inactiveStationWithoutData = TestDataBuilders.WeatherStation()
@@ -210,7 +210,7 @@ public class WeatherStationRepositoryTests : IDisposable
     }
 
     [Fact(Skip = "ExecuteUpdateAsync is not supported by in-memory database provider")]
-    public async Task SetInactiveStationsWithoutDataAsync_WithActiveStationsWithoutData_DeactivatesStations()
+    public async Task SetAllStationsWithoutDataToInactiveAsync_WithActiveStationsWithoutData_DeactivatesStations()
     {
         // Arrange
         var activeStationWithoutData = TestDataBuilders.WeatherStation()
@@ -259,7 +259,7 @@ public class WeatherStationRepositoryTests : IDisposable
     }
 
     [Fact(Skip = "ExecuteUpdateAsync is not supported by in-memory database provider")]
-    public async Task SetInactiveStationsWithoutDataAsync_WithNoActiveStationsWithoutData_ReturnsZero()
+    public async Task SetAllStationsWithoutDataToInactiveAsync_WithNoActiveStationsWithoutData_ReturnsZero()
     {
         // Arrange
         var activeStationWithData = TestDataBuilders.WeatherStation()
@@ -267,13 +267,21 @@ public class WeatherStationRepositoryTests : IDisposable
             .WithProvider("MET")
             .WithIsActive(true)
             .Build();
-        await _context.WeatherStations.AddAsync(activeStationWithData, TestContext.Current.CancellationToken);
+        var activeStationWithData2 = TestDataBuilders.WeatherStation()
+            .WithStationId("MET-002")
+            .WithProvider("MET")
+            .WithIsActive(true)
+            .Build();
+        _context.WeatherStations.AddRange(activeStationWithData, activeStationWithData2);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var stationData = TestDataBuilders.StationData()
             .WithStationId("MET-001")
             .Build();
-        await _context.StationData.AddAsync(stationData, TestContext.Current.CancellationToken);
+        var stationData2 = TestDataBuilders.StationData()
+            .WithStationId("MET-002")
+            .Build();
+        _context.StationData.AddRange(stationData, stationData2);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act

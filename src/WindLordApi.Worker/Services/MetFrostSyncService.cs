@@ -144,10 +144,10 @@ public class MetFrostSyncService : IMetFrostSyncService
             var stationDataInserted = await SyncStationDataAsync(isActive: false, cancellationToken);
 
             // 2. Set stations with data to active
-            var activatedCount = await _weatherStationService.SetActiveStationsWithDataAsync(cancellationToken);
+            var activatedCount = await _weatherStationService.SetAllStationsWithDataToActiveAsync(cancellationToken);
 
             // 3. Set stations without data to inactive
-            var deactivatedCount = await _weatherStationService.SetInactiveStationsWithoutDataAsync(cancellationToken);
+            var deactivatedCount = await _weatherStationService.SetAllStationsWithoutDataToInactiveAsync(cancellationToken);
 
             _logger.LogInformation("MetFrost: Completed weather station active status sync. New station data inserted: {Inserted}, Status updates: {Activated} activated, {Deactivated} deactivated",
                 stationDataInserted, activatedCount, deactivatedCount);

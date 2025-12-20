@@ -212,7 +212,7 @@ public class WeatherStationServiceTests : IDisposable
     }
 
     [Fact(Skip = "Requires relational database provider - raw SQL not supported by in-memory database")]
-    public async Task SetActiveStationsWithDataAsync_DelegatesToRepository()
+    public async Task SetAllStationsWithDataToActiveAsync_DelegatesToRepository()
     {
         // Arrange
         var inactiveStation = TestDataBuilders.WeatherStation()
@@ -230,14 +230,14 @@ public class WeatherStationServiceTests : IDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _service.SetActiveStationsWithDataAsync(TestContext.Current.CancellationToken);
+        var result = await _service.SetAllStationsWithDataToActiveAsync(TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Be(1);
     }
 
     [Fact(Skip = "Requires relational database provider - raw SQL not supported by in-memory database")]
-    public async Task SetInactiveStationsWithoutDataAsync_DelegatesToRepository()
+    public async Task SetAllStationsWithoutDataToInactiveAsync_DelegatesToRepository()
     {
         // Arrange
         var activeStation = TestDataBuilders.WeatherStation()
@@ -249,7 +249,7 @@ public class WeatherStationServiceTests : IDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _service.SetInactiveStationsWithoutDataAsync(TestContext.Current.CancellationToken);
+        var result = await _service.SetAllStationsWithoutDataToInactiveAsync(TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Be(1);
