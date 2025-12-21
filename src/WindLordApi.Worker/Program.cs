@@ -9,6 +9,8 @@ using WindLordApi.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 using WindLordApi.Integrations.MetFrost;
 using WindLordApi.Integrations.Holfuy;
+using WindLordApi.Integrations.MetYr;
+using WindLordApi.Integrations.OpenMeteo;
 using Serilog;
 using Serilog.Events;
 
@@ -93,6 +95,8 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IStationDataService, StationDataService>();
 builder.Services.AddScoped<IWeatherStationService, WeatherStationService>();
 builder.Services.AddScoped<ILatestStationDataService, LatestStationDataService>();
+builder.Services.AddScoped<IParaglidingLocationService, ParaglidingLocationService>();
+builder.Services.AddScoped<IForecastCacheService, ForecastCacheService>();
 
 // Register Mapping Services
 builder.Services.AddScoped<IMetFrostMapping, MetFrostMappingService>();
@@ -101,6 +105,7 @@ builder.Services.AddScoped<IHolfuyMapping, HolfuyMappingService>();
 // Register Worker Services
 builder.Services.AddScoped<IHolfuySyncService, HolfuySyncService>();
 builder.Services.AddScoped<IMetFrostSyncService, MetFrostSyncService>();
+builder.Services.AddScoped<IForecastCombinationService, ForecastCombinationService>();
 
 // Register Schedulers (singleton since Worker is singleton)
 builder.Services.AddSingleton<PeriodicJobScheduler<IMetFrostSyncService>>();
@@ -118,6 +123,12 @@ builder.Services.AddHttpClient<IMetFrostClient, MetFrostClient>();
 
 // Register Holfuy Client
 builder.Services.AddHolfuyClient(builder.Configuration);
+
+// Register MetYr Client
+builder.Services.AddMetYrClient(builder.Configuration);
+
+// Register OpenMeteo Client
+builder.Services.AddOpenMeteoClient(builder.Configuration);
 
 // Register Health Check Services
 builder.Services.AddScoped<DatabaseHealthCheck>();
