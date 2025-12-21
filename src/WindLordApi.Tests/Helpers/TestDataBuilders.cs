@@ -33,6 +33,16 @@ public static class TestDataBuilders
     /// Creates a MetYrDto builder with default test values.
     /// </summary>
     public static MetYrDtoBuilder MetYrDto() => new();
+
+    /// <summary>
+    /// Creates a ParaglidingLocation builder with default test values.
+    /// </summary>
+    public static ParaglidingLocationBuilder ParaglidingLocation() => new();
+
+    /// <summary>
+    /// Creates a ForecastCache builder with default test values.
+    /// </summary>
+    public static ForecastCacheBuilder ForecastCache() => new();
 }
 
 /// <summary>
@@ -784,6 +794,363 @@ public class MetYrDtoBuilder
             WindSpeedOfGust = _windSpeedOfGust,
             ProbabilityOfThunder = _probabilityOfThunder,
             Next6HoursSymbolCode = _next6HoursSymbolCode
+        };
+    }
+}
+
+/// <summary>
+/// Builder for creating ParaglidingLocation test data.
+/// </summary>
+public class ParaglidingLocationBuilder
+{
+    private Guid _id = Guid.NewGuid();
+    private string _name = "Test Paragliding Location";
+    private string? _description = "A test paragliding location";
+    private float _longitude = 10.12345f;
+    private float _latitude = 60.12345f;
+    private int _altitude = 500;
+    private string _country = "Norway";
+    private string _flightlogId = "TEST-FL-001";
+    private bool _isActive = true;
+    private DateTime? _createdAt = DateTime.UtcNow;
+    private DateTime? _updatedAt = DateTime.UtcNow;
+    private bool _n = false;
+    private bool _ne = false;
+    private bool _e = false;
+    private bool _se = false;
+    private bool _s = true; // Default to south-facing
+    private bool _sw = false;
+    private bool _w = false;
+    private bool _nw = false;
+    private bool _isMain = false;
+    private float? _landingLatitude = 60.11111f;
+    private float? _landingLongitude = 10.11111f;
+    private int? _landingAltitude = 100;
+    private string? _timezone = "Europe/Oslo";
+
+    public ParaglidingLocationBuilder WithId(Guid id)
+    {
+        _id = id;
+        return this;
+    }
+
+    public ParaglidingLocationBuilder WithName(string name)
+    {
+        _name = name;
+        return this;
+    }
+
+    public ParaglidingLocationBuilder WithDescription(string? description)
+    {
+        _description = description;
+        return this;
+    }
+
+    public ParaglidingLocationBuilder WithCoordinates(float latitude, float longitude)
+    {
+        _latitude = latitude;
+        _longitude = longitude;
+        return this;
+    }
+
+    public ParaglidingLocationBuilder WithAltitude(int altitude)
+    {
+        _altitude = altitude;
+        return this;
+    }
+
+    public ParaglidingLocationBuilder WithCountry(string country)
+    {
+        _country = country;
+        return this;
+    }
+
+    public ParaglidingLocationBuilder WithFlightlogId(string flightlogId)
+    {
+        _flightlogId = flightlogId;
+        return this;
+    }
+
+    public ParaglidingLocationBuilder WithIsActive(bool isActive)
+    {
+        _isActive = isActive;
+        return this;
+    }
+
+    public ParaglidingLocationBuilder WithDirections(bool n = false, bool ne = false, bool e = false, bool se = false,
+        bool s = false, bool sw = false, bool w = false, bool nw = false)
+    {
+        _n = n;
+        _ne = ne;
+        _e = e;
+        _se = se;
+        _s = s;
+        _sw = sw;
+        _w = w;
+        _nw = nw;
+        return this;
+    }
+
+    public ParaglidingLocationBuilder WithIsMain(bool isMain)
+    {
+        _isMain = isMain;
+        return this;
+    }
+
+    public ParaglidingLocationBuilder WithLandingCoordinates(float? latitude, float? longitude, int? altitude = null)
+    {
+        _landingLatitude = latitude;
+        _landingLongitude = longitude;
+        _landingAltitude = altitude;
+        return this;
+    }
+
+    public ParaglidingLocationBuilder WithTimezone(string? timezone)
+    {
+        _timezone = timezone;
+        return this;
+    }
+
+    public ParaglidingLocation Build()
+    {
+        return new ParaglidingLocation
+        {
+            Id = _id,
+            Name = _name,
+            Description = _description,
+            Longitude = _longitude,
+            Latitude = _latitude,
+            Altitude = _altitude,
+            Country = _country,
+            FlightlogId = _flightlogId,
+            IsActive = _isActive,
+            CreatedAt = _createdAt,
+            UpdatedAt = _updatedAt,
+            N = _n,
+            NE = _ne,
+            E = _e,
+            SE = _se,
+            S = _s,
+            SW = _sw,
+            W = _w,
+            NW = _nw,
+            IsMain = _isMain,
+            LandingLatitude = _landingLatitude,
+            LandingLongitude = _landingLongitude,
+            LandingAltitude = _landingAltitude,
+            Timezone = _timezone
+        };
+    }
+}
+
+/// <summary>
+/// Builder for creating ForecastCache test data.
+/// </summary>
+public class ForecastCacheBuilder
+{
+    private long _id = 0;
+    private Guid _locationId = Guid.NewGuid();
+    private DateTime _time = DateTime.UtcNow.AddHours(1);
+    private decimal? _temperature = 15.5m;
+    private decimal? _windSpeed = 10.0m;
+    private int? _windDirection = 180;
+    private decimal? _windGusts = 15.0m;
+    private decimal? _precipitation = 0.0m;
+    private float? _precipitationProbability = 10.0f;
+    private decimal? _pressureMsl = 1013.25m;
+    private string? _weatherCode = "clearsky_day";
+    private short? _isDay = 1;
+    private decimal? _landingWind = 8.0m;
+    private decimal? _landingGust = 12.0m;
+    private int? _landingWindDirection = 180;
+    private decimal? _windSpeed1000hpa = 12.0m;
+    private int? _windDirection1000hpa = 180;
+    private decimal? _windSpeed925hpa = 14.0m;
+    private int? _windDirection925hpa = 180;
+    private decimal? _windSpeed850hpa = 16.0m;
+    private int? _windDirection850hpa = 180;
+    private decimal? _windSpeed700hpa = 18.0m;
+    private int? _windDirection700hpa = 180;
+    private decimal? _temperature1000hpa = 10.0m;
+    private decimal? _temperature925hpa = 8.0m;
+    private decimal? _temperature850hpa = 5.0m;
+    private decimal? _temperature700hpa = 0.0m;
+    private int? _cloudCover = 20;
+    private int? _cloudCoverLow = 10;
+    private int? _cloudCoverMid = 5;
+    private int? _cloudCoverHigh = 5;
+    private decimal? _cape = 0.0m;
+    private decimal? _convectiveInhibition = 0.0m;
+    private decimal? _liftedIndex = 0.0m;
+    private decimal? _boundaryLayerHeight = 1000.0m;
+    private decimal? _freezingLevelHeight = 2000.0m;
+    private decimal? _geopotentialHeight1000hpa = 100.0m;
+    private decimal? _geopotentialHeight925hpa = 800.0m;
+    private decimal? _geopotentialHeight850hpa = 1500.0m;
+    private decimal? _geopotentialHeight700hpa = 3000.0m;
+    private DateTime? _createdAt = DateTime.UtcNow;
+    private DateTime? _updatedAt = DateTime.UtcNow;
+    private double? _precipitationMax = 0.0;
+    private double? _precipitationMin = 0.0;
+    private bool _isYrData = false;
+
+    public ForecastCacheBuilder WithId(long id)
+    {
+        _id = id;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithLocationId(Guid locationId)
+    {
+        _locationId = locationId;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithTime(DateTime time)
+    {
+        _time = time;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithTemperature(decimal? temperature)
+    {
+        _temperature = temperature;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithWindSpeed(decimal? windSpeed)
+    {
+        _windSpeed = windSpeed;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithWindDirection(int? windDirection)
+    {
+        _windDirection = windDirection;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithWindGusts(decimal? windGusts)
+    {
+        _windGusts = windGusts;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithPrecipitation(decimal? precipitation)
+    {
+        _precipitation = precipitation;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithPrecipitationProbability(float? probability)
+    {
+        _precipitationProbability = probability;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithPressureMsl(decimal? pressure)
+    {
+        _pressureMsl = pressure;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithWeatherCode(string? weatherCode)
+    {
+        _weatherCode = weatherCode;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithIsDay(short? isDay)
+    {
+        _isDay = isDay;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithLandingWind(decimal? landingWind)
+    {
+        _landingWind = landingWind;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithLandingGust(decimal? landingGust)
+    {
+        _landingGust = landingGust;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithLandingWindDirection(int? landingWindDirection)
+    {
+        _landingWindDirection = landingWindDirection;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithCloudCover(int? cloudCover)
+    {
+        _cloudCover = cloudCover;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithIsYrData(bool isYrData)
+    {
+        _isYrData = isYrData;
+        return this;
+    }
+
+    public ForecastCacheBuilder WithUpdatedAt(DateTime? updatedAt)
+    {
+        _updatedAt = updatedAt;
+        return this;
+    }
+
+    public ForecastCache Build()
+    {
+        return new ForecastCache
+        {
+            Id = _id,
+            LocationId = _locationId,
+            Time = _time,
+            Temperature = _temperature,
+            WindSpeed = _windSpeed,
+            WindDirection = _windDirection,
+            WindGusts = _windGusts,
+            Precipitation = _precipitation,
+            PrecipitationProbability = _precipitationProbability,
+            PressureMsl = _pressureMsl,
+            WeatherCode = _weatherCode,
+            IsDay = _isDay,
+            LandingWind = _landingWind,
+            LandingGust = _landingGust,
+            LandingWindDirection = _landingWindDirection,
+            WindSpeed1000hpa = _windSpeed1000hpa,
+            WindDirection1000hpa = _windDirection1000hpa,
+            WindSpeed925hpa = _windSpeed925hpa,
+            WindDirection925hpa = _windDirection925hpa,
+            WindSpeed850hpa = _windSpeed850hpa,
+            WindDirection850hpa = _windDirection850hpa,
+            WindSpeed700hpa = _windSpeed700hpa,
+            WindDirection700hpa = _windDirection700hpa,
+            Temperature1000hpa = _temperature1000hpa,
+            Temperature925hpa = _temperature925hpa,
+            Temperature850hpa = _temperature850hpa,
+            Temperature700hpa = _temperature700hpa,
+            CloudCover = _cloudCover,
+            CloudCoverLow = _cloudCoverLow,
+            CloudCoverMid = _cloudCoverMid,
+            CloudCoverHigh = _cloudCoverHigh,
+            Cape = _cape,
+            ConvectiveInhibition = _convectiveInhibition,
+            LiftedIndex = _liftedIndex,
+            BoundaryLayerHeight = _boundaryLayerHeight,
+            FreezingLevelHeight = _freezingLevelHeight,
+            GeopotentialHeight1000hpa = _geopotentialHeight1000hpa,
+            GeopotentialHeight925hpa = _geopotentialHeight925hpa,
+            GeopotentialHeight850hpa = _geopotentialHeight850hpa,
+            GeopotentialHeight700hpa = _geopotentialHeight700hpa,
+            CreatedAt = _createdAt,
+            UpdatedAt = _updatedAt,
+            PrecipitationMax = _precipitationMax,
+            PrecipitationMin = _precipitationMin,
+            IsYrData = _isYrData
         };
     }
 }
