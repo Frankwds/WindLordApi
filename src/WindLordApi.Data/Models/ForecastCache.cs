@@ -25,9 +25,6 @@ public record ForecastCache
     public required int IsDay { get; init; } // 0 or 1
     public required bool IsYrData { get; init; }
 
-    // Validation
-    public required string ValidationFailures { get; init; }
-    public required string ValidationWarnings { get; init; }
 
     // Landing conditions
     public double? LandingWind { get; init; }

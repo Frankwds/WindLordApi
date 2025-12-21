@@ -14,9 +14,11 @@ public interface IForecastCombinationService
     /// </summary>
     /// <param name="meteoData">Hourly weather data points from OpenMeteo API.</param>
     /// <param name="yrData">Hourly weather data points from MetYr API.</param>
+    /// <param name="locationId">Location ID.</param>
     /// <returns>Combined hourly forecast data points.</returns>
     IReadOnlyList<ForecastCache> CombineDataSources(
         IReadOnlyList<OpenMeteoDto> meteoData,
-        IReadOnlyList<MetYrDto> yrData);
+        IReadOnlyList<MetYrDto> yrData,
+        string locationId);
 }
 

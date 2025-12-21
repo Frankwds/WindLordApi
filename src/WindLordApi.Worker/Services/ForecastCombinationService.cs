@@ -15,11 +15,18 @@ public class ForecastCombinationService : IForecastCombinationService
     /// </summary>
     /// <param name="meteoData">Hourly weather data points from OpenMeteo API.</param>
     /// <param name="yrData">Hourly weather data points from MetYr API.</param>
+    /// <param name="locationId">Location ID.</param>
     /// <returns>Combined hourly forecast data points.</returns>
     public IReadOnlyList<ForecastCache> CombineDataSources(
         IReadOnlyList<OpenMeteoDto> meteoData,
-        IReadOnlyList<MetYrDto> yrData)
+        IReadOnlyList<MetYrDto> yrData,
+        string locationId)
     {
+        if (string.IsNullOrEmpty(locationId))
+        {
+            throw new ArgumentNullException(nameof(locationId));
+        }
+
         // Create a dictionary from Yr data keyed by time (first 16 characters, removing timezone)
         var yrDataMap = new Dictionary<string, MetYrDto>();
         foreach (var yrDp in yrData)
@@ -41,7 +48,7 @@ public class ForecastCombinationService : IForecastCombinationService
             var yrDp = yrDataMap.TryGetValue(meteoDp.Time, out var matchedYrDp) ? matchedYrDp : null;
 
             // Combine the data
-            var combined = CombineWeatherData(meteoDp, yrDp, currentTime);
+            var combined = CombineWeatherData(meteoDp, yrDp, currentTime, locationId);
             result.Add(combined);
         }
 
@@ -55,7 +62,8 @@ public class ForecastCombinationService : IForecastCombinationService
     private static ForecastCache CombineWeatherData(
         OpenMeteoDto meteoDataPoint,
         MetYrDto? yrDataPoint,
-        DateTime currentTime)
+        DateTime currentTime,
+        string locationId)
     {
         // Determine isDay: if Yr symbol_code includes 'night', set to 0, otherwise use OpenMeteo's IsDay
         int isDay = 0;
@@ -72,10 +80,8 @@ public class ForecastCombinationService : IForecastCombinationService
         {
             // Basic identification
             Time = meteoDataPoint.Time + ":00Z",
-            LocationId = string.Empty, // Will be set in the cron job
+            LocationId = locationId,
             IsYrData = yrDataPoint != null,
-            ValidationFailures = string.Empty, // Will be set in the cron job
-            ValidationWarnings = string.Empty, // Will be set in the cron job
             UpdatedAt = currentTime.ToUniversalTime().ToString("O"), // ISO 8601 format
 
             // Surface conditions
