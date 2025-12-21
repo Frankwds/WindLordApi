@@ -1,7 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using WindLordApi.Worker.Services;
-
+using WindLordApi.Integrations.MetYr;
+using WindLordApi.Integrations.OpenMeteo;
 namespace WindLordApi.Worker.Startup;
 
 /// <summary>
@@ -23,57 +24,70 @@ public static class StartupJobs
     {
         logger.LogInformation("Running startup jobs...");
 
+        // Test Forecast Combination Service
+        try
+        {
+            using var forecastUpdateScope = serviceProvider.CreateScope();
+            var forecastUpdateService = forecastUpdateScope.ServiceProvider.GetRequiredService<IForecastUpdateService>();
+
+            await forecastUpdateService.UpdateForecastsAsync(cancellationToken);
+            logger.LogInformation("ForecastUpdate: Completed startup job: UpdateForecastsAsync");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "ForecastUpdate: Error running UpdateForecastsAsync on startup");
+        }
         // Sync Holfuy data on startup (first)
-        try
-        {
-            using var holfuyScope = serviceProvider.CreateScope();
-            var holfuySyncService = holfuyScope.ServiceProvider.GetRequiredService<IHolfuySyncService>();
-            await holfuySyncService.SyncHolfuyDataAsync(cancellationToken);
-            logger.LogInformation("Holfuy: Completed startup job: SyncHolfuyDataAsync");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Holfuy: Error running SyncHolfuyDataAsync on startup");
-        }
+        // try
+        // {
+        //     using var holfuyScope = serviceProvider.CreateScope();
+        //     var holfuySyncService = holfuyScope.ServiceProvider.GetRequiredService<IHolfuySyncService>();
+        //     await holfuySyncService.SyncHolfuyDataAsync(cancellationToken);
+        //     logger.LogInformation("Holfuy: Completed startup job: SyncHolfuyDataAsync");
+        // }
+        // catch (Exception ex)
+        // {
+        //     logger.LogError(ex, "Holfuy: Error running SyncHolfuyDataAsync on startup");
+        // }
 
-        // Sync all stations on startup
-        try
-        {
-            using var scope = serviceProvider.CreateScope();
-            var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
-            await syncService.SyncLatestStationDataAsync(cancellationToken);
-            logger.LogInformation("MetFrost: Completed startup job: SyncLatestStationDataAsync");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "MetFrost: Error running SyncLatestStationDataAsync on startup");
-        }
+        // // Sync all stations on startup
+        // try
+        // {
+        //     using var scope = serviceProvider.CreateScope();
+        //     var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
+        //     await syncService.SyncLatestStationDataAsync(cancellationToken);
+        //     logger.LogInformation("MetFrost: Completed startup job: SyncLatestStationDataAsync");
+        // }
+        // catch (Exception ex)
+        // {
+        //     logger.LogError(ex, "MetFrost: Error running SyncLatestStationDataAsync on startup");
+        // }
 
-        // Sync new weather stations on startup
-        try
-        {
-            using var scope = serviceProvider.CreateScope();
-            var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
-            await syncService.SyncWeatherStationsAsync(cancellationToken);
-            logger.LogInformation("MetFrost: Completed startup job: SyncWeatherStationsAsync");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "MetFrost: Error running SyncWeatherStationsAsync on startup");
-        }
+        // // Sync new weather stations on startup
+        // try
+        // {
+        //     using var scope = serviceProvider.CreateScope();
+        //     var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
+        //     await syncService.SyncWeatherStationsAsync(cancellationToken);
+        //     logger.LogInformation("MetFrost: Completed startup job: SyncWeatherStationsAsync");
+        // }
+        // catch (Exception ex)
+        // {
+        //     logger.LogError(ex, "MetFrost: Error running SyncWeatherStationsAsync on startup");
+        // }
 
-        // Sync weather station active status on startup
-        try
-        {
-            using var scope = serviceProvider.CreateScope();
-            var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
-            await syncService.SyncWeatherStationsActiveStatusAsync(cancellationToken);
-            logger.LogInformation("MetFrost: Completed startup job: SyncWeatherStationsActiveStatusAsync");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "MetFrost: Error running SyncWeatherStationsActiveStatusAsync on startup");
-        }
+        // // Sync weather station active status on startup
+        // try
+        // {
+        //     using var scope = serviceProvider.CreateScope();
+        //     var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
+        //     await syncService.SyncWeatherStationsActiveStatusAsync(cancellationToken);
+        //     logger.LogInformation("MetFrost: Completed startup job: SyncWeatherStationsActiveStatusAsync");
+        // }
+        // catch (Exception ex)
+        // {
+        //     logger.LogError(ex, "MetFrost: Error running SyncWeatherStationsActiveStatusAsync on startup");
+        // }
 
         logger.LogInformation("Startup jobs completed");
     }

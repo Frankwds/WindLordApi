@@ -26,23 +26,6 @@ public class OpenMeteoClient : IOpenMeteoClient
         _logger = logger;
     }
 
-    /// <summary>
-    /// Fetches weather forecast data from OpenMeteo API for the specified location.
-    /// </summary>
-    /// <param name="latitude">Latitude of the location (will be formatted to 4 decimal places).</param>
-    /// <param name="longitude">Longitude of the location (will be formatted to 4 decimal places).</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Deserialized OpenMeteo forecast API response.</returns>
-    public async Task<OpenMeteoResponse> FetchMeteoDataAsync(
-        double latitude,
-        double longitude,
-        CancellationToken cancellationToken = default)
-    {
-        return await FetchMeteoDataInternalAsync(
-            latitude.ToString("F4"),
-            longitude.ToString("F4"),
-            cancellationToken);
-    }
 
     /// <summary>
     /// Fetches weather forecast data from OpenMeteo API for multiple locations.
@@ -50,21 +33,66 @@ public class OpenMeteoClient : IOpenMeteoClient
     /// <param name="latitude">Array of latitudes (will be formatted to 4 decimal places and comma-separated).</param>
     /// <param name="longitude">Array of longitudes (will be formatted to 4 decimal places and comma-separated).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Deserialized OpenMeteo forecast API response.</returns>
-    public async Task<OpenMeteoResponse> FetchMeteoDataAsync(
-        double[] latitude,
-        double[] longitude,
+    /// <returns>Array of deserialized OpenMeteo forecast API responses, one for each location.</returns>
+    public async Task<OpenMeteoResponse[]> FetchMeteoDataAsync(
+        float[] latitude,
+        float[] longitude,
         CancellationToken cancellationToken = default)
     {
-        var latString = string.Join(",", latitude.Select(lat => lat.ToString("F4")));
-        var lonString = string.Join(",", longitude.Select(lon => lon.ToString("F4")));
 
-        return await FetchMeteoDataInternalAsync(latString, lonString, cancellationToken);
+        if (latitude.Length != longitude.Length || latitude.Length == 0)
+        {
+            throw new ArgumentException("Latitude and longitude arrays must be of the same length and not empty.");
+        }
+
+        var latStringCsv = string.Join(",", latitude.Select(lat => lat.ToString("F4")));
+        var lonStringCsv = string.Join(",", longitude.Select(lon => lon.ToString("F4")));
+
+        string content = string.Empty;
+        try
+        {
+            content = await FetchMeteoDataContentAsync(latStringCsv, lonStringCsv, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "OpenMeteo: Unexpected error while fetching forecast data for {Latitude},{Longitude}", latStringCsv, lonStringCsv);
+            throw;
+        }
+
+
+        try
+        {
+            if (latitude.Length == 1)
+            {
+                var result = JsonSerializer.Deserialize<OpenMeteoResponse>(content);
+                if (result is null)
+                {
+                    _logger.LogError("OpenMeteo: Failed to deserialize response to OpenMeteoResponse for location {Latitude},{Longitude}", latStringCsv, lonStringCsv);
+                    throw new JsonException("Failed to deserialize OpenMeteo forecast API response to OpenMeteoResponse.");
+                }
+                return [result];
+            }
+            else
+            {
+                var result = JsonSerializer.Deserialize<OpenMeteoResponse[]>(content);
+                if (result is null)
+                {
+                    _logger.LogError("OpenMeteo: Failed to deserialize response to OpenMeteoResponse[] for locations {Latitude},{Longitude}", latStringCsv, lonStringCsv);
+                    throw new JsonException("Failed to deserialize OpenMeteo forecast API response to OpenMeteoResponse[].");
+                }
+                return result;
+            }
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "OpenMeteo: Invalid JSON response received for locations {Latitude},{Longitude}", latStringCsv, lonStringCsv);
+            throw;
+        }
     }
 
-    private async Task<OpenMeteoResponse> FetchMeteoDataInternalAsync(
-        string latitudeString,
-        string longitudeString,
+    private async Task<string> FetchMeteoDataContentAsync(
+        string latStringCsv,
+        string lonStringCsv,
         CancellationToken cancellationToken)
     {
         var baseUrl = string.IsNullOrWhiteSpace(_options.BaseUrl)
@@ -74,8 +102,8 @@ public class OpenMeteoClient : IOpenMeteoClient
         var url = new UriBuilder(baseUrl);
         var queryParams = new List<string>
         {
-            $"latitude={Uri.EscapeDataString(latitudeString)}",
-            $"longitude={Uri.EscapeDataString(longitudeString)}",
+            $"latitude={Uri.EscapeDataString(latStringCsv)}",
+            $"longitude={Uri.EscapeDataString(lonStringCsv)}",
             $"wind_speed_unit={Uri.EscapeDataString(_options.WindSpeedUnit)}",
             $"hourly={Uri.EscapeDataString(string.Join(",", _options.HourlyParameters))}",
             $"forecast_days={Uri.EscapeDataString(_options.ForecastDays)}",
@@ -98,39 +126,25 @@ public class OpenMeteoClient : IOpenMeteoClient
             {
                 var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogError(
-                    "OpenMeteo: Returned error status {StatusCode} for location {Latitude},{Longitude}. Response body: {ErrorContent}",
+                    "OpenMeteo: Returned error status {StatusCode} for location(s) {Latitude},{Longitude}. Response body: {ErrorContent}",
                     response.StatusCode,
-                    latitudeString,
-                    longitudeString,
+                    latStringCsv,
+                    lonStringCsv,
                     errorContent);
                 throw new HttpRequestException(
-                    $"OpenMeteo forecast API returned error status {response.StatusCode} for location {latitudeString},{longitudeString}. Response body: {errorContent}");
+                    $"OpenMeteo forecast API returned error status {response.StatusCode} for location(s) {latStringCsv},{lonStringCsv}. Response body: {errorContent}");
             }
 
-            var content = await response.Content.ReadAsStringAsync(cancellationToken);
-
-            var result = JsonSerializer.Deserialize<OpenMeteoResponse>(content);
-            if (result is null)
-            {
-                _logger.LogError("OpenMeteo: Failed to deserialize response to OpenMeteoResponse for location {Latitude},{Longitude}", latitudeString, longitudeString);
-                throw new JsonException("Failed to deserialize OpenMeteo forecast API response to OpenMeteoResponse.");
-            }
-
-            return result;
+            return await response.Content.ReadAsStringAsync(cancellationToken);
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "OpenMeteo: HTTP error while fetching forecast data for {Latitude},{Longitude}: {ErrorMessage}", latitudeString, longitudeString, ex.Message);
-            throw;
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogError(ex, "OpenMeteo: Invalid JSON response received for location {Latitude},{Longitude}", latitudeString, longitudeString);
+            _logger.LogError(ex, "OpenMeteo: HTTP error while fetching forecast data for {Latitude},{Longitude}: {ErrorMessage}", latStringCsv, lonStringCsv, ex.Message);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "OpenMeteo: Unexpected error while fetching forecast data for {Latitude},{Longitude}", latitudeString, longitudeString);
+            _logger.LogError(ex, "OpenMeteo: Unexpected error while fetching forecast data for {Latitude},{Longitude}", latStringCsv, lonStringCsv);
             throw;
         }
     }
