@@ -14,17 +14,12 @@ flowchart TB
     ProcessLocations -->|Fetch full details| GetByIds[GetByIdsAsync]
     ProcessLocations -->|If locations exist| ProcessBatch[ProcessBatchAsync]
 
-    ProcessBatch -->|Bulk fetch all at once| OpenMeteo[OpenMeteo API<br/>All locations in one call]
-    OpenMeteo -->|Returns array| MeteoArray[OpenMeteo data array]
-
     ProcessBatch -->|For each location| Loop{Loop through<br/>locations}
-    Loop -->|Extract from array| ExtractMeteo[Get OpenMeteo data for this location]
-    ExtractMeteo -->|Map| MapMeteo[OpenMeteoMapping.MapOpenMeteoData]
-    MapMeteo -->|Fetch| MetYrTakeoff[MetYr API - Takeoff coords]
+    Loop -->|Fetch| MetYrTakeoff[MetYr API - Takeoff coords]
     MetYrTakeoff -->|Map| MapYrTakeoff[MetYrMapping.MapYrData]
-    MapYrTakeoff -->|Combine| Combine[ForecastCombinationService.CombineDataSources]
+    MapYrTakeoff -->|Convert| Convert[ConvertToForecastCache<br/>Map MetYr to ForecastCache]
 
-    Combine -->|Check| HasLanding{Has landing<br/>coordinates?}
+    Convert -->|Check| HasLanding{Has landing<br/>coordinates?}
     HasLanding -->|Yes| MetYrLanding[MetYr API - Landing coords]
     MetYrLanding -->|Map| MapYrLanding[MetYrMapping.MapYrData]
     MapYrLanding -->|Merge| MergeLanding[MergeLandingData<br/>Match by time, update landing wind fields]
@@ -51,29 +46,28 @@ flowchart TB
 
 ### 3. Batch Processing (ProcessBatchAsync)
 
-- **Single Bulk API Call**: Fetches OpenMeteo data for all locations at once using arrays of latitudes/longitudes
-- Returns an array of raw meteo data indexed by location
+- Processes locations sequentially (one at a time)
+- Each location makes individual API calls to MetYr
 
 ### 4. Per-Location Processing Loop
 
 For each location in the batch (sequentially):
 
-1. **Extract & Map OpenMeteo Data**
-
-   - Gets the OpenMeteo data for this specific location from the bulk result array
-   - Maps raw data to domain model via `OpenMeteoMapping.MapOpenMeteoData()`
-
-2. **Fetch & Map MetYr Takeoff Data**
+1. **Fetch & Map MetYr Takeoff Data**
 
    - Calls MetYr API with takeoff latitude/longitude
    - Maps response via `MetYrMapping.MapYrData()`
 
-3. **Combine Data Sources**
+2. **Convert to ForecastCache**
 
-   - Merges OpenMeteo and MetYr takeoff data using `ForecastCombinationService.CombineDataSources()`
-   - Creates initial `ForecastCache` records with location ID
+   - Converts MetYr data directly to `ForecastCache` records via `ConvertToForecastCache()`
+   - Sets location ID and timestamps
+   - Populates surface conditions from MetYr data
+   - Sets atmospheric pressure-level fields to null (not provided by MetYr)
+   - Determines `IsDay` from MetYr `SymbolCode` (0 if contains "night", 1 otherwise)
+   - Sets `IsYrData` to true
 
-4. **Optional Landing Data** (if `LandingLatitude` and `LandingLongitude` exist)
+3. **Optional Landing Data** (if `LandingLatitude` and `LandingLongitude` exist)
 
    - Calls MetYr API with landing coordinates
    - Maps response via `MetYrMapping.MapYrData()`
@@ -81,6 +75,12 @@ For each location in the batch (sequentially):
      - Matches forecast records by time (formatted as `yyyy-MM-ddTHH:mm`)
      - Updates `LandingWind`, `LandingGust`, and `LandingWindDirection` fields
 
-5. **Persist to Database**
+4. **Persist to Database**
    - Upserts all forecast records for the location via `ForecastCacheService.UpsertManyAsync()`
    - Continues to next location even if current location fails (error logged but not thrown)
+
+## Data Source
+
+- **MetYr API Only**: All forecast data is fetched exclusively from Met.no's MetYr LocationForecast API
+- **Fields Populated**: Surface conditions (temperature, wind, precipitation, pressure, weather code, etc.)
+- **Fields Set to Null**: Atmospheric pressure-level data (wind/temperature at 1000/925/850/700hPa, geopotential heights, CAPE, cloud cover levels, stability indices)

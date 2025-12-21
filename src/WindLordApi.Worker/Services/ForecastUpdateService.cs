@@ -2,21 +2,17 @@ using Microsoft.Extensions.Logging;
 using WindLordApi.Data.Models;
 using WindLordApi.Data.Services;
 using WindLordApi.Integrations.MetYr;
-using WindLordApi.Integrations.OpenMeteo;
 
 namespace WindLordApi.Worker.Services;
 
 /// <summary>
 /// Service for updating forecast data for paragliding locations.
-/// Implements the Next.js cron job logic for combining OpenMeteo and MetYr data.
+/// Fetches and processes MetYr forecast data.
 /// </summary>
 public class ForecastUpdateService : IForecastUpdateService
 {
-    private readonly IOpenMeteoClient _openMeteoClient;
     private readonly IMetYrClient _metYrClient;
-    private readonly IOpenMeteoMapping _openMeteoMapping;
     private readonly IMetYrMapping _metYrMapping;
-    private readonly IForecastCombinationService _forecastCombinationService;
     private readonly IParaglidingLocationService _paraglidingLocationService;
     private readonly IForecastCacheService _forecastCacheService;
     private readonly ILogger<ForecastUpdateService> _logger;
@@ -24,20 +20,14 @@ public class ForecastUpdateService : IForecastUpdateService
     private const int BatchSize = 50;
 
     public ForecastUpdateService(
-        IOpenMeteoClient openMeteoClient,
         IMetYrClient metYrClient,
-        IOpenMeteoMapping openMeteoMapping,
         IMetYrMapping metYrMapping,
-        IForecastCombinationService forecastCombinationService,
         IParaglidingLocationService paraglidingLocationService,
         IForecastCacheService forecastCacheService,
         ILogger<ForecastUpdateService> logger)
     {
-        _openMeteoClient = openMeteoClient;
         _metYrClient = metYrClient;
-        _openMeteoMapping = openMeteoMapping;
         _metYrMapping = metYrMapping;
-        _forecastCombinationService = forecastCombinationService;
         _paraglidingLocationService = paraglidingLocationService;
         _forecastCacheService = forecastCacheService;
         _logger = logger;
@@ -116,12 +106,6 @@ public class ForecastUpdateService : IForecastUpdateService
 
     private async Task ProcessBatchAsync(List<ParaglidingLocation> locations, CancellationToken cancellationToken)
     {
-        var latitudes = locations.Select(l => l.Latitude).ToArray();
-        var longitudes = locations.Select(l => l.Longitude).ToArray();
-
-        // Fetch batch data from OpenMeteo for all locations
-        var rawMeteoDataArray = await _openMeteoClient.FetchMeteoDataAsync(latitudes, longitudes, cancellationToken);
-
         // Process each location individually
         for (int index = 0; index < locations.Count; index++)
         {
@@ -130,20 +114,13 @@ public class ForecastUpdateService : IForecastUpdateService
             {
                 _logger.LogDebug("Processing location {LocationId} ({Index}/{Total})", location.Id, index + 1, locations.Count);
 
-                // Get OpenMeteo data for this specific location from the array
-                var rawMeteoData = rawMeteoDataArray[index];
-                var meteoData = _openMeteoMapping.MapOpenMeteoData(rawMeteoData);
-
-                // Fetch YR data for takeoff location
+                // Fetch MetYr data for takeoff location
                 _logger.LogDebug("Fetching MetYr data for takeoff location {LocationId}", location.Id);
                 var yrTakeoffData = await _metYrClient.FetchYrDataAsync(location.Latitude, location.Longitude, cancellationToken);
                 var mappedYrTakeoffData = _metYrMapping.MapYrData(yrTakeoffData);
 
-                // Combine data sources
-                var combinedData = _forecastCombinationService.CombineDataSources(
-                    meteoData,
-                    mappedYrTakeoffData.MetYrDto,
-                    location.Id);
+                // Convert MetYr data to ForecastCache
+                var forecastData = ConvertToForecastCache(mappedYrTakeoffData.MetYrDto, location.Id);
 
                 // If landing coordinates exist, fetch and merge landing data
                 if (location.LandingLatitude.HasValue && location.LandingLongitude.HasValue)
@@ -155,11 +132,11 @@ public class ForecastUpdateService : IForecastUpdateService
                         cancellationToken);
                     var mappedYrLandingData = _metYrMapping.MapYrData(yrLandingData);
 
-                    combinedData = MergeLandingData(combinedData, mappedYrLandingData.MetYrDto);
+                    forecastData = MergeLandingData(forecastData, mappedYrLandingData.MetYrDto);
                 }
 
                 // Upsert forecast data
-                await _forecastCacheService.UpsertManyAsync(combinedData.ToArray(), cancellationToken);
+                await _forecastCacheService.UpsertManyAsync(forecastData.ToArray(), cancellationToken);
 
             }
             catch (Exception ex)
@@ -171,10 +148,89 @@ public class ForecastUpdateService : IForecastUpdateService
     }
 
     /// <summary>
-    /// Merges landing wind data into combined forecast data by matching time strings.
+    /// Converts MetYr data to ForecastCache entities.
+    /// </summary>
+    private IReadOnlyList<ForecastCache> ConvertToForecastCache(
+        IReadOnlyList<MetYrDto> yrData,
+        Guid locationId)
+    {
+        var result = new List<ForecastCache>();
+        var currentTime = DateTime.UtcNow;
+
+        foreach (var yrDp in yrData)
+        {
+            // Determine isDay: if symbol_code includes 'night', set to 0, otherwise set to 1
+            short? isDay = yrDp.SymbolCode.Contains("night", StringComparison.OrdinalIgnoreCase) ? (short)0 : (short)1;
+
+            // Parse the time string to DateTime
+            DateTime timeValue = DateTime.Parse(yrDp.Time, null, System.Globalization.DateTimeStyles.AdjustToUniversal);
+
+            var forecastCache = new ForecastCache
+            {
+                // Basic identification
+                Time = timeValue,
+                LocationId = locationId,
+                IsYrData = true,
+                UpdatedAt = currentTime,
+                CreatedAt = currentTime,
+
+                // Surface conditions from MetYr
+                Temperature = yrDp.AirTemperature,
+                WindSpeed = yrDp.WindSpeed,
+                WindDirection = (int)Math.Truncate(yrDp.WindFromDirection),
+                WindGusts = yrDp.WindSpeedOfGust,
+                Precipitation = yrDp.PrecipitationAmount,
+                PrecipitationMax = yrDp.PrecipitationAmountMax,
+                PrecipitationMin = yrDp.PrecipitationAmountMin,
+                PrecipitationProbability = yrDp.ProbabilityOfPrecipitation,
+                PressureMsl = yrDp.AirPressureAtSeaLevel,
+                WeatherCode = yrDp.SymbolCode,
+                IsDay = isDay,
+
+                // Landing conditions (not yet populated)
+                LandingWind = null,
+                LandingGust = null,
+                LandingWindDirection = null,
+
+                // Atmospheric conditions - set to null (not provided by MetYr)
+                WindSpeed1000hpa = null,
+                WindDirection1000hpa = null,
+                WindSpeed925hpa = null,
+                WindDirection925hpa = null,
+                WindSpeed850hpa = null,
+                WindDirection850hpa = null,
+                WindSpeed700hpa = null,
+                WindDirection700hpa = null,
+                Temperature1000hpa = null,
+                Temperature925hpa = null,
+                Temperature850hpa = null,
+                Temperature700hpa = null,
+                CloudCover = null,
+                CloudCoverLow = null,
+                CloudCoverMid = null,
+                CloudCoverHigh = null,
+                Cape = null,
+                ConvectiveInhibition = null,
+                LiftedIndex = null,
+                BoundaryLayerHeight = null,
+                FreezingLevelHeight = null,
+                GeopotentialHeight1000hpa = null,
+                GeopotentialHeight925hpa = null,
+                GeopotentialHeight850hpa = null,
+                GeopotentialHeight700hpa = null
+            };
+
+            result.Add(forecastCache);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Merges landing wind data into forecast data by matching time strings.
     /// </summary>
     private IReadOnlyList<ForecastCache> MergeLandingData(
-        IReadOnlyList<ForecastCache> combinedData,
+        IReadOnlyList<ForecastCache> forecastData,
         IReadOnlyList<MetYrDto> landingData)
     {
         // Create a dictionary of landing data keyed by time (first 16 characters)
@@ -189,7 +245,7 @@ public class ForecastUpdateService : IForecastUpdateService
         }
 
         var result = new List<ForecastCache>();
-        foreach (var dataPoint in combinedData)
+        foreach (var dataPoint in forecastData)
         {
             // Format the time to match Yr format (YYYY-MM-DDTHH:MM)
             var timeKey = dataPoint.Time.ToString("yyyy-MM-ddTHH:mm");
