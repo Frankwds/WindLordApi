@@ -12,8 +12,8 @@ using WindLordApi.Data;
 namespace WindLordApi.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251203191458_LatestStationDataTable")]
-    partial class LatestStationDataTable
+    [Migration("20251221124525_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
