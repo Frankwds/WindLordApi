@@ -21,6 +21,16 @@ public interface IUnitOfWork : IAsyncDisposable, IDisposable
     ILatestStationDataRepository LatestStationData { get; }
 
     /// <summary>
+    /// Repository for ParaglidingLocation entities.
+    /// </summary>
+    IParaglidingLocationRepository ParaglidingLocations { get; }
+
+    /// <summary>
+    /// Repository for ForecastCache entities.
+    /// </summary>
+    IForecastCacheRepository ForecastCaches { get; }
+
+    /// <summary>
     /// Saves all changes made in this unit of work.
     /// </summary>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

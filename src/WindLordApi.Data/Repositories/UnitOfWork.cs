@@ -13,6 +13,8 @@ public class UnitOfWork : IUnitOfWork
     private IWeatherStationRepository? _weatherStations;
     private IStationDataRepository? _stationData;
     private ILatestStationDataRepository? _latestStationData;
+    private IParaglidingLocationRepository? _paraglidingLocations;
+    private IForecastCacheRepository? _forecastCaches;
 
     public UnitOfWork(ApplicationDbContext context, ILoggerFactory loggerFactory)
     {
@@ -44,6 +46,24 @@ public class UnitOfWork : IUnitOfWork
         {
             _latestStationData ??= new LatestStationDataRepository(_context);
             return _latestStationData;
+        }
+    }
+
+    public IParaglidingLocationRepository ParaglidingLocations
+    {
+        get
+        {
+            _paraglidingLocations ??= new ParaglidingLocationRepository(_context, _loggerFactory.CreateLogger<ParaglidingLocationRepository>());
+            return _paraglidingLocations;
+        }
+    }
+
+    public IForecastCacheRepository ForecastCaches
+    {
+        get
+        {
+            _forecastCaches ??= new ForecastCacheRepository(_context, _loggerFactory.CreateLogger<ForecastCacheRepository>());
+            return _forecastCaches;
         }
     }
 
