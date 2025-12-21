@@ -51,11 +51,7 @@ public class Worker : BackgroundService
             "SyncNewWeatherStationsAsync",
             stoppingToken);
 
-        var syncStatusTask = _periodicJobScheduler.RunAsync(
-            metFrostStationsActiveStatusInterval,
-            async (service, ct) => { await service.SyncWeatherStationsActiveStatusAsync(ct); },
-            "SyncWeatherStationActiveStatusAsync",
-            stoppingToken);
+
 
         var holfuySyncTask = _clockAlignedScheduler.RunAsync(
             TimeSpan.FromMinutes(15),
@@ -64,10 +60,19 @@ public class Worker : BackgroundService
             async (service, ct) => { await service.SyncHolfuyDataAsync(ct); },
             stoppingToken);
 
+        // Stagger initialization of the following jobs to avoid overlapping with other jobs running at same interval
+        await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+
         var forecastUpdateTask = _forecastUpdateScheduler.RunAsync(
             forecastUpdateInterval,
             async (service, ct) => { await service.UpdateForecastsAsync(ct); },
             "UpdateForecastsAsync",
+            stoppingToken);
+
+        var syncStatusTask = _periodicJobScheduler.RunAsync(
+            metFrostStationsActiveStatusInterval,
+            async (service, ct) => { await service.SyncWeatherStationsActiveStatusAsync(ct); },
+            "SyncWeatherStationActiveStatusAsync",
             stoppingToken);
 
         // Wait for all tasks (they will run until cancellation is requested)
