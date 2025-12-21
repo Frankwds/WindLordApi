@@ -61,7 +61,7 @@ public class MetFrostSyncService : IMetFrostSyncService
             batchNumber++;
             var processedCount = Math.Min(i + MaxStationsPerRequest, stationIds.Count);
 
-            _logger.LogInformation("MetFrost: Processing batch {BatchNumber}, {Processed}/{Total} {Status} station_ids",
+            _logger.LogDebug("MetFrost: Processing batch {BatchNumber}, {Processed}/{Total} {Status} station_ids",
                 batchNumber, processedCount, stationIds.Count, statusLabel);
 
             try

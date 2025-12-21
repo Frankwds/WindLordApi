@@ -18,21 +18,25 @@ public class ParaglidingLocationRepository : Repository<ParaglidingLocation>, IP
         _logger = logger;
     }
 
-    public async Task<IEnumerable<LocationsWithOldestForecast>> GetLocationsWithOldestForecastAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<LocationsWithOldestForecast>> GetLocationsWithOldestForecastAsync(int limit, CancellationToken cancellationToken = default)
     {
         var locations = await _context.LocationsWithOldestForecast
+            .OrderBy(l => l.OldestUpdatedAt)
+            .Take(limit)
             .ToListAsync(cancellationToken);
 
-        _logger.LogDebug("Retrieved {Count} locations with oldest forecast from view", locations.Count);
+        _logger.LogDebug("Retrieved {Count} locations with oldest forecast from view (limit: {Limit})", locations.Count, limit);
         return locations;
     }
 
-    public async Task<IEnumerable<LocationsWithoutForecast>> GetLocationsWithoutForecastAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<LocationsWithoutForecast>> GetLocationsWithoutForecastAsync(int limit, CancellationToken cancellationToken = default)
     {
         var locations = await _context.LocationsWithoutForecast
+            .OrderBy(l => l.Name)
+            .Take(limit)
             .ToListAsync(cancellationToken);
 
-        _logger.LogDebug("Retrieved {Count} locations without forecast from view", locations.Count);
+        _logger.LogDebug("Retrieved {Count} locations without forecast from view (limit: {Limit})", locations.Count, limit);
         return locations;
     }
 

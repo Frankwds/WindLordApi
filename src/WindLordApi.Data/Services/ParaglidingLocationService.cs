@@ -10,15 +10,9 @@ namespace WindLordApi.Data.Services;
 public class ParaglidingLocationService : IParaglidingLocationService
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly ILogger<ParaglidingLocationService> _logger;
-    private const int BatchSize = 1000; // Process in batches to avoid parameter limits
-
-    public ParaglidingLocationService(
-        IUnitOfWork unitOfWork,
-        ILogger<ParaglidingLocationService> logger)
+    public ParaglidingLocationService(IUnitOfWork unitOfWork)
     {
         _unitOfWork = unitOfWork;
-        _logger = logger;
     }
 
     public async Task<IEnumerable<ParaglidingLocation>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
@@ -26,14 +20,14 @@ public class ParaglidingLocationService : IParaglidingLocationService
         return await _unitOfWork.ParaglidingLocations.GetByIdsAsync(ids, cancellationToken);
     }
 
-    public async Task<IEnumerable<LocationsWithOldestForecast>> GetLocationsWithOldestForecastAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<LocationsWithOldestForecast>> GetLocationsWithOldestForecastAsync(int limit, CancellationToken cancellationToken = default)
     {
-        return await _unitOfWork.ParaglidingLocations.GetLocationsWithOldestForecastAsync(cancellationToken);
+        return await _unitOfWork.ParaglidingLocations.GetLocationsWithOldestForecastAsync(limit, cancellationToken);
     }
 
-    public async Task<IEnumerable<LocationsWithoutForecast>> GetLocationsWithoutForecastAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<LocationsWithoutForecast>> GetLocationsWithoutForecastAsync(int limit, CancellationToken cancellationToken = default)
     {
-        return await _unitOfWork.ParaglidingLocations.GetLocationsWithoutForecastAsync(cancellationToken);
+        return await _unitOfWork.ParaglidingLocations.GetLocationsWithoutForecastAsync(limit, cancellationToken);
     }
 }
 

@@ -19,11 +19,15 @@ public interface IParaglidingLocationService
     /// Gets locations with their oldest forecast update time (from view).
     /// Returns only main locations that have forecasts, ordered by oldest update time.
     /// </summary>
-    Task<IEnumerable<LocationsWithOldestForecast>> GetLocationsWithOldestForecastAsync(CancellationToken cancellationToken = default);
+    /// <param name="limit">Maximum number of locations to return.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<IEnumerable<LocationsWithOldestForecast>> GetLocationsWithOldestForecastAsync(int limit, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets active main locations that don't have any forecasts yet (from view).
     /// </summary>
-    Task<IEnumerable<LocationsWithoutForecast>> GetLocationsWithoutForecastAsync(CancellationToken cancellationToken = default);
+    /// <param name="limit">Maximum number of locations to return.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<IEnumerable<LocationsWithoutForecast>> GetLocationsWithoutForecastAsync(int limit, CancellationToken cancellationToken = default);
 }
 

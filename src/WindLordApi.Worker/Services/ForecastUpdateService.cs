@@ -77,9 +77,8 @@ public class ForecastUpdateService : IForecastUpdateService
         try
         {
             // Get locations without any forecast data (up to BATCH_SIZE)
-            var locationsWithoutForecast = await _paraglidingLocationService.GetLocationsWithoutForecastAsync(cancellationToken);
+            var locationsWithoutForecast = await _paraglidingLocationService.GetLocationsWithoutForecastAsync(BatchSize, cancellationToken);
             var locationIdsNoData = locationsWithoutForecast
-                .Take(BatchSize)
                 .Select(l => l.LocationId)
                 .ToList();
 
@@ -89,9 +88,8 @@ public class ForecastUpdateService : IForecastUpdateService
             // Fill remaining slots with locations that have oldest forecast data
             if (remainingSlots > 0)
             {
-                var locationsWithOldest = await _paraglidingLocationService.GetLocationsWithOldestForecastAsync(cancellationToken);
+                var locationsWithOldest = await _paraglidingLocationService.GetLocationsWithOldestForecastAsync(remainingSlots, cancellationToken);
                 var locationIdsOldestData = locationsWithOldest
-                    .Take(remainingSlots)
                     .Select(l => l.LocationId)
                     .ToList();
 
@@ -164,7 +162,7 @@ public class ForecastUpdateService : IForecastUpdateService
                 _logger.LogDebug("Upserting {Count} forecast records for location {LocationId}", combinedData.Count, location.Id);
                 await _forecastCacheService.UpsertManyAsync(combinedData.ToArray(), cancellationToken);
 
-                _logger.LogInformation("Successfully processed location {LocationId}", location.Id);
+                _logger.LogDebug("Successfully processed location {LocationId}", location.Id);
             }
             catch (Exception ex)
             {
