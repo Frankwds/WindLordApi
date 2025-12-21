@@ -79,7 +79,7 @@ public class ForecastCacheRepository : Repository<ForecastCache>, IForecastCache
             .Where(fc => fc.Time < cutoffTime)
             .ExecuteDeleteAsync(cancellationToken);
 
-        _logger.LogInformation("Deleted {Count} forecasts older than {CutoffTime}", deleted, cutoffTime);
+        _logger.LogDebug("Deleted {Count} forecasts older than {CutoffTime}", deleted, cutoffTime);
         return deleted;
     }
 }

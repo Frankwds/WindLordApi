@@ -23,7 +23,7 @@ public class ParaglidingLocationRepository : Repository<ParaglidingLocation>, IP
         var locations = await _context.LocationsWithOldestForecast
             .ToListAsync(cancellationToken);
 
-        _logger.LogInformation("Retrieved {Count} locations with oldest forecast from view", locations.Count);
+        _logger.LogDebug("Retrieved {Count} locations with oldest forecast from view", locations.Count);
         return locations;
     }
 
@@ -32,7 +32,7 @@ public class ParaglidingLocationRepository : Repository<ParaglidingLocation>, IP
         var locations = await _context.LocationsWithoutForecast
             .ToListAsync(cancellationToken);
 
-        _logger.LogInformation("Retrieved {Count} locations without forecast from view", locations.Count);
+        _logger.LogDebug("Retrieved {Count} locations without forecast from view", locations.Count);
         return locations;
     }
 
@@ -48,7 +48,7 @@ public class ParaglidingLocationRepository : Repository<ParaglidingLocation>, IP
             .Where(pl => idsList.Contains(pl.Id) && pl.IsActive && pl.IsMain)
             .ToListAsync(cancellationToken);
 
-        _logger.LogInformation("Retrieved {Count} active main locations by IDs", locations.Count);
+        _logger.LogDebug("Retrieved {Count} active main locations by IDs", locations.Count);
         return locations;
     }
 }

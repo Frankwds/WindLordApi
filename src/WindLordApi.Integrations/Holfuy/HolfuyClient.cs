@@ -101,12 +101,12 @@ public class HolfuyClient : IHolfuyClient
                         && lng <= 180;
                 })
                 .ToList();
-            _logger.LogInformation("Holfuy: Fetched data for {StationCount} stations", validStations.Count);
+            _logger.LogDebug("Holfuy: Fetched data for {StationCount} stations", validStations.Count);
             // Map to database models
             var stationData = _holfuyMapping.MapHolfuyToStationData(validStations);
             var weatherStations = _holfuyMapping.MapHolfuyToWeatherStation(validStations);
 
-            _logger.LogInformation("Holfuy: Successfully mapped {StationCount} weather stations and {DataCount} station data records",
+            _logger.LogDebug("Holfuy: Successfully mapped {StationCount} weather stations and {DataCount} station data records",
                 weatherStations.Count, stationData.Count);
 
             return new HolfuyDataResult

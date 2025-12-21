@@ -26,7 +26,7 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
             .Select(ws => ws.StationId)
             .ToListAsync(cancellationToken);
 
-        _logger.LogInformation("MetFrost: Retrieved {Count} active station IDs", stationIds.Count);
+        _logger.LogDebug("MetFrost: Retrieved {Count} active station IDs", stationIds.Count);
         return stationIds;
     }
 
@@ -38,7 +38,7 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
             .Select(ws => ws.StationId)
             .ToListAsync(cancellationToken);
 
-        _logger.LogInformation("MetFrost: Retrieved {Count} inactive station IDs", stationIds.Count);
+        _logger.LogDebug("MetFrost: Retrieved {Count} inactive station IDs", stationIds.Count);
         return stationIds;
     }
 
@@ -55,7 +55,7 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
                 setter => setter.SetProperty(ws => ws.IsActive, true),
                 cancellationToken);
 
-        _logger.LogInformation("MetFrost: Set {Count} stations to active (stations with data)", updated);
+        _logger.LogDebug("MetFrost: Set {Count} stations to active (stations with data)", updated);
         return updated;
     }
 
@@ -72,7 +72,7 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
                 setter => setter.SetProperty(ws => ws.IsActive, false),
                 cancellationToken);
 
-        _logger.LogInformation("MetFrost: Set {Count} stations to inactive (stations without data)", updated);
+        _logger.LogDebug("MetFrost: Set {Count} stations to inactive (stations without data)", updated);
         return updated;
     }
 
