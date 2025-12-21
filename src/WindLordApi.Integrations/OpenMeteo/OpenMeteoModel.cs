@@ -14,7 +14,7 @@ public record OpenMeteoHourly
 
     [JsonRequired]
     [JsonPropertyName("wind_speed_1000hPa")]
-    public IReadOnlyList<double> WindSpeed1000hPa { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> WindSpeed1000hPa { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("wind_direction_1000hPa")]
@@ -26,11 +26,11 @@ public record OpenMeteoHourly
 
     [JsonRequired]
     [JsonPropertyName("wind_speed_925hPa")]
-    public IReadOnlyList<double> WindSpeed925hPa { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> WindSpeed925hPa { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("wind_speed_850hPa")]
-    public IReadOnlyList<double> WindSpeed850hPa { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> WindSpeed850hPa { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("wind_direction_850hPa")]
@@ -42,43 +42,43 @@ public record OpenMeteoHourly
 
     [JsonRequired]
     [JsonPropertyName("wind_speed_700hPa")]
-    public IReadOnlyList<double> WindSpeed700hPa { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> WindSpeed700hPa { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("temperature_1000hPa")]
-    public IReadOnlyList<double> Temperature1000hPa { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> Temperature1000hPa { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("temperature_925hPa")]
-    public IReadOnlyList<double> Temperature925hPa { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> Temperature925hPa { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("temperature_850hPa")]
-    public IReadOnlyList<double> Temperature850hPa { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> Temperature850hPa { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("temperature_700hPa")]
-    public IReadOnlyList<double> Temperature700hPa { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> Temperature700hPa { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("temperature_2m")]
-    public IReadOnlyList<double> Temperature2m { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> Temperature2m { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("precipitation")]
-    public IReadOnlyList<double> Precipitation { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> Precipitation { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("precipitation_probability")]
-    public IReadOnlyList<double> PrecipitationProbability { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<float> PrecipitationProbability { get; init; } = Array.Empty<float>();
 
     [JsonRequired]
     [JsonPropertyName("cloud_cover")]
-    public IReadOnlyList<double> CloudCover { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<int> CloudCover { get; init; } = Array.Empty<int>();
 
     [JsonRequired]
     [JsonPropertyName("wind_speed_10m")]
-    public IReadOnlyList<double> WindSpeed10m { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> WindSpeed10m { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("wind_direction_10m")]
@@ -86,7 +86,7 @@ public record OpenMeteoHourly
 
     [JsonRequired]
     [JsonPropertyName("wind_gusts_10m")]
-    public IReadOnlyList<double> WindGusts10m { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> WindGusts10m { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("weather_code")]
@@ -94,23 +94,23 @@ public record OpenMeteoHourly
 
     [JsonRequired]
     [JsonPropertyName("pressure_msl")]
-    public IReadOnlyList<double> PressureMsl { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> PressureMsl { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("convective_inhibition")]
-    public IReadOnlyList<double> ConvectiveInhibition { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> ConvectiveInhibition { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("cloud_cover_low")]
-    public IReadOnlyList<double> CloudCoverLow { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<int> CloudCoverLow { get; init; } = Array.Empty<int>();
 
     [JsonRequired]
     [JsonPropertyName("cloud_cover_mid")]
-    public IReadOnlyList<double> CloudCoverMid { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<int> CloudCoverMid { get; init; } = Array.Empty<int>();
 
     [JsonRequired]
     [JsonPropertyName("cloud_cover_high")]
-    public IReadOnlyList<double> CloudCoverHigh { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<int> CloudCoverHigh { get; init; } = Array.Empty<int>();
 
     [JsonRequired]
     [JsonPropertyName("is_day")]
@@ -118,35 +118,35 @@ public record OpenMeteoHourly
 
     [JsonRequired]
     [JsonPropertyName("freezing_level_height")]
-    public IReadOnlyList<double> FreezingLevelHeight { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> FreezingLevelHeight { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("cape")]
-    public IReadOnlyList<double> Cape { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> Cape { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("lifted_index")]
-    public IReadOnlyList<double> LiftedIndex { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> LiftedIndex { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("boundary_layer_height")]
-    public IReadOnlyList<double> BoundaryLayerHeight { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> BoundaryLayerHeight { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("geopotential_height_1000hPa")]
-    public IReadOnlyList<double> GeopotentialHeight1000hPa { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> GeopotentialHeight1000hPa { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("geopotential_height_925hPa")]
-    public IReadOnlyList<double> GeopotentialHeight925hPa { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> GeopotentialHeight925hPa { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("geopotential_height_850hPa")]
-    public IReadOnlyList<double> GeopotentialHeight850hPa { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> GeopotentialHeight850hPa { get; init; } = Array.Empty<decimal>();
 
     [JsonRequired]
     [JsonPropertyName("geopotential_height_700hPa")]
-    public IReadOnlyList<double> GeopotentialHeight700hPa { get; init; } = Array.Empty<double>();
+    public IReadOnlyList<decimal> GeopotentialHeight700hPa { get; init; } = Array.Empty<decimal>();
 }
 
 /// <summary>

@@ -302,40 +302,40 @@ public class LatestStationDataBuilder
 public class OpenMeteoDtoBuilder
 {
     private string _time = "2024-01-01T12:00";
-    private double _temperature2m = 15.5;
-    private double _windSpeed10m = 10.0;
+    private decimal _temperature2m = 15.5m;
+    private decimal _windSpeed10m = 10.0m;
     private double _windDirection10m = 180.0;
-    private double _windGusts10m = 15.0;
-    private double _precipitation = 0.0;
-    private double _precipitationProbability = 0.0;
-    private double _pressureMsl = 1013.25;
+    private decimal _windGusts10m = 15.0m;
+    private decimal _precipitation = 0.0m;
+    private float _precipitationProbability = 0.0f;
+    private decimal _pressureMsl = 1013.25m;
     private string _weatherCode = "clear_sky";
     private int _isDay = 1;
-    private double _windSpeed1000hPa = 12.0;
+    private decimal _windSpeed1000hPa = 12.0m;
     private double _windDirection1000hPa = 180.0;
-    private double _windSpeed925hPa = 14.0;
+    private decimal _windSpeed925hPa = 14.0m;
     private double _windDirection925hPa = 180.0;
-    private double _windSpeed850hPa = 16.0;
+    private decimal _windSpeed850hPa = 16.0m;
     private double _windDirection850hPa = 180.0;
-    private double _windSpeed700hPa = 18.0;
+    private decimal _windSpeed700hPa = 18.0m;
     private double _windDirection700hPa = 180.0;
-    private double _temperature1000hPa = 10.0;
-    private double _temperature925hPa = 8.0;
-    private double _temperature850hPa = 5.0;
-    private double _temperature700hPa = 0.0;
-    private double _cloudCover = 0.0;
-    private double _cloudCoverLow = 0.0;
-    private double _cloudCoverMid = 0.0;
-    private double _cloudCoverHigh = 0.0;
-    private double _cape = 0.0;
-    private double _convectiveInhibition = 0.0;
-    private double _liftedIndex = 0.0;
-    private double _boundaryLayerHeight = 1000.0;
-    private double _freezingLevelHeight = 2000.0;
-    private double _geopotentialHeight1000hPa = 100.0;
-    private double _geopotentialHeight925hPa = 800.0;
-    private double _geopotentialHeight850hPa = 1500.0;
-    private double _geopotentialHeight700hPa = 3000.0;
+    private decimal _temperature1000hPa = 10.0m;
+    private decimal _temperature925hPa = 8.0m;
+    private decimal _temperature850hPa = 5.0m;
+    private decimal _temperature700hPa = 0.0m;
+    private int _cloudCover = 0;
+    private int _cloudCoverLow = 0;
+    private int _cloudCoverMid = 0;
+    private int _cloudCoverHigh = 0;
+    private decimal _cape = 0.0m;
+    private decimal _convectiveInhibition = 0.0m;
+    private decimal _liftedIndex = 0.0m;
+    private decimal _boundaryLayerHeight = 1000.0m;
+    private decimal _freezingLevelHeight = 2000.0m;
+    private decimal _geopotentialHeight1000hPa = 100.0m;
+    private decimal _geopotentialHeight925hPa = 800.0m;
+    private decimal _geopotentialHeight850hPa = 1500.0m;
+    private decimal _geopotentialHeight700hPa = 3000.0m;
 
     public OpenMeteoDtoBuilder WithTime(string time)
     {
@@ -343,13 +343,13 @@ public class OpenMeteoDtoBuilder
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithTemperature2m(double temperature)
+    public OpenMeteoDtoBuilder WithTemperature2m(decimal temperature)
     {
         _temperature2m = temperature;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithWindSpeed10m(double windSpeed)
+    public OpenMeteoDtoBuilder WithWindSpeed10m(decimal windSpeed)
     {
         _windSpeed10m = windSpeed;
         return this;
@@ -361,25 +361,25 @@ public class OpenMeteoDtoBuilder
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithWindGusts10m(double windGusts)
+    public OpenMeteoDtoBuilder WithWindGusts10m(decimal windGusts)
     {
         _windGusts10m = windGusts;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithPrecipitation(double precipitation)
+    public OpenMeteoDtoBuilder WithPrecipitation(decimal precipitation)
     {
         _precipitation = precipitation;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithPrecipitationProbability(double probability)
+    public OpenMeteoDtoBuilder WithPrecipitationProbability(float probability)
     {
         _precipitationProbability = probability;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithPressureMsl(double pressure)
+    public OpenMeteoDtoBuilder WithPressureMsl(decimal pressure)
     {
         _pressureMsl = pressure;
         return this;
@@ -397,7 +397,7 @@ public class OpenMeteoDtoBuilder
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithWindSpeed1000hPa(double windSpeed)
+    public OpenMeteoDtoBuilder WithWindSpeed1000hPa(decimal windSpeed)
     {
         _windSpeed1000hPa = windSpeed;
         return this;
@@ -409,7 +409,7 @@ public class OpenMeteoDtoBuilder
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithWindSpeed925hPa(double windSpeed)
+    public OpenMeteoDtoBuilder WithWindSpeed925hPa(decimal windSpeed)
     {
         _windSpeed925hPa = windSpeed;
         return this;
@@ -421,7 +421,7 @@ public class OpenMeteoDtoBuilder
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithWindSpeed850hPa(double windSpeed)
+    public OpenMeteoDtoBuilder WithWindSpeed850hPa(decimal windSpeed)
     {
         _windSpeed850hPa = windSpeed;
         return this;
@@ -433,7 +433,7 @@ public class OpenMeteoDtoBuilder
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithWindSpeed700hPa(double windSpeed)
+    public OpenMeteoDtoBuilder WithWindSpeed700hPa(decimal windSpeed)
     {
         _windSpeed700hPa = windSpeed;
         return this;
@@ -445,103 +445,103 @@ public class OpenMeteoDtoBuilder
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithTemperature1000hPa(double temperature)
+    public OpenMeteoDtoBuilder WithTemperature1000hPa(decimal temperature)
     {
         _temperature1000hPa = temperature;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithTemperature925hPa(double temperature)
+    public OpenMeteoDtoBuilder WithTemperature925hPa(decimal temperature)
     {
         _temperature925hPa = temperature;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithTemperature850hPa(double temperature)
+    public OpenMeteoDtoBuilder WithTemperature850hPa(decimal temperature)
     {
         _temperature850hPa = temperature;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithTemperature700hPa(double temperature)
+    public OpenMeteoDtoBuilder WithTemperature700hPa(decimal temperature)
     {
         _temperature700hPa = temperature;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithCloudCover(double cloudCover)
+    public OpenMeteoDtoBuilder WithCloudCover(int cloudCover)
     {
         _cloudCover = cloudCover;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithCloudCoverLow(double cloudCover)
+    public OpenMeteoDtoBuilder WithCloudCoverLow(int cloudCover)
     {
         _cloudCoverLow = cloudCover;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithCloudCoverMid(double cloudCover)
+    public OpenMeteoDtoBuilder WithCloudCoverMid(int cloudCover)
     {
         _cloudCoverMid = cloudCover;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithCloudCoverHigh(double cloudCover)
+    public OpenMeteoDtoBuilder WithCloudCoverHigh(int cloudCover)
     {
         _cloudCoverHigh = cloudCover;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithCape(double cape)
+    public OpenMeteoDtoBuilder WithCape(decimal cape)
     {
         _cape = cape;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithConvectiveInhibition(double convectiveInhibition)
+    public OpenMeteoDtoBuilder WithConvectiveInhibition(decimal convectiveInhibition)
     {
         _convectiveInhibition = convectiveInhibition;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithLiftedIndex(double liftedIndex)
+    public OpenMeteoDtoBuilder WithLiftedIndex(decimal liftedIndex)
     {
         _liftedIndex = liftedIndex;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithBoundaryLayerHeight(double height)
+    public OpenMeteoDtoBuilder WithBoundaryLayerHeight(decimal height)
     {
         _boundaryLayerHeight = height;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithFreezingLevelHeight(double height)
+    public OpenMeteoDtoBuilder WithFreezingLevelHeight(decimal height)
     {
         _freezingLevelHeight = height;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithGeopotentialHeight1000hPa(double height)
+    public OpenMeteoDtoBuilder WithGeopotentialHeight1000hPa(decimal height)
     {
         _geopotentialHeight1000hPa = height;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithGeopotentialHeight925hPa(double height)
+    public OpenMeteoDtoBuilder WithGeopotentialHeight925hPa(decimal height)
     {
         _geopotentialHeight925hPa = height;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithGeopotentialHeight850hPa(double height)
+    public OpenMeteoDtoBuilder WithGeopotentialHeight850hPa(decimal height)
     {
         _geopotentialHeight850hPa = height;
         return this;
     }
 
-    public OpenMeteoDtoBuilder WithGeopotentialHeight700hPa(double height)
+    public OpenMeteoDtoBuilder WithGeopotentialHeight700hPa(decimal height)
     {
         _geopotentialHeight700hPa = height;
         return this;
@@ -596,26 +596,26 @@ public class OpenMeteoDtoBuilder
 public class MetYrDtoBuilder
 {
     private string _time = "2024-01-01T12:00:00Z";
-    private double _airPressureAtSeaLevel = 1013.25;
-    private double _airTemperature = 15.5;
-    private double? _airTemperaturePercentile10 = null;
-    private double? _airTemperaturePercentile90 = null;
+    private decimal _airPressureAtSeaLevel = 1013.25m;
+    private decimal _airTemperature = 15.5m;
+    private decimal? _airTemperaturePercentile10 = null;
+    private decimal? _airTemperaturePercentile90 = null;
     private double _cloudAreaFraction = 0.0;
     private double _cloudAreaFractionHigh = 0.0;
     private double _cloudAreaFractionLow = 0.0;
     private double _cloudAreaFractionMedium = 0.0;
-    private double _dewPointTemperature = 10.0;
+    private decimal _dewPointTemperature = 10.0m;
     private double _relativeHumidity = 60.0;
     private double _windFromDirection = 180.0;
-    private double _windSpeed = 10.0;
-    private double _precipitationAmount = 0.0;
+    private decimal _windSpeed = 10.0m;
+    private decimal _precipitationAmount = 0.0m;
     private double? _precipitationAmountMax = null;
     private double? _precipitationAmountMin = null;
-    private double? _probabilityOfPrecipitation = null;
+    private float? _probabilityOfPrecipitation = null;
     private string _symbolCode = "clearsky_day";
     private double _fogAreaFraction = 0.0;
     private double _ultravioletIndexClearSky = 3.0;
-    private double? _windSpeedOfGust = null;
+    private decimal? _windSpeedOfGust = null;
     private double? _probabilityOfThunder = null;
     private string _next6HoursSymbolCode = "clearsky_day";
 
@@ -625,25 +625,25 @@ public class MetYrDtoBuilder
         return this;
     }
 
-    public MetYrDtoBuilder WithAirPressureAtSeaLevel(double pressure)
+    public MetYrDtoBuilder WithAirPressureAtSeaLevel(decimal pressure)
     {
         _airPressureAtSeaLevel = pressure;
         return this;
     }
 
-    public MetYrDtoBuilder WithAirTemperature(double temperature)
+    public MetYrDtoBuilder WithAirTemperature(decimal temperature)
     {
         _airTemperature = temperature;
         return this;
     }
 
-    public MetYrDtoBuilder WithAirTemperaturePercentile10(double? percentile)
+    public MetYrDtoBuilder WithAirTemperaturePercentile10(decimal? percentile)
     {
         _airTemperaturePercentile10 = percentile;
         return this;
     }
 
-    public MetYrDtoBuilder WithAirTemperaturePercentile90(double? percentile)
+    public MetYrDtoBuilder WithAirTemperaturePercentile90(decimal? percentile)
     {
         _airTemperaturePercentile90 = percentile;
         return this;
@@ -673,7 +673,7 @@ public class MetYrDtoBuilder
         return this;
     }
 
-    public MetYrDtoBuilder WithDewPointTemperature(double temperature)
+    public MetYrDtoBuilder WithDewPointTemperature(decimal temperature)
     {
         _dewPointTemperature = temperature;
         return this;
@@ -691,13 +691,13 @@ public class MetYrDtoBuilder
         return this;
     }
 
-    public MetYrDtoBuilder WithWindSpeed(double windSpeed)
+    public MetYrDtoBuilder WithWindSpeed(decimal windSpeed)
     {
         _windSpeed = windSpeed;
         return this;
     }
 
-    public MetYrDtoBuilder WithPrecipitationAmount(double amount)
+    public MetYrDtoBuilder WithPrecipitationAmount(decimal amount)
     {
         _precipitationAmount = amount;
         return this;
@@ -715,7 +715,7 @@ public class MetYrDtoBuilder
         return this;
     }
 
-    public MetYrDtoBuilder WithProbabilityOfPrecipitation(double? probability)
+    public MetYrDtoBuilder WithProbabilityOfPrecipitation(float? probability)
     {
         _probabilityOfPrecipitation = probability;
         return this;
@@ -739,7 +739,7 @@ public class MetYrDtoBuilder
         return this;
     }
 
-    public MetYrDtoBuilder WithWindSpeedOfGust(double? gust)
+    public MetYrDtoBuilder WithWindSpeedOfGust(decimal? gust)
     {
         _windSpeedOfGust = gust;
         return this;

@@ -20,11 +20,11 @@ public class ForecastCombinationService : IForecastCombinationService
     public IReadOnlyList<ForecastCache> CombineDataSources(
         IReadOnlyList<OpenMeteoDto> meteoData,
         IReadOnlyList<MetYrDto> yrData,
-        string locationId)
+        Guid locationId)
     {
-        if (string.IsNullOrEmpty(locationId))
+        if (locationId == Guid.Empty)
         {
-            throw new ArgumentNullException(nameof(locationId));
+            throw new ArgumentException("Location ID cannot be empty.", nameof(locationId));
         }
 
         // Create a dictionary from Yr data keyed by time (first 16 characters, removing timezone)
@@ -63,26 +63,31 @@ public class ForecastCombinationService : IForecastCombinationService
         OpenMeteoDto meteoDataPoint,
         MetYrDto? yrDataPoint,
         DateTime currentTime,
-        string locationId)
+        Guid locationId)
     {
         // Determine isDay: if Yr symbol_code includes 'night', set to 0, otherwise use OpenMeteo's IsDay
-        int isDay = 0;
+        short? isDay;
         if (yrDataPoint?.SymbolCode.Contains("night", StringComparison.OrdinalIgnoreCase) == true)
         {
             isDay = 0;
         }
         else
         {
-            isDay = meteoDataPoint.IsDay;
+            isDay = (short)meteoDataPoint.IsDay;
         }
+
+        // Parse the time string to DateTime
+        // meteoDataPoint.Time format is "YYYY-MM-DDTHH:MM", we need to add ":00Z" and parse
+        DateTime timeValue = DateTime.Parse(meteoDataPoint.Time + ":00Z", null, System.Globalization.DateTimeStyles.AdjustToUniversal);
 
         return new ForecastCache
         {
             // Basic identification
-            Time = meteoDataPoint.Time + ":00Z",
+            Time = timeValue,
             LocationId = locationId,
             IsYrData = yrDataPoint != null,
-            UpdatedAt = currentTime.ToUniversalTime().ToString("O"), // ISO 8601 format
+            UpdatedAt = currentTime.ToUniversalTime(),
+            CreatedAt = currentTime.ToUniversalTime(),
 
             // Surface conditions
             Temperature = yrDataPoint?.AirTemperature ?? meteoDataPoint.Temperature2m,

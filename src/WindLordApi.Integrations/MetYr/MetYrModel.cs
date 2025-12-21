@@ -33,17 +33,17 @@ public record MetYrBaseInstantDetails
 {
     [JsonRequired]
     [JsonPropertyName("air_pressure_at_sea_level")]
-    public double AirPressureAtSeaLevel { get; init; }
+    public decimal AirPressureAtSeaLevel { get; init; }
 
     [JsonRequired]
     [JsonPropertyName("air_temperature")]
-    public double AirTemperature { get; init; }
+    public decimal AirTemperature { get; init; }
 
     [JsonPropertyName("air_temperature_percentile_10")]
-    public double? AirTemperaturePercentile10 { get; init; }
+    public decimal? AirTemperaturePercentile10 { get; init; }
 
     [JsonPropertyName("air_temperature_percentile_90")]
-    public double? AirTemperaturePercentile90 { get; init; }
+    public decimal? AirTemperaturePercentile90 { get; init; }
 
     [JsonRequired]
     [JsonPropertyName("cloud_area_fraction")]
@@ -63,7 +63,7 @@ public record MetYrBaseInstantDetails
 
     [JsonRequired]
     [JsonPropertyName("dew_point_temperature")]
-    public double DewPointTemperature { get; init; }
+    public decimal DewPointTemperature { get; init; }
 
     [JsonRequired]
     [JsonPropertyName("relative_humidity")]
@@ -75,7 +75,7 @@ public record MetYrBaseInstantDetails
 
     [JsonRequired]
     [JsonPropertyName("wind_speed")]
-    public double WindSpeed { get; init; }
+    public decimal WindSpeed { get; init; }
 }
 
 /// <summary>
@@ -93,7 +93,7 @@ public record MetYrInstantDetails1Hour : MetYrBaseInstantDetails
     public double UltravioletIndexClearSky { get; init; }
 
     [JsonPropertyName("wind_speed_of_gust")]
-    public double? WindSpeedOfGust { get; init; }
+    public decimal? WindSpeedOfGust { get; init; }
 }
 
 /// <summary>
@@ -117,7 +117,7 @@ public record MetYrBaseNextHoursDetails
 {
     [JsonRequired]
     [JsonPropertyName("precipitation_amount")]
-    public double PrecipitationAmount { get; init; }
+    public decimal PrecipitationAmount { get; init; }
 
     [JsonPropertyName("precipitation_amount_max")]
     public double? PrecipitationAmountMax { get; init; }
@@ -126,7 +126,7 @@ public record MetYrBaseNextHoursDetails
     public double? PrecipitationAmountMin { get; init; }
 
     [JsonPropertyName("probability_of_precipitation")]
-    public double? ProbabilityOfPrecipitation { get; init; }
+    public float? ProbabilityOfPrecipitation { get; init; }
 }
 
 /// <summary>
@@ -147,11 +147,11 @@ public record MetYrNext6HoursDetails : MetYrBaseNextHoursDetails
 {
     [JsonRequired]
     [JsonPropertyName("air_temperature_max")]
-    public double AirTemperatureMax { get; init; }
+    public decimal AirTemperatureMax { get; init; }
 
     [JsonRequired]
     [JsonPropertyName("air_temperature_min")]
-    public double AirTemperatureMin { get; init; }
+    public decimal AirTemperatureMin { get; init; }
 }
 
 /// <summary>

@@ -19,6 +19,6 @@ public interface IForecastCombinationService
     IReadOnlyList<ForecastCache> CombineDataSources(
         IReadOnlyList<OpenMeteoDto> meteoData,
         IReadOnlyList<MetYrDto> yrData,
-        string locationId);
+        Guid locationId);
 }
 

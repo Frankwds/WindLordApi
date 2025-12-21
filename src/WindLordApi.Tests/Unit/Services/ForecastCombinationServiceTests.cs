@@ -12,6 +12,7 @@ namespace WindLordApi.Tests.Unit.Services;
 public class ForecastCombinationServiceTests
 {
     private readonly ForecastCombinationService _service;
+    private readonly Guid _testLocationId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
     public ForecastCombinationServiceTests()
     {
@@ -24,17 +25,17 @@ public class ForecastCombinationServiceTests
     public void WithMatchingTimes_CombinesDataCorrectly()
     {
         // Arrange
-        var meteoData = new[] { TestDataBuilders.OpenMeteoDto().WithTime("2024-01-01T12:00").WithTemperature2m(15.0).Build() };
-        var yrData = new[] { TestDataBuilders.MetYrDto().WithTime("2024-01-01T12:00:00Z").WithAirTemperature(16.0).Build() };
+        var meteoData = new[] { TestDataBuilders.OpenMeteoDto().WithTime("2024-01-01T12:00").WithTemperature2m(15.0m).Build() };
+        var yrData = new[] { TestDataBuilders.MetYrDto().WithTime("2024-01-01T12:00:00Z").WithAirTemperature(16.0m).Build() };
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result.Should().HaveCount(1);
         result[0].IsYrData.Should().BeTrue();
-        result[0].Temperature.Should().Be(16.0); // Yr data takes precedence
-        result[0].Time.Should().Be("2024-01-01T12:00:00Z");
+        result[0].Temperature.Should().Be(16.0m); // Yr data takes precedence
+        result[0].Time.Should().Be(DateTime.Parse("2024-01-01T12:00:00Z").ToUniversalTime());
     }
 
     [Fact]
@@ -55,7 +56,7 @@ public class ForecastCombinationServiceTests
         };
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result.Should().HaveCount(3);
@@ -68,16 +69,16 @@ public class ForecastCombinationServiceTests
     public void WithNoMatchingTimes_UsesOnlyOpenMeteoData()
     {
         // Arrange
-        var meteoData = new[] { TestDataBuilders.OpenMeteoDto().WithTime("2024-01-01T12:00").WithTemperature2m(15.0).Build() };
-        var yrData = new[] { TestDataBuilders.MetYrDto().WithTime("2024-01-01T13:00:00Z").WithAirTemperature(16.0).Build() };
+        var meteoData = new[] { TestDataBuilders.OpenMeteoDto().WithTime("2024-01-01T12:00").WithTemperature2m(15.0m).Build() };
+        var yrData = new[] { TestDataBuilders.MetYrDto().WithTime("2024-01-01T13:00:00Z").WithAirTemperature(16.0m).Build() };
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result.Should().HaveCount(1);
         result[0].IsYrData.Should().BeFalse();
-        result[0].Temperature.Should().Be(15.0); // OpenMeteo data used
+        result[0].Temperature.Should().Be(15.0m); // OpenMeteo data used
     }
 
     [Fact]
@@ -88,7 +89,7 @@ public class ForecastCombinationServiceTests
         var yrData = new[] { TestDataBuilders.MetYrDto().Build() };
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result.Should().BeEmpty();
@@ -98,16 +99,16 @@ public class ForecastCombinationServiceTests
     public void WithEmptyYrData_UsesOnlyOpenMeteoData()
     {
         // Arrange
-        var meteoData = new[] { TestDataBuilders.OpenMeteoDto().WithTime("2024-01-01T12:00").WithTemperature2m(15.0).Build() };
+        var meteoData = new[] { TestDataBuilders.OpenMeteoDto().WithTime("2024-01-01T12:00").WithTemperature2m(15.0m).Build() };
         var yrData = Array.Empty<MetYrDto>();
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result.Should().HaveCount(1);
         result[0].IsYrData.Should().BeFalse();
-        result[0].Temperature.Should().Be(15.0);
+        result[0].Temperature.Should().Be(15.0m);
     }
 
     #endregion
@@ -122,7 +123,7 @@ public class ForecastCombinationServiceTests
         var yrData = new[] { TestDataBuilders.MetYrDto().WithTime("2024-01-01T12:00:00Z").Build() };
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result.Should().HaveCount(1);
@@ -137,7 +138,7 @@ public class ForecastCombinationServiceTests
         var yrData = new[] { TestDataBuilders.MetYrDto().WithTime("2024-01-01T12:00:00+00:00").Build() };
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result.Should().HaveCount(1);
@@ -152,7 +153,7 @@ public class ForecastCombinationServiceTests
         var yrData = new[] { TestDataBuilders.MetYrDto().WithTime("2024-01-01T12").Build() };
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result.Should().HaveCount(1);
@@ -167,16 +168,16 @@ public class ForecastCombinationServiceTests
         var meteoData = new[] { TestDataBuilders.OpenMeteoDto().WithTime("2024-01-01T12:00").Build() };
         var yrData = new[]
         {
-            TestDataBuilders.MetYrDto().WithTime("2024-01-01T12:00:00Z").WithAirTemperature(16.0).Build(),
-            TestDataBuilders.MetYrDto().WithTime("2024-01-01T12:00:00Z").WithAirTemperature(17.0).Build()
+            TestDataBuilders.MetYrDto().WithTime("2024-01-01T12:00:00Z").WithAirTemperature(16.0m).Build(),
+            TestDataBuilders.MetYrDto().WithTime("2024-01-01T12:00:00Z").WithAirTemperature(17.0m).Build()
         };
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result.Should().HaveCount(1);
-        result[0].Temperature.Should().Be(16.0); // First occurrence used
+        result[0].Temperature.Should().Be(16.0m); // First occurrence used
     }
 
     #endregion
@@ -191,10 +192,10 @@ public class ForecastCombinationServiceTests
         {
             TestDataBuilders.OpenMeteoDto()
                 .WithTime("2024-01-01T12:00")
-                .WithTemperature2m(15.0)
-                .WithWindSpeed10m(10.0)
-                .WithPrecipitation(0.5)
-                .WithPressureMsl(1010.0)
+                .WithTemperature2m(15.0m)
+                .WithWindSpeed10m(10.0m)
+                .WithPrecipitation(0.5m)
+                .WithPressureMsl(1010.0m)
                 .WithWeatherCode("cloudy")
                 .Build()
         };
@@ -202,22 +203,22 @@ public class ForecastCombinationServiceTests
         {
             TestDataBuilders.MetYrDto()
                 .WithTime("2024-01-01T12:00:00Z")
-                .WithAirTemperature(16.0)
-                .WithWindSpeed(12.0)
-                .WithPrecipitationAmount(0.7)
-                .WithAirPressureAtSeaLevel(1012.0)
+                .WithAirTemperature(16.0m)
+                .WithWindSpeed(12.0m)
+                .WithPrecipitationAmount(0.7m)
+                .WithAirPressureAtSeaLevel(1012.0m)
                 .WithSymbolCode("partlycloudy_day")
                 .Build()
         };
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
-        result[0].Temperature.Should().Be(16.0);
-        result[0].WindSpeed.Should().Be(12.0);
-        result[0].Precipitation.Should().Be(0.7);
-        result[0].PressureMsl.Should().Be(1012.0);
+        result[0].Temperature.Should().Be(16.0m);
+        result[0].WindSpeed.Should().Be(12.0m);
+        result[0].Precipitation.Should().Be(0.7m);
+        result[0].PressureMsl.Should().Be(1012.0m);
         result[0].WeatherCode.Should().Be("partlycloudy_day");
     }
 
@@ -229,18 +230,18 @@ public class ForecastCombinationServiceTests
         {
             TestDataBuilders.OpenMeteoDto()
                 .WithTime("2024-01-01T12:00")
-                .WithTemperature2m(15.0)
-                .WithWindSpeed10m(10.0)
+                .WithTemperature2m(15.0m)
+                .WithWindSpeed10m(10.0m)
                 .Build()
         };
         var yrData = Array.Empty<MetYrDto>();
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
-        result[0].Temperature.Should().Be(15.0);
-        result[0].WindSpeed.Should().Be(10.0);
+        result[0].Temperature.Should().Be(15.0m);
+        result[0].WindSpeed.Should().Be(10.0m);
     }
 
     [Fact]
@@ -251,7 +252,7 @@ public class ForecastCombinationServiceTests
         {
             TestDataBuilders.OpenMeteoDto()
                 .WithTime("2024-01-01T12:00")
-                .WithPrecipitationProbability(30.0)
+                .WithPrecipitationProbability(30.0f)
                 .Build()
         };
         var yrData = new[]
@@ -263,10 +264,10 @@ public class ForecastCombinationServiceTests
         };
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
-        result[0].PrecipitationProbability.Should().Be(30.0);
+        result[0].PrecipitationProbability.Should().Be(30.0f);
     }
 
     #endregion
@@ -293,7 +294,7 @@ public class ForecastCombinationServiceTests
         };
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result[0].IsDay.Should().Be(0);
@@ -319,7 +320,7 @@ public class ForecastCombinationServiceTests
         };
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result[0].IsDay.Should().Be(1);
@@ -339,7 +340,7 @@ public class ForecastCombinationServiceTests
         var yrData = Array.Empty<MetYrDto>();
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result[0].IsDay.Should().Be(0);
@@ -369,7 +370,7 @@ public class ForecastCombinationServiceTests
             };
 
             // Act
-            var result = _service.CombineDataSources(meteoData, yrData);
+            var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
             // Assert
             result[0].IsDay.Should().Be(0, $"because symbol code '{symbolCode}' contains 'night'");
@@ -388,12 +389,12 @@ public class ForecastCombinationServiceTests
         {
             TestDataBuilders.OpenMeteoDto()
                 .WithTime("2024-01-01T12:00")
-                .WithTemperature2m(15.0)
-                .WithWindSpeed10m(10.0)
+                .WithTemperature2m(15.0m)
+                .WithWindSpeed10m(10.0m)
                 .WithWindDirection10m(180.5)
-                .WithPrecipitation(0.5)
-                .WithPrecipitationProbability(30.0)
-                .WithPressureMsl(1010.0)
+                .WithPrecipitation(0.5m)
+                .WithPrecipitationProbability(30.0f)
+                .WithPressureMsl(1010.0m)
                 .WithWeatherCode("cloudy")
                 .Build()
         };
@@ -401,31 +402,31 @@ public class ForecastCombinationServiceTests
         {
             TestDataBuilders.MetYrDto()
                 .WithTime("2024-01-01T12:00:00Z")
-                .WithAirTemperature(16.0)
-                .WithWindSpeed(12.0)
+                .WithAirTemperature(16.0m)
+                .WithWindSpeed(12.0m)
                 .WithWindFromDirection(185.7)
-                .WithPrecipitationAmount(0.7)
-                .WithProbabilityOfPrecipitation(40.0)
-                .WithAirPressureAtSeaLevel(1012.0)
+                .WithPrecipitationAmount(0.7m)
+                .WithProbabilityOfPrecipitation(40.0f)
+                .WithAirPressureAtSeaLevel(1012.0m)
                 .WithSymbolCode("partlycloudy_day")
-                .WithWindSpeedOfGust(20.0)
+                .WithWindSpeedOfGust(20.0m)
                 .WithPrecipitationAmountMax(1.0)
                 .WithPrecipitationAmountMin(0.3)
                 .Build()
         };
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
-        result[0].Temperature.Should().Be(16.0);
-        result[0].WindSpeed.Should().Be(12.0);
+        result[0].Temperature.Should().Be(16.0m);
+        result[0].WindSpeed.Should().Be(12.0m);
         result[0].WindDirection.Should().Be(185); // Truncated
-        result[0].Precipitation.Should().Be(0.7);
-        result[0].PrecipitationProbability.Should().Be(40.0);
-        result[0].PressureMsl.Should().Be(1012.0);
+        result[0].Precipitation.Should().Be(0.7m);
+        result[0].PrecipitationProbability.Should().Be(40.0f);
+        result[0].PressureMsl.Should().Be(1012.0m);
         result[0].WeatherCode.Should().Be("partlycloudy_day");
-        result[0].WindGusts.Should().Be(20.0);
+        result[0].WindGusts.Should().Be(20.0m);
         result[0].PrecipitationMax.Should().Be(1.0);
         result[0].PrecipitationMin.Should().Be(0.3);
     }
@@ -438,29 +439,29 @@ public class ForecastCombinationServiceTests
         {
             TestDataBuilders.OpenMeteoDto()
                 .WithTime("2024-01-01T12:00")
-                .WithWindSpeed1000hPa(12.0)
+                .WithWindSpeed1000hPa(12.0m)
                 .WithWindDirection1000hPa(180.5)
-                .WithWindSpeed925hPa(14.0)
+                .WithWindSpeed925hPa(14.0m)
                 .WithWindDirection925hPa(185.7)
-                .WithWindSpeed850hPa(16.0)
+                .WithWindSpeed850hPa(16.0m)
                 .WithWindDirection850hPa(190.3)
-                .WithWindSpeed700hPa(18.0)
+                .WithWindSpeed700hPa(18.0m)
                 .WithWindDirection700hPa(195.9)
                 .Build()
         };
         var yrData = Array.Empty<MetYrDto>();
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
-        result[0].WindSpeed1000hpa.Should().Be(12.0);
+        result[0].WindSpeed1000hpa.Should().Be(12.0m);
         result[0].WindDirection1000hpa.Should().Be(180); // Truncated
-        result[0].WindSpeed925hpa.Should().Be(14.0);
+        result[0].WindSpeed925hpa.Should().Be(14.0m);
         result[0].WindDirection925hpa.Should().Be(185); // Truncated
-        result[0].WindSpeed850hpa.Should().Be(16.0);
+        result[0].WindSpeed850hpa.Should().Be(16.0m);
         result[0].WindDirection850hpa.Should().Be(190); // Truncated
-        result[0].WindSpeed700hpa.Should().Be(18.0);
+        result[0].WindSpeed700hpa.Should().Be(18.0m);
         result[0].WindDirection700hpa.Should().Be(195); // Truncated
     }
 
@@ -472,22 +473,22 @@ public class ForecastCombinationServiceTests
         {
             TestDataBuilders.OpenMeteoDto()
                 .WithTime("2024-01-01T12:00")
-                .WithTemperature1000hPa(10.0)
-                .WithTemperature925hPa(8.0)
-                .WithTemperature850hPa(5.0)
-                .WithTemperature700hPa(0.0)
+                .WithTemperature1000hPa(10.0m)
+                .WithTemperature925hPa(8.0m)
+                .WithTemperature850hPa(5.0m)
+                .WithTemperature700hPa(0.0m)
                 .Build()
         };
         var yrData = Array.Empty<MetYrDto>();
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
-        result[0].Temperature1000hpa.Should().Be(10.0);
-        result[0].Temperature925hpa.Should().Be(8.0);
-        result[0].Temperature850hpa.Should().Be(5.0);
-        result[0].Temperature700hpa.Should().Be(0.0);
+        result[0].Temperature1000hpa.Should().Be(10.0m);
+        result[0].Temperature925hpa.Should().Be(8.0m);
+        result[0].Temperature850hpa.Should().Be(5.0m);
+        result[0].Temperature700hpa.Should().Be(0.0m);
     }
 
     [Fact]
@@ -498,22 +499,22 @@ public class ForecastCombinationServiceTests
         {
             TestDataBuilders.OpenMeteoDto()
                 .WithTime("2024-01-01T12:00")
-                .WithCloudCover(50.0)
-                .WithCloudCoverLow(20.0)
-                .WithCloudCoverMid(15.0)
-                .WithCloudCoverHigh(15.0)
+                .WithCloudCover(50)
+                .WithCloudCoverLow(20)
+                .WithCloudCoverMid(15)
+                .WithCloudCoverHigh(15)
                 .Build()
         };
         var yrData = Array.Empty<MetYrDto>();
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
-        result[0].CloudCover.Should().Be(50.0);
-        result[0].CloudCoverLow.Should().Be(20.0);
-        result[0].CloudCoverMid.Should().Be(15.0);
-        result[0].CloudCoverHigh.Should().Be(15.0);
+        result[0].CloudCover.Should().Be(50);
+        result[0].CloudCoverLow.Should().Be(20);
+        result[0].CloudCoverMid.Should().Be(15);
+        result[0].CloudCoverHigh.Should().Be(15);
     }
 
     [Fact]
@@ -524,24 +525,24 @@ public class ForecastCombinationServiceTests
         {
             TestDataBuilders.OpenMeteoDto()
                 .WithTime("2024-01-01T12:00")
-                .WithCape(500.0)
-                .WithConvectiveInhibition(100.0)
-                .WithLiftedIndex(-2.0)
-                .WithBoundaryLayerHeight(1500.0)
-                .WithFreezingLevelHeight(2500.0)
+                .WithCape(500.0m)
+                .WithConvectiveInhibition(100.0m)
+                .WithLiftedIndex(-2.0m)
+                .WithBoundaryLayerHeight(1500.0m)
+                .WithFreezingLevelHeight(2500.0m)
                 .Build()
         };
         var yrData = Array.Empty<MetYrDto>();
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
-        result[0].Cape.Should().Be(500.0);
-        result[0].ConvectiveInhibition.Should().Be(100.0);
-        result[0].LiftedIndex.Should().Be(-2.0);
-        result[0].BoundaryLayerHeight.Should().Be(1500.0);
-        result[0].FreezingLevelHeight.Should().Be(2500.0);
+        result[0].Cape.Should().Be(500.0m);
+        result[0].ConvectiveInhibition.Should().Be(100.0m);
+        result[0].LiftedIndex.Should().Be(-2.0m);
+        result[0].BoundaryLayerHeight.Should().Be(1500.0m);
+        result[0].FreezingLevelHeight.Should().Be(2500.0m);
     }
 
     [Fact]
@@ -552,22 +553,22 @@ public class ForecastCombinationServiceTests
         {
             TestDataBuilders.OpenMeteoDto()
                 .WithTime("2024-01-01T12:00")
-                .WithGeopotentialHeight1000hPa(100.0)
-                .WithGeopotentialHeight925hPa(800.0)
-                .WithGeopotentialHeight850hPa(1500.0)
-                .WithGeopotentialHeight700hPa(3000.0)
+                .WithGeopotentialHeight1000hPa(100.0m)
+                .WithGeopotentialHeight925hPa(800.0m)
+                .WithGeopotentialHeight850hPa(1500.0m)
+                .WithGeopotentialHeight700hPa(3000.0m)
                 .Build()
         };
         var yrData = Array.Empty<MetYrDto>();
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
-        result[0].GeopotentialHeight1000hpa.Should().Be(100.0);
-        result[0].GeopotentialHeight925hpa.Should().Be(800.0);
-        result[0].GeopotentialHeight850hpa.Should().Be(1500.0);
-        result[0].GeopotentialHeight700hpa.Should().Be(3000.0);
+        result[0].GeopotentialHeight1000hpa.Should().Be(100.0m);
+        result[0].GeopotentialHeight925hpa.Should().Be(800.0m);
+        result[0].GeopotentialHeight850hpa.Should().Be(1500.0m);
+        result[0].GeopotentialHeight700hpa.Should().Be(3000.0m);
     }
 
     #endregion
@@ -588,7 +589,7 @@ public class ForecastCombinationServiceTests
         var yrData = Array.Empty<MetYrDto>();
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result[0].WindDirection.Should().Be(180); // Truncated, not rounded
@@ -613,7 +614,7 @@ public class ForecastCombinationServiceTests
         };
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result[0].WindDirection.Should().Be(185); // Truncated
@@ -633,7 +634,7 @@ public class ForecastCombinationServiceTests
         var yrData = Array.Empty<MetYrDto>();
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result[0].WindDirection.Should().Be(190); // Truncated
@@ -656,10 +657,10 @@ public class ForecastCombinationServiceTests
         var yrData = Array.Empty<MetYrDto>();
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
-        result[0].Time.Should().Be("2024-01-01T12:00:00Z");
+        result[0].Time.Should().Be(DateTime.Parse("2024-01-01T12:00:00Z").ToUniversalTime());
     }
 
 
@@ -668,7 +669,7 @@ public class ForecastCombinationServiceTests
     #region Default Values Tests
 
     [Fact]
-    public void WithDefaultFields_SetsEmptyStrings()
+    public void WithDefaultFields_SetsCorrectLocationId()
     {
         // Arrange
         var meteoData = new[]
@@ -680,12 +681,10 @@ public class ForecastCombinationServiceTests
         var yrData = Array.Empty<MetYrDto>();
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
-        result[0].LocationId.Should().BeEmpty();
-        result[0].ValidationFailures.Should().BeEmpty();
-        result[0].ValidationWarnings.Should().BeEmpty();
+        result[0].LocationId.Should().Be(_testLocationId);
     }
 
     [Fact]
@@ -701,7 +700,7 @@ public class ForecastCombinationServiceTests
         var yrData = Array.Empty<MetYrDto>();
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result[0].LandingWind.Should().BeNull();
@@ -729,7 +728,7 @@ public class ForecastCombinationServiceTests
             .ToArray();
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result.Should().HaveCount(1000);
@@ -755,7 +754,7 @@ public class ForecastCombinationServiceTests
         };
 
         // Act
-        var result = _service.CombineDataSources(meteoData, yrData);
+        var result = _service.CombineDataSources(meteoData, yrData, _testLocationId);
 
         // Assert
         result[0].WeatherCode.Should().Be("partly_cloudy-day");
