@@ -67,9 +67,9 @@ public class ForecastUpdateService : IForecastUpdateService
 
         _logger.LogInformation("Deleting forecast data older than: {CutoffTime}", twoHoursAgo);
 
-        await _forecastCacheService.DeleteOldForecastsAsync(twoHoursAgo, cancellationToken);
+        var deletedCount = await _forecastCacheService.DeleteOldForecastsAsync(twoHoursAgo, cancellationToken);
 
-        _logger.LogInformation("Forecast data cleanup completed successfully");
+        _logger.LogInformation("Forecast data cleanup completed successfully. Deleted {Count} records of forecast cache", deletedCount);
     }
 
     private async Task ProcessLocationsWithOldestForecastDataAsync(CancellationToken cancellationToken)
