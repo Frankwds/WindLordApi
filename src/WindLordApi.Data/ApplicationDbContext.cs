@@ -15,6 +15,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<LatestStationData> LatestStationData { get; set; }
     public DbSet<ParaglidingLocation> ParaglidingLocations { get; set; }
     public DbSet<ForecastCache> ForecastCaches { get; set; }
+    
+    // Views
+    public DbSet<LocationsWithOldestForecast> LocationsWithOldestForecast { get; set; }
+    public DbSet<LocationsWithoutForecast> LocationsWithoutForecast { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -258,6 +262,19 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(e => e.Time)
                 .ValueGeneratedNever();
+        });
+
+        // Configure Views (keyless entities)
+        modelBuilder.Entity<LocationsWithOldestForecast>(entity =>
+        {
+            entity.HasNoKey();
+            entity.ToView("locations_with_oldest_forecast");
+        });
+
+        modelBuilder.Entity<LocationsWithoutForecast>(entity =>
+        {
+            entity.HasNoKey();
+            entity.ToView("locations_without_forecast");
         });
     }
 }
