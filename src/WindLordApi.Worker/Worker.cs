@@ -1,3 +1,4 @@
+using Serilog;
 using WindLordApi.Worker.Schedulers;
 using WindLordApi.Worker.Services;
 using WindLordApi.Worker.Startup;
@@ -43,45 +44,67 @@ public class Worker : BackgroundService
         var forecastUpdateInterval = TimeSpan.FromMinutes(5);
         var holfuySyncInterval = TimeSpan.FromMinutes(15);
 
+        // Define Holfuy clock alignment
+        var holfuyClockAlignment = TimeSpan.FromSeconds(30);
 
-        var metFrostObservationDataTimer = new PeriodicTimer(metFrostObservationInterval);
-        jobSchedule.Add(("SyncLatestStationDataAsync", currentDelay, metFrostObservationInterval, scheduleStartTime.Add(metFrostObservationInterval)));
-        var syncDataTask = _periodicJobScheduler.RunAsync(
-            metFrostObservationDataTimer,
-            async (service, ct) => { await service.SyncLatestStationDataAsync(ct); },
-            "SyncLatestStationDataAsync",
-            stoppingToken);
+        // Calculate Holfuy's next scheduled run time using the clock-aligned scheduler helper
+        var holfuyNextRun = ClockAlignedSchedulerHelper.CalculateNextScheduledRunTime(
+            holfuySyncInterval,
+            holfuyClockAlignment);
 
-        var metFrostNewStationsTimer = new PeriodicTimer(metFrostNewStationsInterval);
-        jobSchedule.Add(("SyncNewWeatherStationsAsync", currentDelay, metFrostNewStationsInterval, scheduleStartTime.Add(metFrostNewStationsInterval)));
-        var syncStationsTask = _periodicJobScheduler.RunAsync(
-            metFrostNewStationsTimer,
-            async (service, ct) => { await service.SyncWeatherStationsAsync(ct); },
-            "SyncNewWeatherStationsAsync",
-            stoppingToken);
-
-        var holfuySyncTask = _clockAlignedScheduler.RunAsync(
-            TimeSpan.FromMinutes(15),
-            TimeSpan.FromSeconds(30),
+        // Add Holfuy to schedule with calculated clock-aligned time
+        jobSchedule.Add(("SyncHolfuyDataAsync", holfuyNextRun - scheduleStartTime, holfuySyncInterval, holfuyNextRun.DateTime));
+        var holfuySyncTask = _clockAlignedScheduler.RunAsync( // Expected time to complete: 18 seconds
+            holfuySyncInterval,
+            holfuyClockAlignment,
             "SyncHolfuyDataAsync",
             async (service, ct) => { await service.SyncHolfuyDataAsync(ct); },
             stoppingToken);
 
-        // Stagger initialization of the following jobs to avoid overlapping with other jobs running at same interval
-        currentDelay += TimeSpan.FromSeconds(15);
-        await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+        // If holfuyNextRun is very close to 5 minutes from now, then wait alittle to space out the jobs a bit.
+        if (holfuyNextRun > DateTime.UtcNow.AddMinutes(4).AddSeconds(45) && holfuyNextRun < DateTime.UtcNow.AddMinutes(5).AddSeconds(45))
+        {
+            // If holfuyNextRun = UtcNow + 4m46s, then waitTime ≈ 60 seconds
+            // If holfuyNextRun = UtcNow + 5m44s, then waitTime ≈ 2 seconds
+            var waitTime = DateTime.UtcNow.AddMinutes(5).AddSeconds(46) - holfuyNextRun;
+            currentDelay += waitTime;
+            Log.Information("Waiting for {WaitTime} seconds to stagger initialization and avoid exact overlap of some jobs...", waitTime.TotalSeconds);
+            await Task.Delay(waitTime, stoppingToken);
+        }
 
         var forecastUpdateTimer = new PeriodicTimer(forecastUpdateInterval);
         jobSchedule.Add(("UpdateForecastsAsync", currentDelay, forecastUpdateInterval, scheduleStartTime.Add(forecastUpdateInterval + currentDelay)));
-        var forecastUpdateTask = _forecastUpdateScheduler.RunAsync(
+        var forecastUpdateTask = _forecastUpdateScheduler.RunAsync( // Expected time to complete: 22 seconds
             forecastUpdateTimer,
             async (service, ct) => { await service.UpdateForecastsAsync(ct); },
             "UpdateForecastsAsync",
             stoppingToken);
 
+        var metFrostNewStationsTimer = new PeriodicTimer(metFrostNewStationsInterval);
+        jobSchedule.Add(("SyncNewWeatherStationsAsync", currentDelay, metFrostNewStationsInterval, scheduleStartTime.Add(metFrostNewStationsInterval)));
+        var syncStationsTask = _periodicJobScheduler.RunAsync( // Expected time to complete: 2 seconds
+            metFrostNewStationsTimer,
+            async (service, ct) => { await service.SyncWeatherStationsAsync(ct); },
+            "SyncNewWeatherStationsAsync",
+            stoppingToken);
+
+        // Stagger initialization of the following jobs to avoid overlapping with other jobs running at same interval
+        currentDelay += TimeSpan.FromSeconds(15);
+        Log.Information("Waiting for 15 seconds to stagger initialization of the following jobs...");
+        await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+
+
+        var metFrostObservationDataTimer = new PeriodicTimer(metFrostObservationInterval);
+        jobSchedule.Add(("SyncLatestStationDataAsync", currentDelay, metFrostObservationInterval, scheduleStartTime.Add(metFrostObservationInterval + currentDelay)));
+        var syncDataTask = _periodicJobScheduler.RunAsync( // Expected time to complete: 35 seconds
+            metFrostObservationDataTimer,
+            async (service, ct) => { await service.SyncLatestStationDataAsync(ct); },
+            "SyncLatestStationDataAsync",
+            stoppingToken);
+
         var metFrostActiveStatusTimer = new PeriodicTimer(metFrostActiveStatusInterval);
         jobSchedule.Add(("SyncWeatherStationActiveStatusAsync", currentDelay, metFrostActiveStatusInterval, scheduleStartTime.Add(metFrostActiveStatusInterval + currentDelay)));
-        var syncStatusTask = _periodicJobScheduler.RunAsync(
+        var syncStatusTask = _periodicJobScheduler.RunAsync( // Expected time to complete: 2 seconds
             metFrostActiveStatusTimer,
             async (service, ct) => { await service.SyncWeatherStationsActiveStatusAsync(ct); },
             "SyncWeatherStationActiveStatusAsync",
