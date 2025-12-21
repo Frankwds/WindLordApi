@@ -9,21 +9,21 @@ public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
     private readonly IServiceProvider _serviceProvider;
-    private readonly PeriodicJobScheduler<IMetFrostSyncService> _periodicJobScheduler;
-    private readonly ClockAlignedScheduler<IHolfuySyncService> _clockAlignedScheduler;
-    private readonly PeriodicJobScheduler<IForecastUpdateService> _forecastUpdateScheduler;
+    private readonly CronScheduler<IMetFrostSyncService> _metFrostScheduler;
+    private readonly CronScheduler<IHolfuySyncService> _holfuyScheduler;
+    private readonly CronScheduler<IForecastUpdateService> _forecastUpdateScheduler;
 
     public Worker(
         ILogger<Worker> logger,
         IServiceProvider serviceProvider,
-        PeriodicJobScheduler<IMetFrostSyncService> periodicJobScheduler,
-        ClockAlignedScheduler<IHolfuySyncService> clockAlignedScheduler,
-        PeriodicJobScheduler<IForecastUpdateService> forecastUpdateScheduler)
+        CronScheduler<IMetFrostSyncService> metFrostScheduler,
+        CronScheduler<IHolfuySyncService> holfuyScheduler,
+        CronScheduler<IForecastUpdateService> forecastUpdateScheduler)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
-        _periodicJobScheduler = periodicJobScheduler;
-        _clockAlignedScheduler = clockAlignedScheduler;
+        _metFrostScheduler = metFrostScheduler;
+        _holfuyScheduler = holfuyScheduler;
         _forecastUpdateScheduler = forecastUpdateScheduler;
     }
 
@@ -34,123 +34,89 @@ public class Worker : BackgroundService
 
         // Track schedule for visualization
         var scheduleStartTime = DateTime.UtcNow;
-        var jobSchedule = new List<(string Name, TimeSpan InitialDelay, TimeSpan Interval, DateTime FirstRun)>();
-        var currentDelay = TimeSpan.Zero;
+        var jobSchedule = new List<(string Name, string CronExpression, DateTime? FirstRun, int ExpectedDuration)>();
 
-        // Define job intervals
-        var metFrostObservationInterval = TimeSpan.FromMinutes(5);
-        var metFrostNewStationsInterval = TimeSpan.FromDays(7);
-        var metFrostActiveStatusInterval = TimeSpan.FromDays(7);
-        var forecastUpdateInterval = TimeSpan.FromMinutes(5);
-        var holfuySyncInterval = TimeSpan.FromMinutes(15);
+        // Define cron schedules with expected execution times
+        var forecastUpdateCron = "0 1/5 * * * *";      // Every 5 min at :01:00 seconds (34s duration)
+        var holfuyCron = "30 */15 * * * *";             // Every 15 min at :30 seconds (18s duration)
+        var metFrostDataCron = "0 2/5 * * * *";         // Every 5 min at :02:00 (35s duration)
+        var metFrostNewStationsCron = "0 0 3 * * SUN";  // Sundays at 3:00 AM (2s duration)
+        var metFrostActiveStatusCron = "0 0 4 * * SUN"; // Sundays at 4:00 AM (2s duration)
 
-        // Define Holfuy clock alignment
-        var holfuyClockAlignment = TimeSpan.FromSeconds(30);
+        // Calculate next run times for all jobs
+        var forecastUpdateNextRun = CronScheduler<IForecastUpdateService>.CalculateNextRunTime(forecastUpdateCron);
+        var holfuyNextRun = CronScheduler<IHolfuySyncService>.CalculateNextRunTime(holfuyCron);
+        var metFrostDataNextRun = CronScheduler<IMetFrostSyncService>.CalculateNextRunTime(metFrostDataCron);
+        var metFrostNewStationsNextRun = CronScheduler<IMetFrostSyncService>.CalculateNextRunTime(metFrostNewStationsCron);
+        var metFrostActiveStatusNextRun = CronScheduler<IMetFrostSyncService>.CalculateNextRunTime(metFrostActiveStatusCron);
 
-        // Calculate Holfuy's next scheduled run time using the clock-aligned scheduler helper
-        var holfuyNextRun = ClockAlignedSchedulerHelper.CalculateNextScheduledRunTime(
-            holfuySyncInterval,
-            holfuyClockAlignment);
+        // Add jobs to schedule
+        jobSchedule.Add(("UpdateForecastsAsync", forecastUpdateCron, forecastUpdateNextRun?.DateTime, 34));
+        jobSchedule.Add(("SyncHolfuyDataAsync", holfuyCron, holfuyNextRun?.DateTime, 18));
+        jobSchedule.Add(("SyncLatestStationDataAsync", metFrostDataCron, metFrostDataNextRun?.DateTime, 35));
+        jobSchedule.Add(("SyncNewWeatherStationsAsync", metFrostNewStationsCron, metFrostNewStationsNextRun?.DateTime, 2));
+        jobSchedule.Add(("SyncWeatherStationActiveStatusAsync", metFrostActiveStatusCron, metFrostActiveStatusNextRun?.DateTime, 2));
 
-        // Add Holfuy to schedule with calculated clock-aligned time
-        jobSchedule.Add(("SyncHolfuyDataAsync", holfuyNextRun - scheduleStartTime, holfuySyncInterval, holfuyNextRun.DateTime));
-        var holfuySyncTask = _clockAlignedScheduler.RunAsync( // Expected time to complete: 18 seconds
-            holfuySyncInterval,
-            holfuyClockAlignment,
-            "SyncHolfuyDataAsync",
-            async (service, ct) => { await service.SyncHolfuyDataAsync(ct); },
-            stoppingToken);
+        // Print schedule visualization
+        PrintJobSchedule(jobSchedule, scheduleStartTime);
 
-        // If holfuyNextRun is very close to 5 minutes from now, then wait alittle to space out the jobs a bit.
-        if (holfuyNextRun > DateTime.UtcNow.AddMinutes(4).AddSeconds(45) && holfuyNextRun < DateTime.UtcNow.AddMinutes(5).AddSeconds(45))
-        {
-            // If holfuyNextRun = UtcNow + 4m46s, then waitTime ≈ 60 seconds
-            // If holfuyNextRun = UtcNow + 5m44s, then waitTime ≈ 2 seconds
-            var waitTime = DateTime.UtcNow.AddMinutes(5).AddSeconds(46) - holfuyNextRun;
-            currentDelay += waitTime;
-            Log.Information("Waiting for {WaitTime} seconds to stagger initialization and avoid exact overlap of some jobs...", waitTime.TotalSeconds);
-            await Task.Delay(waitTime, stoppingToken);
-        }
-
-        var forecastUpdateTimer = new PeriodicTimer(forecastUpdateInterval);
-        jobSchedule.Add(("UpdateForecastsAsync", currentDelay, forecastUpdateInterval, scheduleStartTime.Add(forecastUpdateInterval + currentDelay)));
-        var forecastUpdateTask = _forecastUpdateScheduler.RunAsync( // Expected time to complete: 22 seconds
-            forecastUpdateTimer,
+        // Start all scheduled tasks
+        var forecastUpdateTask = _forecastUpdateScheduler.RunAsync(
+            forecastUpdateCron,
             async (service, ct) => { await service.UpdateForecastsAsync(ct); },
             "UpdateForecastsAsync",
             stoppingToken);
 
-        var metFrostNewStationsTimer = new PeriodicTimer(metFrostNewStationsInterval);
-        jobSchedule.Add(("SyncNewWeatherStationsAsync", currentDelay, metFrostNewStationsInterval, scheduleStartTime.Add(metFrostNewStationsInterval)));
-        var syncStationsTask = _periodicJobScheduler.RunAsync( // Expected time to complete: 2 seconds
-            metFrostNewStationsTimer,
-            async (service, ct) => { await service.SyncWeatherStationsAsync(ct); },
-            "SyncNewWeatherStationsAsync",
+        var holfuySyncTask = _holfuyScheduler.RunAsync(
+            holfuyCron,
+            async (service, ct) => { await service.SyncHolfuyDataAsync(ct); },
+            "SyncHolfuyDataAsync",
             stoppingToken);
 
-        // Stagger initialization of the following jobs to avoid overlapping with other jobs running at same interval
-        currentDelay += TimeSpan.FromSeconds(15);
-        Log.Information("Waiting for 15 seconds to stagger initialization of the following jobs...");
-        await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
-
-
-        var metFrostObservationDataTimer = new PeriodicTimer(metFrostObservationInterval);
-        jobSchedule.Add(("SyncLatestStationDataAsync", currentDelay, metFrostObservationInterval, scheduleStartTime.Add(metFrostObservationInterval + currentDelay)));
-        var syncDataTask = _periodicJobScheduler.RunAsync( // Expected time to complete: 35 seconds
-            metFrostObservationDataTimer,
+        var syncDataTask = _metFrostScheduler.RunAsync(
+            metFrostDataCron,
             async (service, ct) => { await service.SyncLatestStationDataAsync(ct); },
             "SyncLatestStationDataAsync",
             stoppingToken);
 
-        var metFrostActiveStatusTimer = new PeriodicTimer(metFrostActiveStatusInterval);
-        jobSchedule.Add(("SyncWeatherStationActiveStatusAsync", currentDelay, metFrostActiveStatusInterval, scheduleStartTime.Add(metFrostActiveStatusInterval + currentDelay)));
-        var syncStatusTask = _periodicJobScheduler.RunAsync( // Expected time to complete: 2 seconds
-            metFrostActiveStatusTimer,
+        var syncStationsTask = _metFrostScheduler.RunAsync(
+            metFrostNewStationsCron,
+            async (service, ct) => { await service.SyncWeatherStationsAsync(ct); },
+            "SyncNewWeatherStationsAsync",
+            stoppingToken);
+
+        var syncStatusTask = _metFrostScheduler.RunAsync(
+            metFrostActiveStatusCron,
             async (service, ct) => { await service.SyncWeatherStationsActiveStatusAsync(ct); },
             "SyncWeatherStationActiveStatusAsync",
             stoppingToken);
-
-        // Print schedule visualization
-        PrintJobSchedule(jobSchedule, scheduleStartTime);
 
         // Wait for all tasks (they will run until cancellation is requested)
         await Task.WhenAll(syncDataTask, syncStationsTask, syncStatusTask, holfuySyncTask, forecastUpdateTask);
     }
 
-    private void PrintJobSchedule(List<(string Name, TimeSpan InitialDelay, TimeSpan Interval, DateTime FirstRun)> schedule, DateTime startTime)
+    private void PrintJobSchedule(List<(string Name, string CronExpression, DateTime? FirstRun, int ExpectedDuration)> schedule, DateTime startTime)
     {
         _logger.LogInformation("═══════════════════════════════════════════════════════════════════════════");
         _logger.LogInformation("                          JOB SCHEDULE OVERVIEW                            ");
         _logger.LogInformation("═══════════════════════════════════════════════════════════════════════════");
         _logger.LogInformation("Schedule initialized at: {StartTime:yyyy-MM-dd HH:mm:ss} UTC", startTime);
         _logger.LogInformation("");
-        _logger.LogInformation("{JobName,-40} {Delay,12} {Interval,15} {NextRun,20}",
-            "Job Name", "Init Delay", "Interval", "First Run (UTC)");
+        _logger.LogInformation("{JobName,-40} {CronExpression,-20} {Duration,10} {NextRun,20}",
+            "Job Name", "Cron Expression", "Duration", "First Run (UTC)");
         _logger.LogInformation("───────────────────────────────────────────────────────────────────────────");
 
-        foreach (var job in schedule.OrderBy(j => j.FirstRun))
+        foreach (var job in schedule.OrderBy(j => j.FirstRun ?? DateTime.MaxValue))
         {
-            var delayStr = FormatTimeSpan(job.InitialDelay);
-            var intervalStr = FormatTimeSpan(job.Interval);
-            var nextRunStr = job.FirstRun.ToString("yyyy-MM-dd HH:mm:ss");
+            var nextRunStr = job.FirstRun?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A";
+            var durationStr = $"{job.ExpectedDuration}s";
 
-            _logger.LogInformation("{JobName,-40} {Delay,12} {Interval,15} {NextRun,20}",
-                job.Name, delayStr, intervalStr, nextRunStr);
+            _logger.LogInformation("{JobName,-40} {CronExpression,-20} {ExpectedDuration,10} {NextRun,20}",
+                job.Name, job.CronExpression, durationStr, nextRunStr);
         }
 
         _logger.LogInformation("═══════════════════════════════════════════════════════════════════════════");
         _logger.LogInformation("");
 
-    }
-
-    private static string FormatTimeSpan(TimeSpan span)
-    {
-        if (span.TotalDays >= 1)
-            return $"{span.TotalDays:F1}d";
-        if (span.TotalHours >= 1)
-            return $"{span.TotalHours:F1}h";
-        if (span.TotalMinutes >= 1)
-            return $"{span.TotalMinutes:F1}m";
-        return $"{span.TotalSeconds:F0}s";
     }
 }

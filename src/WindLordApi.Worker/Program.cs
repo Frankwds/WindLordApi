@@ -111,9 +111,9 @@ builder.Services.AddScoped<IForecastCombinationService, ForecastCombinationServi
 builder.Services.AddScoped<IForecastUpdateService, ForecastUpdateService>();
 
 // Register Schedulers (singleton since Worker is singleton)
-builder.Services.AddSingleton<PeriodicJobScheduler<IMetFrostSyncService>>();
-builder.Services.AddSingleton<ClockAlignedScheduler<IHolfuySyncService>>();
-builder.Services.AddSingleton<PeriodicJobScheduler<IForecastUpdateService>>();
+builder.Services.AddSingleton<CronScheduler<IMetFrostSyncService>>();
+builder.Services.AddSingleton<CronScheduler<IHolfuySyncService>>();
+builder.Services.AddSingleton<CronScheduler<IForecastUpdateService>>();
 
 // Register MET Frost Client
 // 1. Configure Options (binds from appsettings) with validation
