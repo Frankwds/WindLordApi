@@ -138,12 +138,16 @@ builder.Services.AddOpenMeteoClient(builder.Configuration);
 builder.Services.AddScoped<DatabaseHealthCheck>();
 builder.Services.AddScoped<MetFrostHealthCheck>();
 builder.Services.AddScoped<HolfuyHealthCheck>();
+builder.Services.AddScoped<MetYrHealthCheck>();
+builder.Services.AddScoped<OpenMeteoHealthCheck>();
 
 // Register Health Checks
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database", tags: ["db", "database"])
     .AddCheck<MetFrostHealthCheck>("metfrost", tags: ["api", "metfrost"])
-    .AddCheck<HolfuyHealthCheck>("holfuy", tags: ["api", "holfuy"]);
+    .AddCheck<HolfuyHealthCheck>("holfuy", tags: ["api", "holfuy"])
+    .AddCheck<MetYrHealthCheck>("metyr", tags: ["api", "metyr"])
+    .AddCheck<OpenMeteoHealthCheck>("openmeteo", tags: ["api", "openmeteo"]);
 
 builder.Services.AddHostedService<Worker>();
 

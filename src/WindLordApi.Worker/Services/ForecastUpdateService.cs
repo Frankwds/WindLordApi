@@ -128,7 +128,7 @@ public class ForecastUpdateService : IForecastUpdateService
             var location = locations[index];
             try
             {
-                _logger.LogInformation("Processing location {LocationId} ({Index}/{Total})", location.Id, index + 1, locations.Count);
+                _logger.LogDebug("Processing location {LocationId} ({Index}/{Total})", location.Id, index + 1, locations.Count);
 
                 // Get OpenMeteo data for this specific location from the array
                 var rawMeteoData = rawMeteoDataArray[index];
@@ -159,10 +159,8 @@ public class ForecastUpdateService : IForecastUpdateService
                 }
 
                 // Upsert forecast data
-                _logger.LogDebug("Upserting {Count} forecast records for location {LocationId}", combinedData.Count, location.Id);
                 await _forecastCacheService.UpsertManyAsync(combinedData.ToArray(), cancellationToken);
 
-                _logger.LogDebug("Successfully processed location {LocationId}", location.Id);
             }
             catch (Exception ex)
             {
