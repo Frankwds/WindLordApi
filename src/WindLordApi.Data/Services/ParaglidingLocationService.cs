@@ -20,5 +20,20 @@ public class ParaglidingLocationService : IParaglidingLocationService
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
+
+    public async Task<IEnumerable<ParaglidingLocation>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        return await _unitOfWork.ParaglidingLocations.GetByIdsAsync(ids, cancellationToken);
+    }
+
+    public async Task<IEnumerable<LocationsWithOldestForecast>> GetLocationsWithOldestForecastAsync(CancellationToken cancellationToken = default)
+    {
+        return await _unitOfWork.ParaglidingLocations.GetLocationsWithOldestForecastAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<LocationsWithoutForecast>> GetLocationsWithoutForecastAsync(CancellationToken cancellationToken = default)
+    {
+        return await _unitOfWork.ParaglidingLocations.GetLocationsWithoutForecastAsync(cancellationToken);
+    }
 }
 

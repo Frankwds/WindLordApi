@@ -35,5 +35,21 @@ public class ParaglidingLocationRepository : Repository<ParaglidingLocation>, IP
         _logger.LogInformation("Retrieved {Count} locations without forecast from view", locations.Count);
         return locations;
     }
+
+    public async Task<IEnumerable<ParaglidingLocation>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        var idsList = ids.ToList();
+        if (idsList.Count == 0)
+        {
+            return Enumerable.Empty<ParaglidingLocation>();
+        }
+
+        var locations = await _dbSet
+            .Where(pl => idsList.Contains(pl.Id) && pl.IsActive && pl.IsMain)
+            .ToListAsync(cancellationToken);
+
+        _logger.LogInformation("Retrieved {Count} active main locations by IDs", locations.Count);
+        return locations;
+    }
 }
 

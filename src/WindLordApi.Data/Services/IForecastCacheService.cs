@@ -13,6 +13,10 @@ public interface IForecastCacheService
     /// </summary>
     Task<int> UpsertManyAsync(ForecastCache[] forecasts, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Deletes forecasts older than the specified cutoff time.
+    /// </summary>
+    Task<int> DeleteOldForecastsAsync(DateTime cutoffTime, CancellationToken cancellationToken = default);
 
 }
 

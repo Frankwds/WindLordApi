@@ -67,5 +67,16 @@ public class ForecastCacheService : IForecastCacheService
             throw;
         }
     }
+
+    public async Task<int> DeleteOldForecastsAsync(DateTime cutoffTime, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Deleting forecast data older than: {CutoffTime}", cutoffTime);
+
+        var deletedCount = await _unitOfWork.ForecastCaches.DeleteOldForecastsAsync(cutoffTime, cancellationToken);
+
+        _logger.LogInformation("Forecast data cleanup completed successfully. Deleted {Count} records", deletedCount);
+
+        return deletedCount;
+    }
 }
 
