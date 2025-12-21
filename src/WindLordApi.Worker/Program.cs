@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using WindLordApi.Integrations.MetFrost;
 using WindLordApi.Integrations.Holfuy;
 using WindLordApi.Integrations.MetYr;
-using WindLordApi.Integrations.OpenMeteo;
 using Serilog;
 using Serilog.Events;
 
@@ -102,12 +101,10 @@ builder.Services.AddScoped<IForecastCacheService, ForecastCacheService>();
 builder.Services.AddScoped<IMetFrostMapping, MetFrostMappingService>();
 builder.Services.AddScoped<IHolfuyMapping, HolfuyMappingService>();
 builder.Services.AddScoped<IMetYrMapping, MetYrMappingService>();
-builder.Services.AddScoped<IOpenMeteoMapping, OpenMeteoMappingService>();
 
 // Register Worker Services
 builder.Services.AddScoped<IHolfuySyncService, HolfuySyncService>();
 builder.Services.AddScoped<IMetFrostSyncService, MetFrostSyncService>();
-builder.Services.AddScoped<IForecastCombinationService, ForecastCombinationService>();
 builder.Services.AddScoped<IForecastUpdateService, ForecastUpdateService>();
 
 // Register Schedulers (singleton since Worker is singleton)
@@ -131,23 +128,18 @@ builder.Services.AddHolfuyClient(builder.Configuration);
 // Register MetYr Client
 builder.Services.AddMetYrClient(builder.Configuration);
 
-// Register OpenMeteo Client
-builder.Services.AddOpenMeteoClient(builder.Configuration);
-
 // Register Health Check Services
 builder.Services.AddScoped<DatabaseHealthCheck>();
 builder.Services.AddScoped<MetFrostHealthCheck>();
 builder.Services.AddScoped<HolfuyHealthCheck>();
 builder.Services.AddScoped<MetYrHealthCheck>();
-builder.Services.AddScoped<OpenMeteoHealthCheck>();
 
 // Register Health Checks
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database", tags: ["db", "database"])
     .AddCheck<MetFrostHealthCheck>("metfrost", tags: ["api", "metfrost"])
     .AddCheck<HolfuyHealthCheck>("holfuy", tags: ["api", "holfuy"])
-    .AddCheck<MetYrHealthCheck>("metyr", tags: ["api", "metyr"])
-    .AddCheck<OpenMeteoHealthCheck>("openmeteo", tags: ["api", "openmeteo"]);
+    .AddCheck<MetYrHealthCheck>("metyr", tags: ["api", "metyr"]);
 
 builder.Services.AddHostedService<Worker>();
 

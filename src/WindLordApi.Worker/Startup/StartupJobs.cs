@@ -2,7 +2,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using WindLordApi.Worker.Services;
 using WindLordApi.Integrations.MetYr;
-using WindLordApi.Integrations.OpenMeteo;
 namespace WindLordApi.Worker.Startup;
 
 /// <summary>
