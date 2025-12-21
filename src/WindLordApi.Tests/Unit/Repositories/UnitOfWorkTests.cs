@@ -98,55 +98,6 @@ public class UnitOfWorkTests : IDisposable
         result.Should().Be(0);
     }
 
-    [Fact(Skip = "Requires relational database provider - transactions not supported by in-memory database")]
-    public async Task BeginTransactionAsync_CreatesTransaction()
-    {
-        // Act
-        var transaction = await _unitOfWork.BeginTransactionAsync(TestContext.Current.CancellationToken);
-
-        // Assert
-        transaction.Should().NotBeNull();
-        transaction.Dispose();
-    }
-
-    [Fact(Skip = "Requires relational database provider - transactions not supported by in-memory database")]
-    public async Task CommitTransactionAsync_CommitsTransaction()
-    {
-        // Arrange
-        var station = TestDataBuilders.WeatherStation()
-            .WithStationId("TEST-001")
-            .Build();
-        await _unitOfWork.WeatherStations.AddAsync(station, TestContext.Current.CancellationToken);
-
-        var transaction = await _unitOfWork.BeginTransactionAsync(TestContext.Current.CancellationToken);
-
-        // Act
-        await _unitOfWork.CommitTransactionAsync(transaction, TestContext.Current.CancellationToken);
-
-        // Assert
-        var savedStation = await _context.WeatherStations.FindAsync([station.Id], TestContext.Current.CancellationToken);
-        savedStation.Should().NotBeNull();
-    }
-
-    [Fact(Skip = "Requires relational database provider - transactions not supported by in-memory database")]
-    public async Task RollbackTransactionAsync_RollsBackTransaction()
-    {
-        // Arrange
-        var station = TestDataBuilders.WeatherStation()
-            .WithStationId("TEST-001")
-            .Build();
-        await _unitOfWork.WeatherStations.AddAsync(station, TestContext.Current.CancellationToken);
-
-        var transaction = await _unitOfWork.BeginTransactionAsync(TestContext.Current.CancellationToken);
-
-        // Act
-        await _unitOfWork.RollbackTransactionAsync(transaction, TestContext.Current.CancellationToken);
-
-        // Assert
-        // Note: In-memory database doesn't support true rollback, but we verify the method doesn't throw
-        transaction.Should().NotBeNull();
-    }
-
     [Fact]
     public async Task DisposeAsync_DisposesContext()
     {
