@@ -31,5 +31,10 @@ public interface IWeatherStationRepository : IRepository<WeatherStation>
     /// Upserts a range of weather stations using FlexLabs upsert.
     /// </summary>
     Task<int> UpsertRangeAsync(IEnumerable<WeatherStation> entities, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all weather stations where Country is null or "UKJENT".
+    /// </summary>
+    Task<List<WeatherStation>> GetStationsWithMissingCountryAsync(CancellationToken cancellationToken = default);
 }
 

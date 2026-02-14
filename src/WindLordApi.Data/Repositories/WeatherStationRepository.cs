@@ -76,6 +76,16 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
         return updated;
     }
 
+    public async Task<List<WeatherStation>> GetStationsWithMissingCountryAsync(CancellationToken cancellationToken = default)
+    {
+        var stations = await _dbSet
+            .Where(ws => ws.Country == null || ws.Country == "UKJENT")
+            .ToListAsync(cancellationToken);
+
+        _logger.LogDebug("Retrieved {Count} weather stations with missing country", stations.Count);
+        return stations;
+    }
+
     public async Task<int> UpsertRangeAsync(IEnumerable<WeatherStation> entities, CancellationToken cancellationToken = default)
     {
         var entitiesList = entities.ToList();

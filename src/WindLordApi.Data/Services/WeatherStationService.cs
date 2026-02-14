@@ -84,5 +84,10 @@ public class WeatherStationService : IWeatherStationService
         return await _unitOfWork.WeatherStations.SetAllStationsWithoutDataToInactiveAsync(cancellationToken);
     }
 
+    public async Task<List<WeatherStation>> GetStationsWithMissingCountryAsync(CancellationToken cancellationToken = default)
+    {
+        return await _unitOfWork.WeatherStations.GetStationsWithMissingCountryAsync(cancellationToken);
+    }
+
 }
 

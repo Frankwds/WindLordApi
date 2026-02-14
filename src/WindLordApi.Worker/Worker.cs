@@ -13,6 +13,7 @@ public class Worker : BackgroundService
     private readonly CronScheduler<IHolfuySyncService> _holfuyScheduler;
     private readonly CronScheduler<IForecastUpdateService> _forecastUpdateScheduler;
     private readonly CronScheduler<IWindsMobiSyncService> _windsMobiScheduler;
+    private readonly CronScheduler<ICountryLocatorService> _countryLocatorScheduler;
 
     public Worker(
         ILogger<Worker> logger,
@@ -20,7 +21,8 @@ public class Worker : BackgroundService
         CronScheduler<IMetFrostSyncService> metFrostScheduler,
         CronScheduler<IHolfuySyncService> holfuyScheduler,
         CronScheduler<IForecastUpdateService> forecastUpdateScheduler,
-        CronScheduler<IWindsMobiSyncService> windsMobiScheduler)
+        CronScheduler<IWindsMobiSyncService> windsMobiScheduler,
+        CronScheduler<ICountryLocatorService> countryLocatorScheduler)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
@@ -28,6 +30,7 @@ public class Worker : BackgroundService
         _holfuyScheduler = holfuyScheduler;
         _forecastUpdateScheduler = forecastUpdateScheduler;
         _windsMobiScheduler = windsMobiScheduler;
+        _countryLocatorScheduler = countryLocatorScheduler;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -46,6 +49,7 @@ public class Worker : BackgroundService
         var metFrostNewStationsCron = "0 0 3 * * SUN";  // Sundays at 3:00 AM (2s duration)
         var metFrostActiveStatusCron = "0 0 4 * * SUN"; // Sundays at 4:00 AM (2s duration)
         var windsMobiCron = "0 */5 * * * *";              // Every 5 min at :00 seconds (~30s duration)
+        var countryLocatorCron = "0 0 5 * * SUN";          // Sundays at 5:00 AM
 
         // Calculate next run times for all jobs
         var forecastUpdateNextRun = CronScheduler<IForecastUpdateService>.CalculateNextRunTime(forecastUpdateCron);
@@ -54,6 +58,7 @@ public class Worker : BackgroundService
         var metFrostNewStationsNextRun = CronScheduler<IMetFrostSyncService>.CalculateNextRunTime(metFrostNewStationsCron);
         var metFrostActiveStatusNextRun = CronScheduler<IMetFrostSyncService>.CalculateNextRunTime(metFrostActiveStatusCron);
         var windsMobiNextRun = CronScheduler<IWindsMobiSyncService>.CalculateNextRunTime(windsMobiCron);
+        var countryLocatorNextRun = CronScheduler<ICountryLocatorService>.CalculateNextRunTime(countryLocatorCron);
 
         // Add jobs to schedule
         jobSchedule.Add(("UpdateForecastsAsync", forecastUpdateCron, forecastUpdateNextRun?.DateTime, 34));
@@ -62,6 +67,7 @@ public class Worker : BackgroundService
         jobSchedule.Add(("SyncNewWeatherStationsAsync", metFrostNewStationsCron, metFrostNewStationsNextRun?.DateTime, 2));
         jobSchedule.Add(("SyncWeatherStationActiveStatusAsync", metFrostActiveStatusCron, metFrostActiveStatusNextRun?.DateTime, 2));
         jobSchedule.Add(("SyncWindsMobiDataAsync", windsMobiCron, windsMobiNextRun?.DateTime, 30));
+        jobSchedule.Add(("LocateCountriesAsync", countryLocatorCron, countryLocatorNextRun?.DateTime, 10));
 
         // Print schedule visualization
         PrintJobSchedule(jobSchedule, scheduleStartTime);
@@ -103,8 +109,14 @@ public class Worker : BackgroundService
             "SyncWindsMobiDataAsync",
             stoppingToken);
 
+        var countryLocatorTask = _countryLocatorScheduler.RunAsync(
+            countryLocatorCron,
+            async (service, ct) => { await service.LocateCountriesAsync(ct); },
+            "LocateCountriesAsync",
+            stoppingToken);
+
         // Wait for all tasks (they will run until cancellation is requested)
-        await Task.WhenAll(syncDataTask, syncStationsTask, syncStatusTask, holfuySyncTask, forecastUpdateTask, windsMobiSyncTask);
+        await Task.WhenAll(syncDataTask, syncStationsTask, syncStatusTask, holfuySyncTask, forecastUpdateTask, windsMobiSyncTask, countryLocatorTask);
     }
 
     private void PrintJobSchedule(List<(string Name, string CronExpression, DateTime? FirstRun, int ExpectedDuration)> schedule, DateTime startTime)
