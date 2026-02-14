@@ -101,10 +101,9 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
                 Latitude = incoming.Latitude,
                 Longitude = incoming.Longitude,
                 Altitude = incoming.Altitude,
-                Country = incoming.Country,
                 Provider = incoming.Provider,
-                UpdatedAt = incoming.UpdatedAt,
-                IsMain = incoming.IsMain
+                UpdatedAt = incoming.UpdatedAt
+                // Country and IsMain are intentionally excluded - managed by CountryLocatorService
                 // is_active is intentionally excluded - managed separately
             })
             .RunAsync(cancellationToken);
