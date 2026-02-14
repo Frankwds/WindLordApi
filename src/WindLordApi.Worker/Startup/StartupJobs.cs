@@ -49,20 +49,6 @@ public static class StartupJobs
             logger.LogError(ex, "CountryLocator: Error running LocateCountriesAsync on startup");
         }
 
-        // Locate countries for stations with missing country data
-        try
-        {
-            using var countryLocatorScope = serviceProvider.CreateScope();
-            var countryLocatorService = countryLocatorScope.ServiceProvider.GetRequiredService<ICountryLocatorService>();
-            await countryLocatorService.LocateCountriesAsync(cancellationToken);
-            logger.LogInformation("CountryLocator: Completed startup job: LocateCountriesAsync");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "CountryLocator: Error running LocateCountriesAsync on startup");
-        }
-
-
         // Update forecasts on startup
         try
         {

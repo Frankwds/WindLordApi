@@ -89,5 +89,51 @@ public class WeatherStationService : IWeatherStationService
         return await _unitOfWork.WeatherStations.GetStationsWithMissingCountryAsync(cancellationToken);
     }
 
+    public async Task<int> UpdateCountriesAsync(WeatherStation[] weatherStations, CancellationToken cancellationToken = default)
+    {
+        if (weatherStations == null || weatherStations.Length == 0)
+        {
+            throw new ArgumentException("Weather stations array cannot be null or empty", nameof(weatherStations));
+        }
+        var records = weatherStations.Where(ws => ws is not null).ToList();
+        if (records.Count == 0)
+        {
+            throw new ArgumentException("Weather stations array cannot contain only null elements", nameof(weatherStations));
+        }
+
+        var totalAffected = 0;
+
+        // Process in batches to avoid parameter limits
+        for (int i = 0; i < records.Count; i += BatchSize)
+        {
+            var batch = records.Skip(i).Take(BatchSize).ToList();
+            totalAffected += await UpdateCountriesBatchAsync(batch, cancellationToken);
+        }
+
+        return totalAffected;
+    }
+
+    private async Task<int> UpdateCountriesBatchAsync(List<WeatherStation> batch, CancellationToken cancellationToken)
+    {
+        if (batch.Count == 0) return 0;
+
+        // Use explicit transaction for Supabase connection pooler compatibility
+        await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var updatedCount = await _unitOfWork.WeatherStations.UpdateCountriesAsync(batch, cancellationToken);
+
+            await _unitOfWork.CommitTransactionAsync(transaction, cancellationToken);
+
+            return updatedCount;
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackTransactionAsync(transaction, cancellationToken);
+            _logger.LogError(ex, "Failed to update countries for weather stations batch of {Count} records", batch.Count);
+            throw;
+        }
+    }
+
 }
 

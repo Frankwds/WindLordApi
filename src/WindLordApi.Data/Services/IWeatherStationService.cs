@@ -10,5 +10,6 @@ public interface IWeatherStationService
     Task<int> SetAllStationsWithDataToActiveAsync(CancellationToken cancellationToken = default);
     Task<int> SetAllStationsWithoutDataToInactiveAsync(CancellationToken cancellationToken = default);
     Task<List<Models.WeatherStation>> GetStationsWithMissingCountryAsync(CancellationToken cancellationToken = default);
+    Task<int> UpdateCountriesAsync(WeatherStation[] weatherStations, CancellationToken cancellationToken = default);
 }
 

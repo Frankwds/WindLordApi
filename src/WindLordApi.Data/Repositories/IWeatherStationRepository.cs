@@ -36,5 +36,11 @@ public interface IWeatherStationRepository : IRepository<WeatherStation>
     /// Gets all weather stations where Country is null or "UKJENT".
     /// </summary>
     Task<List<WeatherStation>> GetStationsWithMissingCountryAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates only the Country and IsMain fields for the given weather stations.
+    /// Used by the CountryLocatorService to persist geocoded countries without affecting other fields.
+    /// </summary>
+    Task<int> UpdateCountriesAsync(IEnumerable<WeatherStation> entities, CancellationToken cancellationToken = default);
 }
 

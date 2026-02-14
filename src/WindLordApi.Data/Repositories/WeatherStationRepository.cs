@@ -109,5 +109,22 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
             })
             .RunAsync(cancellationToken);
     }
+
+    public async Task<int> UpdateCountriesAsync(IEnumerable<WeatherStation> entities, CancellationToken cancellationToken = default)
+    {
+        var entitiesList = entities.ToList();
+        if (entitiesList.Count == 0) return 0;
+
+        // Use FlexLabs upsert: ON CONFLICT (station_id) DO UPDATE
+        // Only updates Country and IsMain - used by CountryLocatorService
+        return await _context.UpsertRange<WeatherStation>(entitiesList)
+            .On(ws => ws.StationId)
+            .WhenMatched((existing, incoming) => new WeatherStation
+            {
+                Country = incoming.Country,
+                IsMain = incoming.IsMain
+            })
+            .RunAsync(cancellationToken);
+    }
 }
 

@@ -98,13 +98,13 @@ public class CountryLocatorService : ICountryLocatorService
                     }
                 }
 
-                // 4. Persist the batch - upsert the updated stations
+                // 4. Persist the batch - update only Country and IsMain for geocoded stations
                 if (batchLocated > 0)
                 {
                     var updatedStations = batch.Where(s => s.Country != null && s.Country != "UKJENT").ToArray();
                     if (updatedStations.Length > 0)
                     {
-                        await _weatherStationService.UpsertManyAsync(updatedStations, cancellationToken);
+                        await _weatherStationService.UpdateCountriesAsync(updatedStations, cancellationToken);
                     }
                 }
 
