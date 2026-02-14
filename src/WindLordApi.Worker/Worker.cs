@@ -12,25 +12,28 @@ public class Worker : BackgroundService
     private readonly CronScheduler<IMetFrostSyncService> _metFrostScheduler;
     private readonly CronScheduler<IHolfuySyncService> _holfuyScheduler;
     private readonly CronScheduler<IForecastUpdateService> _forecastUpdateScheduler;
+    private readonly CronScheduler<IWindsMobiSyncService> _windsMobiScheduler;
 
     public Worker(
         ILogger<Worker> logger,
         IServiceProvider serviceProvider,
         CronScheduler<IMetFrostSyncService> metFrostScheduler,
         CronScheduler<IHolfuySyncService> holfuyScheduler,
-        CronScheduler<IForecastUpdateService> forecastUpdateScheduler)
+        CronScheduler<IForecastUpdateService> forecastUpdateScheduler,
+        CronScheduler<IWindsMobiSyncService> windsMobiScheduler)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
         _metFrostScheduler = metFrostScheduler;
         _holfuyScheduler = holfuyScheduler;
         _forecastUpdateScheduler = forecastUpdateScheduler;
+        _windsMobiScheduler = windsMobiScheduler;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Run all jobs once on startup
-        // await StartupJobs.RunStartupJobsAsync(_serviceProvider, _logger, stoppingToken);
+        await StartupJobs.RunStartupJobsAsync(_serviceProvider, _logger, stoppingToken);
 
         // Track schedule for visualization
         var scheduleStartTime = DateTime.UtcNow;
@@ -42,6 +45,7 @@ public class Worker : BackgroundService
         var metFrostDataCron = "0 2/5 * * * *";         // Every 5 min at :02:00 (35s duration)
         var metFrostNewStationsCron = "0 0 3 * * SUN";  // Sundays at 3:00 AM (2s duration)
         var metFrostActiveStatusCron = "0 0 4 * * SUN"; // Sundays at 4:00 AM (2s duration)
+        var windsMobiCron = "0 */5 * * * *";              // Every 5 min at :00 seconds (~30s duration)
 
         // Calculate next run times for all jobs
         var forecastUpdateNextRun = CronScheduler<IForecastUpdateService>.CalculateNextRunTime(forecastUpdateCron);
@@ -49,6 +53,7 @@ public class Worker : BackgroundService
         var metFrostDataNextRun = CronScheduler<IMetFrostSyncService>.CalculateNextRunTime(metFrostDataCron);
         var metFrostNewStationsNextRun = CronScheduler<IMetFrostSyncService>.CalculateNextRunTime(metFrostNewStationsCron);
         var metFrostActiveStatusNextRun = CronScheduler<IMetFrostSyncService>.CalculateNextRunTime(metFrostActiveStatusCron);
+        var windsMobiNextRun = CronScheduler<IWindsMobiSyncService>.CalculateNextRunTime(windsMobiCron);
 
         // Add jobs to schedule
         jobSchedule.Add(("UpdateForecastsAsync", forecastUpdateCron, forecastUpdateNextRun?.DateTime, 34));
@@ -56,6 +61,7 @@ public class Worker : BackgroundService
         jobSchedule.Add(("SyncLatestStationDataAsync", metFrostDataCron, metFrostDataNextRun?.DateTime, 35));
         jobSchedule.Add(("SyncNewWeatherStationsAsync", metFrostNewStationsCron, metFrostNewStationsNextRun?.DateTime, 2));
         jobSchedule.Add(("SyncWeatherStationActiveStatusAsync", metFrostActiveStatusCron, metFrostActiveStatusNextRun?.DateTime, 2));
+        jobSchedule.Add(("SyncWindsMobiDataAsync", windsMobiCron, windsMobiNextRun?.DateTime, 30));
 
         // Print schedule visualization
         PrintJobSchedule(jobSchedule, scheduleStartTime);
@@ -91,8 +97,14 @@ public class Worker : BackgroundService
             "SyncWeatherStationActiveStatusAsync",
             stoppingToken);
 
+        var windsMobiSyncTask = _windsMobiScheduler.RunAsync(
+            windsMobiCron,
+            async (service, ct) => { await service.SyncWindsMobiDataAsync(ct); },
+            "SyncWindsMobiDataAsync",
+            stoppingToken);
+
         // Wait for all tasks (they will run until cancellation is requested)
-        await Task.WhenAll(syncDataTask, syncStationsTask, syncStatusTask, holfuySyncTask, forecastUpdateTask);
+        await Task.WhenAll(syncDataTask, syncStationsTask, syncStatusTask, holfuySyncTask, forecastUpdateTask, windsMobiSyncTask);
     }
 
     private void PrintJobSchedule(List<(string Name, string CronExpression, DateTime? FirstRun, int ExpectedDuration)> schedule, DateTime startTime)

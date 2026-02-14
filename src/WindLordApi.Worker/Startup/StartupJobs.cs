@@ -23,6 +23,19 @@ public static class StartupJobs
     {
         logger.LogInformation("Running startup jobs...");
 
+        // Sync WindsMobi data on startup
+        try
+        {
+            using var windsMobiScope = serviceProvider.CreateScope();
+            var windsMobiSyncService = windsMobiScope.ServiceProvider.GetRequiredService<IWindsMobiSyncService>();
+            await windsMobiSyncService.SyncWindsMobiDataAsync(cancellationToken);
+            logger.LogInformation("WindsMobi: Completed startup job: SyncWindsMobiDataAsync");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "WindsMobi: Error running SyncWindsMobiDataAsync on startup");
+        }
+
         // Update forecasts on startup
         try
         {

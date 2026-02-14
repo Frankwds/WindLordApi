@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using WindLordApi.Integrations.MetFrost;
 using WindLordApi.Integrations.Holfuy;
 using WindLordApi.Integrations.MetYr;
+using WindLordApi.Integrations.WindsMobi;
 using Serilog;
 using Serilog.Events;
 
@@ -106,11 +107,13 @@ builder.Services.AddScoped<IMetYrMapping, MetYrMappingService>();
 builder.Services.AddScoped<IHolfuySyncService, HolfuySyncService>();
 builder.Services.AddScoped<IMetFrostSyncService, MetFrostSyncService>();
 builder.Services.AddScoped<IForecastUpdateService, ForecastUpdateService>();
+builder.Services.AddScoped<IWindsMobiSyncService, WindsMobiSyncService>();
 
 // Register Schedulers (singleton since Worker is singleton)
 builder.Services.AddSingleton<CronScheduler<IMetFrostSyncService>>();
 builder.Services.AddSingleton<CronScheduler<IHolfuySyncService>>();
 builder.Services.AddSingleton<CronScheduler<IForecastUpdateService>>();
+builder.Services.AddSingleton<CronScheduler<IWindsMobiSyncService>>();
 
 // Register MET Frost Client
 // 1. Configure Options (binds from appsettings) with validation
@@ -127,6 +130,9 @@ builder.Services.AddHolfuyClient(builder.Configuration);
 
 // Register MetYr Client
 builder.Services.AddMetYrClient(builder.Configuration);
+
+// Register WindsMobi Client
+builder.Services.AddWindsMobiClient(builder.Configuration);
 
 // Register Health Check Services
 builder.Services.AddScoped<DatabaseHealthCheck>();
