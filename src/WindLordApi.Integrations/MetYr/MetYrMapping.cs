@@ -33,9 +33,8 @@ public class MetYrMappingService : IMetYrMapping
 
         var timeseries = rawData.Properties.Timeseries;
         var firstMissingIndex = FindFirstMissingNext1HoursIndex(timeseries);
-
-        // Slice hourly data: timeseries[0..(firstMissingIndex - 6)]
-        var hourlyEndIndex = Math.Max(0, firstMissingIndex - 6);
+        // Slice hourly data up to the first missing next_1_hours entry.
+        var hourlyEndIndex = firstMissingIndex;
         var slicedHourlyData = timeseries.Take(hourlyEndIndex).ToList();
 
         // Slice 6-hourly data: timeseries[firstMissingIndex..80]
@@ -62,13 +61,17 @@ public class MetYrMappingService : IMetYrMapping
 
                 // Parse next_6_hours (summary only for hourly entries)
                 var next6HoursJson = item.Data.Next6Hours;
-                var next6HoursSummary = JsonSerializer.Deserialize<MetYrNext6HoursForHourly>(next6HoursJson.GetRawText());
+                MetYrNext6HoursForHourly? next6HoursSummary = null;
+                if (next6HoursJson.ValueKind == JsonValueKind.Object)
+                {
+                    next6HoursSummary = JsonSerializer.Deserialize<MetYrNext6HoursForHourly>(next6HoursJson.GetRawText());
+                }
 
                 // Parse instant details as 1-hour type
                 var instantDetailsJson = item.Data.Instant.Details;
                 var instant1Hour = JsonSerializer.Deserialize<MetYrInstantDetails1Hour>(instantDetailsJson.GetRawText());
 
-                if (instant1Hour == null || next6HoursSummary == null)
+                if (instant1Hour == null)
                 {
                     throw new InvalidOperationException("Failed to parse hourly forecast data");
                 }
@@ -97,7 +100,7 @@ public class MetYrMappingService : IMetYrMapping
                     UltravioletIndexClearSky = instant1Hour.UltravioletIndexClearSky,
                     WindSpeedOfGust = instant1Hour.WindSpeedOfGust,
                     ProbabilityOfThunder = next1Hours.Details.ProbabilityOfThunder,
-                    Next6HoursSymbolCode = next6HoursSummary.Summary.SymbolCode
+                    Next6HoursSymbolCode = next6HoursSummary?.Summary.SymbolCode ?? next1Hours.Summary.SymbolCode
                 };
             })
             .ToList();
