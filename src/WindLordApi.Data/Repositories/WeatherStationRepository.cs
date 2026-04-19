@@ -102,9 +102,11 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
                 Longitude = incoming.Longitude,
                 Altitude = incoming.Altitude,
                 Provider = incoming.Provider,
-                UpdatedAt = incoming.UpdatedAt
+                UpdatedAt = incoming.UpdatedAt,
+                // Holfuy stations seen in sync should always be active.
+                IsActive = incoming.Provider == "Holfuy" ? true : existing.IsActive
                 // Country and IsMain are intentionally excluded - managed by CountryLocatorService
-                // is_active is intentionally excluded - managed separately
+                // MET is_active is intentionally managed by MetFrost active status sync job
             })
             .RunAsync(cancellationToken);
     }
