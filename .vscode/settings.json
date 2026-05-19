@@ -3,12 +3,19 @@
   "[csharp]": {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "anysphere.csharp",
-    "editor.tabSize": 4,
-
+    "editor.tabSize": 4
   },
   "[json]": {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2
-  }
+  },
+  "json.schemas": [
+    {
+      "fileMatch": [
+        ".dev/archetypes/**/archetype.json"
+      ],
+      "url": "./.dev/archetypes/archetype.schema.json"
+    }
+  ]
 }
