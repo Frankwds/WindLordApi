@@ -86,6 +86,88 @@ Existing MET workflows should be updated to use the provider-scoped methods wher
 
 ## PortWind Integration Design
 
+## External API Contract Assumptions
+
+The implementation depends on two upstream PortWind endpoints.
+
+### Station catalog endpoint
+
+- URL: `https://portwind.no/js/stations.js`
+- Response type: JavaScript source, not JSON
+- Contract assumption: the response contains a `window.stations = { ... }` assignment followed by additional JavaScript that is not part of the station catalog
+
+The required downstream shape is the top-level station object keyed by station id, where only the following fields are required:
+
+```javascript
+window.stations = {
+	"VS1285": {
+		status: true,
+		history: true,
+		label: "Geiranger (N)",
+		location: {
+			lat: 62.102889,
+			lng: 7.206366
+		}
+	}
+};
+```
+
+Required fields from this payload:
+
+- top-level station id key, for example `VS1285`
+- `label`
+- `status`
+- `history`
+- `location.lat`
+- `location.lng`
+
+All other fields, such as `maintenance`, `message`, `type`, `labeltooltip`, `camera`, `model`, `connection`, `sensors`, and any future additions, are optional and MUST be ignored unless a later requirement explicitly introduces downstream use for them.
+
+### Latest observation endpoint
+
+- URL pattern: `https://portwind.no/api/v1/dbdata.php?stationid=<station-id>&dataset=latest`
+- Response type: JSON
+- Request model: one station id per request
+
+The required downstream shape is:
+
+```json
+{
+	"server_time": 1779181147000,
+	"last_measurement": 1779177600000,
+	"data": [
+		{
+			"uts": 1779177600000,
+			"temperature_min": 16,
+			"temperature_avg": 16.6,
+			"temperature_max": 16.8,
+			"wind_direction_avg": 172,
+			"wind_speed_avg": 3.1,
+			"wind_speed_max": 9.2,
+			"wind_gust": 8.2,
+			"pressure_avg": 1014
+		}
+	]
+}
+```
+
+Required fields from this payload:
+
+- `last_measurement`
+- `data[0].wind_speed_avg`
+- `data[0].wind_direction_avg`
+- `data[0].wind_gust` or `data[0].wind_speed_max`
+- `data[0].temperature_avg`
+
+Contract assumptions for this payload:
+
+- `last_measurement` is the authoritative timestamp for persisted `UpdatedAt`
+- timestamps are epoch milliseconds in UTC
+- `data` may be empty, in which case the observation sync skips persistence for that station without changing station activity
+- fields such as `server_time`, `uts`, `temperature_min`, `temperature_max`, and `pressure_avg` are optional for downstream behavior and are ignored unless a later requirement uses them
+- `wind_gust` is preferred for gust mapping, with `wind_speed_max` as fallback
+- fewer than 50 active stations are expected, so sequential requests without explicit rate limiting are operationally acceptable for the current design
+
 ### Station catalog parsing
 
 The PortWind station catalog client should:
