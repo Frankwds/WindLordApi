@@ -56,3 +56,9 @@ nunit-*.xml
 .vs/
 .openspec-bootstrap-tmp/
 .openspec-bootstrap-venv/
+
+.agents
+.claude
+.github/skills
+.github.agents
+.github/instructions

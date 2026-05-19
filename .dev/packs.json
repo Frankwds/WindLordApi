@@ -14,6 +14,16 @@
         ".dev/packs/spec-init/.skills/openspec-bootstrap/references/verification-guide.md",
         ".dev/packs/spec-init/README.md"
       ]
+    },
+    "dev-docs": {
+      "installedAt": "2026-05-19T08:15:59.6007689+00:00",
+      "updatedAt": "2026-05-19T08:15:59.6007689+00:00",
+      "files": [
+        ".dev/packs/dev-docs/README.md",
+        ".dev/packs/dev-docs/skills/adr-writer/SKILL.md",
+        ".dev/packs/dev-docs/skills/estimation-helper/SKILL.md",
+        ".dev/packs/dev-docs/skills/pr-description-writer/SKILL.md"
+      ]
     }
   }
 }
