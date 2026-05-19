@@ -17,6 +17,18 @@ public static class PortWindExtensions
     {
         services.AddOptions<PortWindOptions>()
             .Bind(configuration.GetSection(PortWindOptions.SectionName))
+            .PostConfigure(options =>
+            {
+                if (string.IsNullOrWhiteSpace(options.StationCatalogUrl))
+                {
+                    options.StationCatalogUrl = PortWindOptions.DefaultStationCatalogUrl;
+                }
+
+                if (string.IsNullOrWhiteSpace(options.LatestDataBaseUrl))
+                {
+                    options.LatestDataBaseUrl = PortWindOptions.DefaultLatestDataBaseUrl;
+                }
+            })
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
