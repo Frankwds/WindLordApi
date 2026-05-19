@@ -10,7 +10,7 @@ namespace WindLordApi.Tests.Unit.Services;
 public class StartupJobsTests
 {
     [Fact]
-    public async Task RunStartupJobsAsync_RunsPortWindStationRefreshBeforePortWindLatestData()
+    public async Task RunStartupJobsAsync_RunsPortWindJobsFirstWithRefreshBeforeLatestData()
     {
         // Arrange
         var executionOrder = new List<string>();
@@ -83,6 +83,8 @@ public class StartupJobsTests
         // Assert
         executionOrder.Should().Contain("PortWindRefresh");
         executionOrder.Should().Contain("PortWindLatest");
+        executionOrder[0].Should().Be("PortWindRefresh");
+        executionOrder[1].Should().Be("PortWindLatest");
         executionOrder.IndexOf("PortWindRefresh").Should().BeLessThan(executionOrder.IndexOf("PortWindLatest"));
     }
 }

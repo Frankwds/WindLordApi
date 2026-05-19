@@ -1,3 +1,4 @@
+using System.Text.Json;
 using WindLordApi.Data.Services;
 using WindLordApi.Integrations.PortWind;
 
@@ -70,6 +71,11 @@ public class PortWindLatestDataSyncService : IPortWindLatestDataSyncService
                 {
                     await _latestStationDataService.UpsertManyAsync(latestStationDataArray, cancellationToken);
                 }
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "PortWind: Invalid latest data payload for station {StationId}. Marking station inactive", stationId);
+                await _weatherStationService.SetStationsInactiveByProviderAsync(Provider, [stationId], cancellationToken);
             }
             catch (Exception ex)
             {

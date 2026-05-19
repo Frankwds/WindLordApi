@@ -153,13 +153,15 @@ builder.Services.AddScoped<DatabaseHealthCheck>();
 builder.Services.AddScoped<MetFrostHealthCheck>();
 builder.Services.AddScoped<HolfuyHealthCheck>();
 builder.Services.AddScoped<MetYrHealthCheck>();
+builder.Services.AddScoped<PortWindHealthCheck>();
 
 // Register Health Checks
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database", tags: ["db", "database"])
     .AddCheck<MetFrostHealthCheck>("metfrost", tags: ["api", "metfrost"])
     .AddCheck<HolfuyHealthCheck>("holfuy", tags: ["api", "holfuy"])
-    .AddCheck<MetYrHealthCheck>("metyr", tags: ["api", "metyr"]);
+    .AddCheck<MetYrHealthCheck>("metyr", tags: ["api", "metyr"])
+    .AddCheck<PortWindHealthCheck>("portwind", tags: ["api", "portwind"]);
 
 builder.Services.AddHostedService<Worker>();
 

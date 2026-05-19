@@ -23,6 +23,32 @@ public static class StartupJobs
     {
         logger.LogInformation("Running startup jobs...");
 
+        // Refresh PortWind stations before any other startup job so metadata exists for dependent syncs.
+        try
+        {
+            using var scope = serviceProvider.CreateScope();
+            var syncService = scope.ServiceProvider.GetRequiredService<IPortWindStationRefreshService>();
+            await syncService.SyncWeatherStationsAsync(cancellationToken);
+            logger.LogInformation("PortWind: Completed startup job: SyncWeatherStationsAsync");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "PortWind: Error running SyncWeatherStationsAsync on startup");
+        }
+
+        // Sync PortWind latest data immediately after station refresh.
+        try
+        {
+            using var scope = serviceProvider.CreateScope();
+            var syncService = scope.ServiceProvider.GetRequiredService<IPortWindLatestDataSyncService>();
+            await syncService.SyncLatestStationDataAsync(cancellationToken);
+            logger.LogInformation("PortWind: Completed startup job: SyncLatestStationDataAsync");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "PortWind: Error running SyncLatestStationDataAsync on startup");
+        }
+
         // Sync WindsMobi data on startup
         try
         {
@@ -73,32 +99,6 @@ public static class StartupJobs
         catch (Exception ex)
         {
             logger.LogError(ex, "Holfuy: Error running SyncHolfuyDataAsync on startup");
-        }
-
-        // Sync all weather stations on startup
-        try
-        {
-            using var scope = serviceProvider.CreateScope();
-            var syncService = scope.ServiceProvider.GetRequiredService<IPortWindStationRefreshService>();
-            await syncService.SyncWeatherStationsAsync(cancellationToken);
-            logger.LogInformation("PortWind: Completed startup job: SyncWeatherStationsAsync");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "PortWind: Error running SyncWeatherStationsAsync on startup");
-        }
-
-        // Sync PortWind latest data on startup
-        try
-        {
-            using var scope = serviceProvider.CreateScope();
-            var syncService = scope.ServiceProvider.GetRequiredService<IPortWindLatestDataSyncService>();
-            await syncService.SyncLatestStationDataAsync(cancellationToken);
-            logger.LogInformation("PortWind: Completed startup job: SyncLatestStationDataAsync");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "PortWind: Error running SyncLatestStationDataAsync on startup");
         }
 
         // Sync all weather stations on startup

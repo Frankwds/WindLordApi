@@ -48,6 +48,40 @@ public class PortWindClientTests
         stations["pw_1"].Location!.Longitude.Should().Be(10.54321m);
     }
 
+        [Fact]
+        public async Task FetchStationsAsync_GivenSingleQuotedStringsTrailingCommasAndUnicodeEscapes_ExtractsStationSet()
+        {
+                // Arrange
+                var client = CreateClient(
+                        """
+                        window.stations = {
+                            pw_1: {
+                                status: true,
+                                history: true,
+                                label: 'Troms\u00F8',
+                                location: { lat: 69.6492, lng: 18.9553 },
+                            },
+                            pw_2: {
+                                status: false,
+                                history: true,
+                                label: 'Bod\u00F8',
+                                location: { lat: 67.2804, lng: 14.4049 },
+                            },
+                        };
+                        window.renderStations();
+                        """);
+
+                // Act
+                var stations = await client.FetchStationsAsync(TestContext.Current.CancellationToken);
+
+                // Assert
+                stations.Should().HaveCount(2);
+                stations["pw_1"].Label.Should().Be("Tromsø");
+                stations["pw_2"].Label.Should().Be("Bodø");
+                stations["pw_2"].Location!.Latitude.Should().Be(67.2804m);
+                stations["pw_2"].Location!.Longitude.Should().Be(14.4049m);
+        }
+
     [Fact]
     public async Task FetchStationsAsync_GivenMissingStationsAssignment_ThrowsFormatException()
     {

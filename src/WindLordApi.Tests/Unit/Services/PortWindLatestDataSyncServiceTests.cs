@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -93,5 +94,63 @@ public class PortWindLatestDataSyncServiceTests
         _portWindClientMock.Verify(client => client.FetchLatestDataAsync("pw-3", It.IsAny<CancellationToken>()), Times.Once);
         _stationDataServiceMock.Verify(service => service.UpsertManyAsync(It.Is<StationData[]>(data => data.Length == 1 && data[0].StationId == "pw-1"), It.IsAny<CancellationToken>()), Times.Once);
         _latestStationDataServiceMock.Verify(service => service.UpsertManyAsync(It.Is<LatestStationData[]>(data => data.Length == 1 && data[0].StationId == "pw-1"), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SyncLatestStationDataAsync_GivenInvalidJsonForStation_SetsStationInactiveAndContinues()
+    {
+        // Arrange
+        var successfulResponse = new PortWindLatestResponse
+        {
+            LastMeasurement = 1732968000000L,
+            Data = new[] { new PortWindLatestDataPoint { WindSpeedAverage = 5m, WindDirectionAverage = 180m } }
+        };
+        var stationData = new StationData
+        {
+            StationId = "pw-2",
+            WindSpeed = 5m,
+            Direction = 180,
+            UpdatedAt = DateTimeOffset.FromUnixTimeMilliseconds(1732968000000L).UtcDateTime,
+            IsCompressed = false
+        };
+
+        _weatherStationServiceMock
+            .Setup(service => service.GetActiveStationIdsByProviderAsync(PortWindOptions.ProviderName, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { "pw-1", "pw-2" });
+
+        _portWindClientMock
+            .Setup(client => client.FetchLatestDataAsync("pw-1", It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new JsonException("invalid payload"));
+        _portWindClientMock
+            .Setup(client => client.FetchLatestDataAsync("pw-2", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(successfulResponse);
+
+        _weatherStationServiceMock
+            .Setup(service => service.SetStationsInactiveByProviderAsync(PortWindOptions.ProviderName, It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        _portWindMappingMock
+            .Setup(mapping => mapping.MapToStationData("pw-2", successfulResponse))
+            .Returns(stationData);
+
+        _stationDataServiceMock
+            .Setup(service => service.UpsertManyAsync(It.IsAny<StationData[]>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+        _latestStationDataServiceMock
+            .Setup(service => service.UpsertManyAsync(It.IsAny<LatestStationData[]>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        // Act
+        var insertedCount = await _service.SyncLatestStationDataAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        insertedCount.Should().Be(1);
+        _weatherStationServiceMock.Verify(
+            service => service.SetStationsInactiveByProviderAsync(
+                PortWindOptions.ProviderName,
+                It.Is<IEnumerable<string>>(stationIds => stationIds.SequenceEqual(new[] { "pw-1" })),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        _stationDataServiceMock.Verify(service => service.UpsertManyAsync(It.Is<StationData[]>(data => data.Length == 1 && data[0].StationId == "pw-2"), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

@@ -112,6 +112,7 @@ public class PortWindClient : IPortWindClient
 
         var depth = 0;
         var inString = false;
+        var stringDelimiter = '\0';
         var escaping = false;
 
         for (var i = objectStartIndex; i < scriptContent.Length; i++)
@@ -128,17 +129,19 @@ public class PortWindClient : IPortWindClient
                 {
                     escaping = true;
                 }
-                else if (current == '"')
+                else if (current == stringDelimiter)
                 {
                     inString = false;
+                    stringDelimiter = '\0';
                 }
 
                 continue;
             }
 
-            if (current == '"')
+            if (current is '\'' or '"')
             {
                 inString = true;
+                stringDelimiter = current;
                 continue;
             }
 
@@ -161,131 +164,166 @@ public class PortWindClient : IPortWindClient
 
     private static string ConvertJavaScriptObjectLiteralToJson(string objectLiteral)
     {
-        var output = new StringBuilder(objectLiteral.Length + 32);
-        var contexts = new Stack<ContainerContext>();
-        var inString = false;
-        var escaping = false;
+        var builder = new StringBuilder(objectLiteral.Length + 32);
 
-        for (var i = 0; i < objectLiteral.Length; i++)
+        for (var index = 0; index < objectLiteral.Length;)
         {
-            var current = objectLiteral[i];
+            var current = objectLiteral[index];
 
-            if (inString)
+            if (current is '\'' or '"')
             {
-                output.Append(current);
+                builder.Append(JsonSerializer.Serialize(ReadQuotedString(objectLiteral, ref index)));
+                continue;
+            }
 
-                if (escaping)
+            if (current is '{' or ',')
+            {
+                builder.Append(current);
+                index++;
+
+                while (index < objectLiteral.Length && char.IsWhiteSpace(objectLiteral[index]))
                 {
-                    escaping = false;
+                    builder.Append(objectLiteral[index]);
+                    index++;
                 }
-                else if (current == '\\')
+
+                if (TryReadPropertyIdentifier(objectLiteral, ref index, out var identifier))
                 {
-                    escaping = true;
-                }
-                else if (current == '"')
-                {
-                    inString = false;
+                    builder.Append('"').Append(identifier).Append('"');
+                    continue;
                 }
 
                 continue;
             }
 
-            switch (current)
+            if (current is '}' or ']')
             {
-                case '"':
-                    inString = true;
-                    output.Append(current);
-                    break;
-
-                case '{':
-                    contexts.Push(new ContainerContext(isObject: true, expectKey: true));
-                    output.Append(current);
-                    break;
-
-                case '[':
-                    contexts.Push(new ContainerContext(isObject: false, expectKey: false));
-                    output.Append(current);
-                    break;
-
-                case '}':
-                case ']':
-                    if (contexts.Count > 0)
-                    {
-                        contexts.Pop();
-                    }
-
-                    output.Append(current);
-                    break;
-
-                case ':':
-                    if (contexts.Count > 0 && contexts.Peek().IsObject)
-                    {
-                        contexts.Peek().ExpectKey = false;
-                    }
-
-                    output.Append(current);
-                    break;
-
-                case ',':
-                    if (contexts.Count > 0 && contexts.Peek().IsObject)
-                    {
-                        contexts.Peek().ExpectKey = true;
-                    }
-
-                    output.Append(current);
-                    break;
-
-                default:
-                    if (char.IsWhiteSpace(current))
-                    {
-                        output.Append(current);
-                        break;
-                    }
-
-                    if (ShouldQuoteIdentifier(contexts, current))
-                    {
-                        var startIndex = i;
-                        while (i < objectLiteral.Length && IsIdentifierPart(objectLiteral[i]))
-                        {
-                            i++;
-                        }
-
-                        var identifier = objectLiteral.Substring(startIndex, i - startIndex);
-                        output.Append('"').Append(identifier).Append('"');
-                        i--;
-                        break;
-                    }
-
-                    output.Append(current);
-                    break;
+                RemoveTrailingComma(builder);
+                builder.Append(current);
+                index++;
+                continue;
             }
+
+            builder.Append(current);
+            index++;
         }
 
-        return output.ToString();
+        return builder.ToString();
     }
 
-    private static bool ShouldQuoteIdentifier(Stack<ContainerContext> contexts, char current)
+    private static string ReadQuotedString(string input, ref int index)
     {
-        return contexts.Count > 0
-            && contexts.Peek().IsObject
-            && contexts.Peek().ExpectKey
-            && IsIdentifierStart(current);
+        var delimiter = input[index++];
+        var builder = new StringBuilder();
+
+        while (index < input.Length)
+        {
+            var current = input[index++];
+
+            if (current == '\\')
+            {
+                if (index >= input.Length)
+                {
+                    throw new FormatException("PortWind station catalog contained an unterminated escape sequence.");
+                }
+
+                var escaped = input[index++];
+                builder.Append(escaped switch
+                {
+                    '\\' => '\\',
+                    '\'' => '\'',
+                    '"' => '"',
+                    '/' => '/',
+                    'b' => '\b',
+                    'f' => '\f',
+                    'n' => '\n',
+                    'r' => '\r',
+                    't' => '\t',
+                    'u' => ReadUnicodeEscape(input, ref index),
+                    _ => escaped
+                });
+                continue;
+            }
+
+            if (current == delimiter)
+            {
+                return builder.ToString();
+            }
+
+            builder.Append(current);
+        }
+
+        throw new FormatException("PortWind station catalog contained an unterminated string.");
     }
 
-    private static bool IsIdentifierStart(char value)
+    private static char ReadUnicodeEscape(string input, ref int index)
     {
-        return char.IsLetter(value) || value == '_' || value == '$';
+        if (index + 4 > input.Length)
+        {
+            throw new FormatException("PortWind station catalog contained an incomplete unicode escape.");
+        }
+
+        var hex = input.Substring(index, 4);
+        index += 4;
+        if (!ushort.TryParse(hex, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out var value))
+        {
+            throw new FormatException("PortWind station catalog contained an invalid unicode escape.");
+        }
+
+        return (char)value;
     }
 
-    private static bool IsIdentifierPart(char value)
+    private static bool TryReadPropertyIdentifier(string input, ref int index, out string identifier)
     {
-        return char.IsLetterOrDigit(value) || value == '_' || value == '$';
+        identifier = string.Empty;
+        if (index >= input.Length)
+        {
+            return false;
+        }
+
+        if (!(char.IsLetter(input[index]) || input[index] is '_' or '$'))
+        {
+            return false;
+        }
+
+        var start = index;
+        index++;
+        while (index < input.Length && (char.IsLetterOrDigit(input[index]) || input[index] is '_' or '$'))
+        {
+            index++;
+        }
+
+        var end = index;
+        while (index < input.Length && char.IsWhiteSpace(input[index]))
+        {
+            index++;
+        }
+
+        if (index >= input.Length || input[index] != ':')
+        {
+            index = start;
+            return false;
+        }
+
+        identifier = input[start..end];
+        return true;
     }
 
-    private sealed class ContainerContext(bool isObject, bool expectKey)
+    private static void RemoveTrailingComma(StringBuilder builder)
     {
-        public bool IsObject { get; } = isObject;
+        for (var index = builder.Length - 1; index >= 0; index--)
+        {
+            if (char.IsWhiteSpace(builder[index]))
+            {
+                continue;
+            }
 
-        public bool ExpectKey { get; set; } = expectKey;
+            if (builder[index] == ',')
+            {
+                builder.Remove(index, 1);
+            }
+
+            break;
+        }
     }
 }
