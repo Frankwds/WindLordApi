@@ -1,0 +1,57 @@
+schema: spec-driven
+
+context: |
+  ## Tech Stack
+  C# with .NET 9 across a Worker service, shared Data library, Integrations library, and xUnit test project.
+  Worker runtime uses Cronos for scheduling, Serilog for logging, and ASP.NET Core hosting/health checks.
+  Persistence uses Entity Framework Core 9 with Npgsql against PostgreSQL/Supabase and FlexLabs upsert support.
+  Integrations are outbound HTTP clients for Holfuy, MetFrost, MetYr, WindsMobi, and Google Geocoding.
+  Build and test use NuGet plus `dotnet build`, `dotnet test`, `dotnet publish`, and `dotnet watch run`.
+
+  ## Architecture
+  This repository is a layered background-worker system with no public HTTP API surface.
+  `WindLordApi.Worker` orchestrates startup jobs, cron schedules, health checks, and provider update workflows.
+  `WindLordApi.Data` owns EF Core models, repositories, services, migrations, and database invariants.
+  `WindLordApi.Integrations` owns provider clients, DTOs, mappings, options, and DI extension methods.
+  Data flows from provider clients through mappings into worker sync/update services and then into data services and repositories.
+
+  ## Domain Overview
+  The core domains are weather-station integration, forecast caching, and paragliding location management.
+  Key entities are WeatherStation, StationData, LatestStationData, ParaglidingLocation, and ForecastCache.
+  Important workflows are provider synchronization, prioritized forecast refresh, and country enrichment for stations missing country metadata.
+  Preserve project vocabulary such as provider, weather station, latest station data, forecast cache, paragliding location, main location, and active station.
+
+  ## Conventions
+  Follow standard .NET naming: PascalCase for types/members, `I*` interfaces, and `Async` suffixes for asynchronous methods.
+  Keep layering intact: worker orchestration depends on integrations and data services; integration clients should not own persistence logic.
+  Prefer repository/service entry points in `WindLordApi.Data` for database access instead of ad hoc EF Core usage in worker code.
+  Use XML documentation where the surrounding code already documents public contracts.
+  Log failures with `ILogger<T>` and preserve cancellation token flow in async methods.
+  Tests belong in `src/WindLordApi.Tests` with unit vs integration coverage chosen by behavior scope.
+
+  ## External Dependencies
+  Upstream providers: Holfuy, MetFrost, MetYr, WindsMobi, and Google Geocoding.
+  Database and deployment environment: PostgreSQL/Supabase plus a GitHub Actions deployment to a self-hosted Linux ARM64 service host.
+  Secrets are supplied through user secrets and environment-backed configuration, never checked into the repository.
+
+rules:
+  proposal:
+    - Identify which module(s) and domain(s) the change affects: Worker, Data, Integrations, Tests.
+    - Call out any database schema, migration, cron schedule, or startup-job impact explicitly.
+    - Note secret/configuration changes for provider credentials, connection strings, or environment-specific settings.
+    - State out-of-scope items clearly when a change touches multiple providers or workflows.
+  specs:
+    - Use Given/When/Then scenarios and the project's actual domain terms.
+    - Describe observable behavior, not DTO or EF Core implementation details.
+    - Preserve data invariants such as unique station observations, latest-data projection, and forecast retention semantics.
+    - Use SHOULD instead of MUST when behavior is inferred but not directly enforced in code.
+  design:
+    - Show how the change moves through integrations, worker orchestration, and data persistence layers.
+    - Include migration and rollback strategy for any schema or persistence change.
+    - Include cron, batching, retention, or provider-specific operational effects when relevant.
+    - Prefer existing repository, mapping, and options patterns before introducing new abstractions.
+  tasks:
+    - Order work by dependency: integrations/data contracts, persistence, worker orchestration, tests, docs.
+    - Keep tasks small enough to validate independently with build or test commands.
+    - Include focused validation for every behavior change and list the exact command where possible.
+    - Include configuration or secret-setup tasks when a change adds or changes external-provider requirements.
