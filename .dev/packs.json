@@ -1,0 +1,19 @@
+{
+  "packs": {
+    "spec-init": {
+      "installedAt": "2026-05-18T08:33:58.1994806+00:00",
+      "updatedAt": "2026-05-18T08:33:58.1994806+00:00",
+      "files": [
+        ".dev/packs/spec-init/.DS_Store",
+        ".dev/packs/spec-init/.skills/openspec-bootstrap/SKILL.md",
+        ".dev/packs/spec-init/.skills/openspec-bootstrap/references/agent-catalog.md",
+        ".dev/packs/spec-init/.skills/openspec-bootstrap/references/analysis-guide.md",
+        ".dev/packs/spec-init/.skills/openspec-bootstrap/references/config-examples.md",
+        ".dev/packs/spec-init/.skills/openspec-bootstrap/references/instruction-templates.md",
+        ".dev/packs/spec-init/.skills/openspec-bootstrap/references/tool-conventions.md",
+        ".dev/packs/spec-init/.skills/openspec-bootstrap/references/verification-guide.md",
+        ".dev/packs/spec-init/README.md"
+      ]
+    }
+  }
+}

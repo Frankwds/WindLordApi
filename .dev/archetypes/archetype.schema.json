@@ -1,0 +1,859 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://twoday.dk/schemas/dev/archetype.schema.json",
+    "title": "Dev Archetype Definition",
+    "description": "Defines an archetype for scaffolding integration features with files, actions, and post-actions.",
+    "type": "object",
+    "required": [
+        "name",
+        "displayName",
+        "description",
+        "version"
+    ],
+    "properties": {
+        "$schema": {
+            "type": "string",
+            "description": "Reference to this schema for IDE support."
+        },
+        "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "Unique identifier for the archetype (kebab-case)."
+        },
+        "displayName": {
+            "type": "string",
+            "description": "Human-readable name shown in CLI output."
+        },
+        "description": {
+            "type": "string",
+            "description": "Detailed description of what this archetype creates."
+        },
+        "version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "description": "Semantic version of the archetype."
+        },
+        "extends": {
+            "type": "string",
+            "description": "Name of a parent archetype to inherit from. Inherited files/actions execute first."
+        },
+        "internal": {
+            "type": "boolean",
+            "default": false,
+            "description": "If true, this archetype is internal and not visible in 'archetype list' or usable via 'archetype new'. Internal archetypes can only be invoked programmatically by other CLI commands."
+        },
+        "triggers": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "http",
+                    "servicebus",
+                    "timer",
+                    "blob",
+                    "queue",
+                    "eventgrid",
+                    "durable"
+                ]
+            },
+            "description": "Supported Azure Function trigger types for this archetype."
+        },
+        "defaultTrigger": {
+            "type": "string",
+            "enum": [
+                "http",
+                "servicebus",
+                "timer",
+                "blob",
+                "queue",
+                "eventgrid",
+                "durable"
+            ],
+            "description": "Default trigger if not specified by user."
+        },
+        "targetProjects": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "Functions.*",
+                    "Web.Api",
+                    "Services.DataContracts",
+                    "Services.DocumentDatabase",
+                    "Services.RelationalDatabase"
+                ]
+            },
+            "description": "Projects this archetype can target. Supports wildcards."
+        },
+        "requiresProject": {
+            "type": "boolean",
+            "description": "Whether this archetype requires a target project. Defaults to true if targetProjects is defined, false otherwise. Set to false for archetypes that don't generate project-specific files (e.g., ADRs, documentation)."
+        },
+        "requiresNamespace": {
+            "type": "boolean",
+            "description": "Whether this archetype requires a namespace/subdirectory path. Defaults to true if requiresProject is true. Set to false for archetypes that don't need namespace organization."
+        },
+        "supportsSchemaInference": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether this archetype supports inferring types from a JSON schema file. Defaults to false. Set to true for archetypes that can generate code from schema files (e.g., entity-from-schema)."
+        },
+        "requiresSchemaInference": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether this archetype requires a JSON schema file for type inference. When true, the interactive mode skips the confirmation prompt and goes directly to file selection. Implies supportsSchemaInference = true."
+        },
+        "parameters": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/$defs/parameterDefinition"
+            },
+            "description": "Parameters available for template rendering and action execution."
+        },
+        "files": {
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/fileDefinition"
+            },
+            "description": "Files to generate from templates."
+        },
+        "actions": {
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/actionDefinition"
+            },
+            "description": "Actions to perform after file generation (modify existing files, add references, etc.)."
+        },
+        "postActions": {
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/postActionDefinition"
+            },
+            "description": "Final actions after all generation is complete (messages, commands)."
+        }
+    },
+    "$defs": {
+        "parameterDefinition": {
+            "type": "object",
+            "required": [
+                "type",
+                "description"
+            ],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "string",
+                        "boolean",
+                        "number",
+                        "array",
+                        "object"
+                    ],
+                    "description": "Data type of the parameter."
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Help text shown in CLI."
+                },
+                "source": {
+                    "type": "string",
+                    "enum": [
+                        "argument",
+                        "inferred",
+                        "computed",
+                        "environment",
+                        "prompt"
+                    ],
+                    "default": "argument",
+                    "description": "How the parameter value is obtained."
+                },
+                "required": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether CLI must provide this value."
+                },
+                "default": {
+                    "description": "Default value if not provided."
+                },
+                "allowedValues": {
+                    "type": "array",
+                    "description": "Restrict to specific values (creates enum in CLI)."
+                },
+                "computed": {
+                    "type": "string",
+                    "description": "Scriban expression to compute value from other parameters."
+                },
+                "inferredFrom": {
+                    "type": "string",
+                    "enum": [
+                        "schemaFileName",
+                        "schemaProperties",
+                        "schemaNestedObjects",
+                        "projectName",
+                        "moduleName"
+                    ],
+                    "description": "Source for inferred values (used with source: inferred)."
+                },
+                "transform": {
+                    "type": "string",
+                    "enum": [
+                        "PascalCase",
+                        "camelCase",
+                        "kebab-case",
+                        "snake_case",
+                        "UPPER_CASE",
+                        "Pluralize",
+                        "Singularize"
+                    ],
+                    "description": "String transformation to apply."
+                },
+                "prefix": {
+                    "type": "string",
+                    "description": "Prefix to add to inferred/computed value."
+                },
+                "suffix": {
+                    "type": "string",
+                    "description": "Suffix to add to inferred/computed value."
+                },
+                "itemSchema": {
+                    "type": "object",
+                    "description": "Schema for array items (when type is array)."
+                }
+            }
+        },
+        "fileDefinition": {
+            "type": "object",
+            "required": [
+                "template",
+                "output"
+            ],
+            "properties": {
+                "template": {
+                    "type": "string",
+                    "description": "Path to the .scriban template file, relative to archetype directory."
+                },
+                "output": {
+                    "type": "string",
+                    "description": "Output file path. Supports Scriban expressions like {{FeatureName}}Handler.cs"
+                },
+                "targetProject": {
+                    "type": "string",
+                    "description": "Target project for the file. If omitted, uses the project from CLI args. Supports Scriban expressions."
+                },
+                "targetPath": {
+                    "type": "string",
+                    "description": "Path within target project. Combined with output for final path. Supports Scriban expressions."
+                },
+                "condition": {
+                    "type": "string",
+                    "description": "Scriban expression that must evaluate to true for file to be generated. Use 'always' for unconditional."
+                },
+                "overwrite": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to overwrite existing file. Default is to skip with warning."
+                }
+            }
+        },
+        "actionDefinition": {
+            "type": "object",
+            "required": [
+                "type"
+            ],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "create-file",
+                        "modify-bicep",
+                        "modify-bicepparam",
+                        "modify-yaml",
+                        "modify-json",
+                        "modify-text",
+                        "modify-csproj",
+                        "add-project-reference",
+                        "run-command",
+                        "copilot"
+                    ],
+                    "description": "The type of action to perform."
+                },
+                "condition": {
+                    "type": "string",
+                    "description": "Scriban expression. Action only runs if this evaluates to true."
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Human-readable description shown during execution."
+                },
+                "file": {
+                    "type": "string",
+                    "description": "Target file path (resolved via Scriban). Used by modify-* actions."
+                },
+                "targetProject": {
+                    "type": "string",
+                    "description": "Target project for cross-project operations."
+                },
+                "parameters": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Action-specific parameters."
+                }
+            },
+            "allOf": [
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "create-file"
+                            }
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "template": {
+                                        "type": "string",
+                                        "description": "Template file path relative to archetype directory."
+                                    },
+                                    "targetPath": {
+                                        "type": "string",
+                                        "description": "Path within target project for the generated file."
+                                    },
+                                    "overwrite": {
+                                        "type": "boolean",
+                                        "default": false
+                                    }
+                                },
+                                "required": [
+                                    "template",
+                                    "targetPath"
+                                ]
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "modify-bicep"
+                            }
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "operation": {
+                                        "type": "string",
+                                        "enum": [
+                                            "add-parameter",
+                                            "add-variable",
+                                            "add-resource",
+                                            "add-module",
+                                            "add-import",
+                                            "add-property-to-type",
+                                            "add-property-to-variable",
+                                            "add-element-to-array"
+                                        ],
+                                        "description": "Type of Bicep modification."
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name of the property/parameter/variable to add."
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "description": "Bicep type (string, int, bool, object, array) for parameters/properties."
+                                    },
+                                    "resourceType": {
+                                        "type": "string",
+                                        "description": "Azure resource type for add-resource (e.g., 'Microsoft.ServiceBus/namespaces/queues@2024-01-01'). Preferred over 'type' to avoid conflict with action type."
+                                    },
+                                    "value": {
+                                        "type": "string",
+                                        "description": "Value for variables or default value for parameters."
+                                    },
+                                    "path": {
+                                        "type": "string",
+                                        "description": "Module path for add-module, or import path for add-import."
+                                    },
+                                    "deploymentName": {
+                                        "type": "string",
+                                        "description": "Deployment name for add-module."
+                                    },
+                                    "properties": {
+                                        "type": "object",
+                                        "description": "Properties for add-resource or add-module."
+                                    },
+                                    "parent": {
+                                        "type": "string",
+                                        "description": "Parent resource symbolic name for add-resource."
+                                    },
+                                    "targetType": {
+                                        "type": "string",
+                                        "description": "Target type name for add-property-to-type."
+                                    },
+                                    "targetVariable": {
+                                        "type": "string",
+                                        "description": "Target variable name for add-property-to-variable or add-element-to-array."
+                                    }
+                                },
+                                "required": [
+                                    "operation"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "file"
+                        ]
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "modify-yaml"
+                            }
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "operation": {
+                                        "type": "string",
+                                        "enum": [
+                                            "add-to-array",
+                                            "set-property",
+                                            "merge-object",
+                                            "remove-node"
+                                        ],
+                                        "description": "Type of YAML modification."
+                                    },
+                                    "path": {
+                                        "type": "string",
+                                        "description": "Dot-notation path to the target location (e.g., 'stages.0.jobs')."
+                                    },
+                                    "value": {
+                                        "description": "Value to add/set. Can be string, object, or array."
+                                    },
+                                    "position": {
+                                        "type": "string",
+                                        "enum": [
+                                            "start",
+                                            "end"
+                                        ],
+                                        "default": "end",
+                                        "description": "Position for array insertions."
+                                    }
+                                },
+                                "required": [
+                                    "operation",
+                                    "path"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "file"
+                        ]
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "modify-json"
+                            }
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "operation": {
+                                        "type": "string",
+                                        "enum": [
+                                            "set-property",
+                                            "add-to-array",
+                                            "merge-object",
+                                            "remove-node"
+                                        ],
+                                        "description": "Type of JSON modification."
+                                    },
+                                    "path": {
+                                        "type": "string",
+                                        "description": "Dot-notation path to the target location (e.g., 'Values.AzureFunctions')."
+                                    },
+                                    "value": {
+                                        "description": "Value to set/add. Supports Scriban in string values."
+                                    },
+                                    "position": {
+                                        "type": "string",
+                                        "enum": [
+                                            "start",
+                                            "end"
+                                        ],
+                                        "default": "end",
+                                        "description": "Position for array insertions."
+                                    }
+                                },
+                                "required": [
+                                    "operation",
+                                    "path"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "file"
+                        ]
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "modify-csproj"
+                            }
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "operation": {
+                                        "type": "string",
+                                        "enum": [
+                                            "add-package-reference",
+                                            "set-property",
+                                            "add-item"
+                                        ],
+                                        "description": "Type of csproj modification."
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Package name (for add-package-reference) or property name (for set-property)."
+                                    },
+                                    "value": {
+                                        "type": "string",
+                                        "description": "Package version (for add-package-reference, omit if using central package management) or property value (for set-property) or include path (for add-item)."
+                                    },
+                                    "itemType": {
+                                        "type": "string",
+                                        "description": "Item type for add-item (e.g., 'Compile', 'Content', 'None')."
+                                    },
+                                    "metadata": {
+                                        "type": "object",
+                                        "description": "Additional metadata for add-item."
+                                    }
+                                },
+                                "required": [
+                                    "operation"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "file"
+                        ]
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "add-project-reference"
+                            }
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "project": {
+                                        "type": "string",
+                                        "description": "Project that will receive the reference. Supports Scriban."
+                                    },
+                                    "reference": {
+                                        "type": "string",
+                                        "description": "Project to reference (e.g., 'Services.DataContracts')."
+                                    }
+                                },
+                                "required": [
+                                    "project",
+                                    "reference"
+                                ]
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "run-command"
+                            }
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "command": {
+                                        "type": "string",
+                                        "description": "Shell command to execute. Supports Scriban."
+                                    },
+                                    "workingDirectory": {
+                                        "type": "string",
+                                        "description": "Working directory for the command. Defaults to repository root."
+                                    },
+                                    "failOnError": {
+                                        "type": "boolean",
+                                        "default": true,
+                                        "description": "Whether to fail the action if command returns non-zero exit code."
+                                    }
+                                },
+                                "required": [
+                                    "command"
+                                ]
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "copilot"
+                            }
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "prompt": {
+                                        "type": "string",
+                                        "description": "Natural language prompt for GitHub Copilot."
+                                    },
+                                    "workingDirectory": {
+                                        "type": "string",
+                                        "description": "Working directory for the session (default: repo root)."
+                                    },
+                                    "model": {
+                                        "type": "string",
+                                        "description": "Specific model to use (e.g. gpt-4)."
+                                    },
+                                    "systemMessage": {
+                                        "type": "string",
+                                        "description": "System message to prepend to the conversation."
+                                    },
+                                    "agent": {
+                                        "type": "string",
+                                        "description": "Name of a pre-configured agent (e.g. adr-architect) to use for instructions."
+                                    },
+                                    "timeout": {
+                                        "type": "integer",
+                                        "description": "Timeout in seconds. Use -1 for indefinite (default: 120)."
+                                    },
+                                    "availableTools": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "description": "List of enabled tools for the agent."
+                                    }
+                                },
+                                "required": [
+                                    "prompt"
+                                ]
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "modify-text"
+                            }
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "operation": {
+                                        "type": "string",
+                                        "enum": [
+                                            "insert-after-pattern",
+                                            "insert-before-pattern",
+                                            "replace-pattern",
+                                            "add-using"
+                                        ],
+                                        "description": "Type of C# file modification."
+                                    },
+                                    "pattern": {
+                                        "type": "string",
+                                        "description": "Pattern to search for in the file. Supports Scriban. Can be literal text or regex (if isRegex is true)."
+                                    },
+                                    "value": {
+                                        "type": "string",
+                                        "description": "Content to insert or replace with. Supports Scriban. Either 'value' or 'valuePath' must be provided."
+                                    },
+                                    "valuePath": {
+                                        "type": "string",
+                                        "description": "Path to a Scriban template file containing the content to insert. Either 'value' or 'valuePath' must be provided."
+                                    },
+                                    "namespace": {
+                                        "type": "string",
+                                        "description": "Namespace to add (for add-using operation). Supports Scriban."
+                                    },
+                                    "isRegex": {
+                                        "type": "boolean",
+                                        "default": false,
+                                        "description": "Whether the pattern is a regular expression."
+                                    },
+                                    "matchLast": {
+                                        "type": "boolean",
+                                        "default": false,
+                                        "description": "If true, matches the last occurrence instead of the first."
+                                    },
+                                    "matchUntil": {
+                                        "type": "string",
+                                        "description": "When using regex, extends the match until this pattern is found."
+                                    },
+                                    "skipIfContains": {
+                                        "type": "string",
+                                        "description": "Skip the operation if the file already contains this text."
+                                    },
+                                    "indentation": {
+                                        "type": "integer",
+                                        "description": "Number of spaces to indent the inserted content. Supports Scriban."
+                                    },
+                                    "continueOnError": {
+                                        "type": "boolean",
+                                        "default": false,
+                                        "description": "If true, continues execution even if the operation fails (e.g., pattern not found)."
+                                    }
+                                },
+                                "required": [
+                                    "operation"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "file"
+                        ]
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "const": "modify-bicepparam"
+                            }
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "operation": {
+                                        "type": "string",
+                                        "enum": [
+                                            "add-object-to-array",
+                                            "add-property",
+                                            "add-parameter-assignment"
+                                        ],
+                                        "description": "Type of .bicepparam file modification."
+                                    },
+                                    "paramName": {
+                                        "type": "string",
+                                        "description": "Name of the parameter to modify (for add-object-to-array and add-property)."
+                                    },
+                                    "propertyPath": {
+                                        "type": "string",
+                                        "description": "Dot-notation path within the object for nested properties (for add-property)."
+                                    },
+                                    "properties": {
+                                        "type": "object",
+                                        "description": "Object properties to add. Values support Scriban expressions."
+                                    },
+                                    "identifyingProperty": {
+                                        "type": "string",
+                                        "description": "Property name used to identify existing objects in array (for add-object-to-array)."
+                                    },
+                                    "skipIfExists": {
+                                        "type": "boolean",
+                                        "default": true,
+                                        "description": "Skip operation if object/property already exists."
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Parameter name (for add-parameter-assignment)."
+                                    },
+                                    "value": {
+                                        "type": "string",
+                                        "description": "Parameter value (for add-parameter-assignment). Supports Scriban."
+                                    }
+                                },
+                                "required": [
+                                    "operation"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "file"
+                        ]
+                    }
+                }
+            ]
+        },
+        "postActionDefinition": {
+            "type": "object",
+            "required": [
+                "type"
+            ],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "info",
+                        "warning",
+                        "success",
+                        "run-command",
+                        "open-file"
+                    ],
+                    "description": "Type of post-action."
+                },
+                "message": {
+                    "type": "string",
+                    "description": "Message to display (for info/warning/success). Supports Scriban."
+                },
+                "command": {
+                    "type": "string",
+                    "description": "Command to show/run (for run-command). Supports Scriban."
+                },
+                "file": {
+                    "type": "string",
+                    "description": "File to open in editor (for open-file). Supports Scriban."
+                },
+                "condition": {
+                    "type": "string",
+                    "description": "Scriban expression. Post-action only runs if this evaluates to true."
+                }
+            }
+        }
+    }
+}

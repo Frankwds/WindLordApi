@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "mermaid-diagrams",
+  "owner": "el-feo",
+  "repo": "ai-context",
+  "path": "plugins/general/skills/mermaid-diagrams",
+  "branch": "main",
+  "sha": "93bde8ad7c8a5ef7f72fc564e58cd607660e8cfd",
+  "source": "manual"
+}

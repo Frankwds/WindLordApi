@@ -1,0 +1,58 @@
+schema: spec-driven
+
+context: |
+  ## Tech Stack
+  C# with .NET 9 across a worker host, data access library, integrations library, and xUnit test project.
+  Entity Framework Core 9 with Npgsql targets PostgreSQL and uses FlexLabs upsert support for batch persistence.
+  Microsoft.Extensions hosting, dependency injection, configuration, options validation, and health checks shape the runtime.
+  Serilog provides structured console and file logging.
+  Cron-based scheduling is used for recurring sync workflows.
+
+  ## Architecture
+  The system is a modular layered worker service rather than a public API.
+  WindLordApi.Worker owns startup, DI, schedules, and orchestrated sync workflows.
+  WindLordApi.Integrations wraps provider-specific HTTP clients, options, DTOs, and mapping logic.
+  WindLordApi.Data owns EF Core entities, repositories, services, views, and transaction boundaries.
+  Data flows from external provider clients through mapping and sync services into repositories and PostgreSQL.
+
+  ## Domain Overview
+  The application aggregates weather and wind data for paragliding locations.
+  Core domains are forecast supply, weather station network management, observation ingestion, and location enrichment.
+  Core entities include ParaglidingLocation, ForecastCache, WeatherStation, StationData, and LatestStationData.
+  Important invariants include forecast cleanup before refresh, metadata before observation writes for newly discovered stations, and latest-station snapshots derived from observation history.
+
+  ## Conventions
+  Namespaces follow WindLordApi.<Project>.<Feature>.
+  Types and methods use PascalCase; interfaces use I prefixes; locals and parameters use camelCase.
+  Integrations are organized per provider with Client, Options, Mapping, and model files.
+  Data access goes through repositories and the unit-of-work boundary rather than ad hoc DbContext usage from orchestration code.
+  Configuration uses strongly typed options with startup validation.
+  Tests are split into Unit and Integration folders and commonly use shared builders and fixtures.
+
+  ## External Dependencies
+  MetYr provides forecast data.
+  MetFrost, Holfuy, and WindsMobi provide weather station metadata or observations.
+  Google Geocoding provides country lookup for locations.
+  PostgreSQL appears to be hosted through Supabase, with deployment to a self-hosted Linux ARM64 machine via GitHub Actions and systemd.
+
+rules:
+  proposal:
+    - Identify which domains are affected: forecast-supply, weather-station-network, observation-ingestion, location-enrichment, or shared-sync-orchestration.
+    - Call out provider contract changes, secret/config changes, and database migration impact explicitly.
+    - State the validation plan and any operational consequences for schedules or deployment.
+    - Keep out-of-scope sections explicit when a change touches multiple providers or projects.
+  specs:
+    - Use Given/When/Then scenarios for observable worker behavior.
+    - Prefer the existing domain vocabulary: ParaglidingLocation, WeatherStation, ForecastCache, StationData, LatestStationData, Provider.
+    - Separate provider-specific behavior from normalized persistence behavior.
+    - Use MUST only for behavior enforced by the current code or schema; use SHOULD when behavior is inferred from current patterns.
+  design:
+    - Preserve the worker -> service -> integration/data layering unless a proposal explicitly changes the architecture.
+    - Reference repository, unit-of-work, options, and mapping patterns before introducing new abstractions.
+    - Document batching, failure handling, retry assumptions, and migration strategy for sync changes.
+    - Note CI/CD or systemd deployment impact when worker startup, schedules, or packaging changes.
+  tasks:
+    - Group tasks by layer or project: data, integrations, worker orchestration, tests, docs.
+    - Include a testing task for every behavior change.
+    - Keep tasks narrow enough to complete within one project whenever possible.
+    - Call out required config or secret changes as dedicated tasks, not hidden implementation details.
