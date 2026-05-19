@@ -54,3 +54,11 @@ TestResult.xml
 nunit-*.xml
 
 .vs/
+
+.codex/
+.agents
+.claude
+.github/skills
+.github/agents
+.github/instructions
+.github/prompts
