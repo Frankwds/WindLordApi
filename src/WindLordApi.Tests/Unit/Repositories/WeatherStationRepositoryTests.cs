@@ -27,7 +27,7 @@ public class WeatherStationRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetActiveMETStationIdsAsync_WithActiveMETStations_ReturnsStationIds()
+    public async Task GetActiveStationIdsByProviderAsync_WithActiveProviderStations_ReturnsStationIds()
     {
         // Arrange
         var activeMetStation1 = TestDataBuilders.WeatherStation()
@@ -56,7 +56,7 @@ public class WeatherStationRepositoryTests : IDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.GetActiveMETStationIdsAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.GetActiveStationIdsByProviderAsync("MET", TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().HaveCount(2);
@@ -67,7 +67,7 @@ public class WeatherStationRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetActiveMETStationIdsAsync_WithNoActiveMETStations_ReturnsEmptyCollection()
+    public async Task GetActiveStationIdsByProviderAsync_WithNoActiveProviderStations_ReturnsEmptyCollection()
     {
         // Arrange
         var inactiveMetStation = TestDataBuilders.WeatherStation()
@@ -79,14 +79,14 @@ public class WeatherStationRepositoryTests : IDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.GetActiveMETStationIdsAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.GetActiveStationIdsByProviderAsync("MET", TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task GetInactiveMETStationIdsAsync_WithInactiveMETStations_ReturnsStationIds()
+    public async Task GetInactiveStationIdsByProviderAsync_WithInactiveProviderStations_ReturnsStationIds()
     {
         // Arrange
         var inactiveMetStation1 = TestDataBuilders.WeatherStation()
@@ -110,7 +110,7 @@ public class WeatherStationRepositoryTests : IDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.GetInactiveMETStationIdsAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.GetInactiveStationIdsByProviderAsync("MET", TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().HaveCount(2);
@@ -120,7 +120,7 @@ public class WeatherStationRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetInactiveMETStationIdsAsync_WithNoInactiveMETStations_ReturnsEmptyCollection()
+    public async Task GetInactiveStationIdsByProviderAsync_WithNoInactiveProviderStations_ReturnsEmptyCollection()
     {
         // Arrange
         var activeMetStation = TestDataBuilders.WeatherStation()
@@ -132,7 +132,7 @@ public class WeatherStationRepositoryTests : IDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.GetInactiveMETStationIdsAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.GetInactiveStationIdsByProviderAsync("MET", TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().BeEmpty();

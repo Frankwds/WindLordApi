@@ -18,61 +18,116 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
         _logger = logger;
     }
 
-    public async Task<IEnumerable<string>> GetActiveMETStationIdsAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<string>> GetActiveStationIdsByProviderAsync(string provider, CancellationToken cancellationToken = default)
     {
         var stationIds = await _dbSet
             .Where(ws => ws.IsActive)
-            .Where(ws => ws.Provider == "MET")
+            .Where(ws => ws.Provider == provider)
             .Select(ws => ws.StationId)
             .ToListAsync(cancellationToken);
 
-        _logger.LogDebug("MetFrost: Retrieved {Count} active station IDs", stationIds.Count);
+        _logger.LogDebug("Retrieved {Count} active station IDs for provider {Provider}", stationIds.Count, provider);
         return stationIds;
     }
 
-    public async Task<IEnumerable<string>> GetInactiveMETStationIdsAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<string>> GetInactiveStationIdsByProviderAsync(string provider, CancellationToken cancellationToken = default)
     {
         var stationIds = await _dbSet
             .Where(ws => !ws.IsActive)
-            .Where(ws => ws.Provider == "MET")
+            .Where(ws => ws.Provider == provider)
             .Select(ws => ws.StationId)
             .ToListAsync(cancellationToken);
 
-        _logger.LogDebug("MetFrost: Retrieved {Count} inactive station IDs", stationIds.Count);
+        _logger.LogDebug("Retrieved {Count} inactive station IDs for provider {Provider}", stationIds.Count, provider);
         return stationIds;
     }
 
-    public async Task<int> SetAllStationsWithDataToActiveAsync(CancellationToken cancellationToken = default)
+    public async Task<int> SetAllStationsWithDataToActiveByProviderAsync(string provider, CancellationToken cancellationToken = default)
     {
-        // Use ExecuteUpdateAsync for type-safe bulk update without loading entities
-        // Only update stations that are currently inactive (is_active = false)
-        // This ensures we only count actual changes
         var updated = await _dbSet
             .Where(ws => !ws.IsActive)
-            .Where(ws => ws.Provider == "MET")
+            .Where(ws => ws.Provider == provider)
             .Where(ws => _context.Set<StationData>().Any(sd => sd.StationId == ws.StationId))
             .ExecuteUpdateAsync(
                 setter => setter.SetProperty(ws => ws.IsActive, true),
                 cancellationToken);
 
-        _logger.LogDebug("MetFrost: Set {Count} stations to active (stations with data)", updated);
+        _logger.LogDebug("Set {Count} stations to active for provider {Provider} based on persisted data", updated, provider);
         return updated;
     }
 
-    public async Task<int> SetAllStationsWithoutDataToInactiveAsync(CancellationToken cancellationToken = default)
+    public async Task<int> SetAllStationsWithoutDataToInactiveByProviderAsync(string provider, CancellationToken cancellationToken = default)
     {
-        // Use ExecuteUpdateAsync for type-safe bulk update without loading entities
-        // Only update stations that are currently active (is_active = true)
-        // This ensures we only count actual changes
         var updated = await _dbSet
             .Where(ws => ws.IsActive)
-            .Where(ws => ws.Provider == "MET")
+            .Where(ws => ws.Provider == provider)
             .Where(ws => !_context.Set<StationData>().Any(sd => sd.StationId == ws.StationId))
             .ExecuteUpdateAsync(
                 setter => setter.SetProperty(ws => ws.IsActive, false),
                 cancellationToken);
 
-        _logger.LogDebug("MetFrost: Set {Count} stations to inactive (stations without data)", updated);
+        _logger.LogDebug("Set {Count} stations to inactive for provider {Provider} based on missing persisted data", updated, provider);
+        return updated;
+    }
+
+    public async Task<int> SetStationsActiveByProviderAsync(string provider, IEnumerable<string> stationIds, CancellationToken cancellationToken = default)
+    {
+        var stationIdList = stationIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
+        if (stationIdList.Count == 0)
+        {
+            return 0;
+        }
+
+        var updated = await _dbSet
+            .Where(ws => !ws.IsActive)
+            .Where(ws => ws.Provider == provider)
+            .Where(ws => stationIdList.Contains(ws.StationId))
+            .ExecuteUpdateAsync(
+                setter => setter.SetProperty(ws => ws.IsActive, true),
+                cancellationToken);
+
+        _logger.LogDebug("Set {Count} station(s) to active for provider {Provider}", updated, provider);
+        return updated;
+    }
+
+    public async Task<int> SetStationsInactiveByProviderAsync(string provider, IEnumerable<string> stationIds, CancellationToken cancellationToken = default)
+    {
+        var stationIdList = stationIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
+        if (stationIdList.Count == 0)
+        {
+            return 0;
+        }
+
+        var updated = await _dbSet
+            .Where(ws => ws.IsActive)
+            .Where(ws => ws.Provider == provider)
+            .Where(ws => stationIdList.Contains(ws.StationId))
+            .ExecuteUpdateAsync(
+                setter => setter.SetProperty(ws => ws.IsActive, false),
+                cancellationToken);
+
+        _logger.LogDebug("Set {Count} station(s) to inactive for provider {Provider}", updated, provider);
+        return updated;
+    }
+
+    public async Task<int> SetMissingStationsInactiveByProviderAsync(string provider, IEnumerable<string> seenStationIds, CancellationToken cancellationToken = default)
+    {
+        var seenStationIdList = seenStationIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
+
+        var query = _dbSet
+            .Where(ws => ws.IsActive)
+            .Where(ws => ws.Provider == provider);
+
+        if (seenStationIdList.Count > 0)
+        {
+            query = query.Where(ws => !seenStationIdList.Contains(ws.StationId));
+        }
+
+        var updated = await query.ExecuteUpdateAsync(
+            setter => setter.SetProperty(ws => ws.IsActive, false),
+            cancellationToken);
+
+        _logger.LogDebug("Set {Count} missing station(s) to inactive for provider {Provider}", updated, provider);
         return updated;
     }
 

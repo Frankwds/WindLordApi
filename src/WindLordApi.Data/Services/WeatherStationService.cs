@@ -6,6 +6,7 @@ namespace WindLordApi.Data.Services;
 
 public class WeatherStationService : IWeatherStationService
 {
+    private static readonly StringComparer ProviderComparer = StringComparer.Ordinal;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<WeatherStationService> _logger;
     private const int BatchSize = 1000; // Process in batches to avoid parameter limits
@@ -18,14 +19,16 @@ public class WeatherStationService : IWeatherStationService
         _logger = logger;
     }
 
-    public async Task<IEnumerable<string>> GetActiveMETStationIdsAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<string>> GetActiveStationIdsByProviderAsync(string provider, CancellationToken cancellationToken = default)
     {
-        return await _unitOfWork.WeatherStations.GetActiveMETStationIdsAsync(cancellationToken);
+        ValidateProvider(provider);
+        return await _unitOfWork.WeatherStations.GetActiveStationIdsByProviderAsync(provider, cancellationToken);
     }
 
-    public async Task<IEnumerable<string>> GetInactiveMETStationIdsAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<string>> GetInactiveStationIdsByProviderAsync(string provider, CancellationToken cancellationToken = default)
     {
-        return await _unitOfWork.WeatherStations.GetInactiveMETStationIdsAsync(cancellationToken);
+        ValidateProvider(provider);
+        return await _unitOfWork.WeatherStations.GetInactiveStationIdsByProviderAsync(provider, cancellationToken);
     }
 
     public async Task<int> UpsertManyAsync(WeatherStation[] weatherStations, CancellationToken cancellationToken = default)
@@ -74,14 +77,61 @@ public class WeatherStationService : IWeatherStationService
         }
     }
 
-    public async Task<int> SetAllStationsWithDataToActiveAsync(CancellationToken cancellationToken = default)
+    public async Task<int> SetAllStationsWithDataToActiveByProviderAsync(string provider, CancellationToken cancellationToken = default)
     {
-        return await _unitOfWork.WeatherStations.SetAllStationsWithDataToActiveAsync(cancellationToken);
+        ValidateProvider(provider);
+        return await _unitOfWork.WeatherStations.SetAllStationsWithDataToActiveByProviderAsync(provider, cancellationToken);
     }
 
-    public async Task<int> SetAllStationsWithoutDataToInactiveAsync(CancellationToken cancellationToken = default)
+    public async Task<int> SetAllStationsWithoutDataToInactiveByProviderAsync(string provider, CancellationToken cancellationToken = default)
     {
-        return await _unitOfWork.WeatherStations.SetAllStationsWithoutDataToInactiveAsync(cancellationToken);
+        ValidateProvider(provider);
+        return await _unitOfWork.WeatherStations.SetAllStationsWithoutDataToInactiveByProviderAsync(provider, cancellationToken);
+    }
+
+    public async Task<int> SetStationsActiveByProviderAsync(string provider, IEnumerable<string> stationIds, CancellationToken cancellationToken = default)
+    {
+        ValidateProvider(provider);
+        var stationIdList = NormalizeStationIds(stationIds);
+        if (stationIdList.Count == 0)
+        {
+            return 0;
+        }
+
+        var totalUpdated = 0;
+        for (int i = 0; i < stationIdList.Count; i += BatchSize)
+        {
+            var batch = stationIdList.Skip(i).Take(BatchSize).ToList();
+            totalUpdated += await _unitOfWork.WeatherStations.SetStationsActiveByProviderAsync(provider, batch, cancellationToken);
+        }
+
+        return totalUpdated;
+    }
+
+    public async Task<int> SetStationsInactiveByProviderAsync(string provider, IEnumerable<string> stationIds, CancellationToken cancellationToken = default)
+    {
+        ValidateProvider(provider);
+        var stationIdList = NormalizeStationIds(stationIds);
+        if (stationIdList.Count == 0)
+        {
+            return 0;
+        }
+
+        var totalUpdated = 0;
+        for (int i = 0; i < stationIdList.Count; i += BatchSize)
+        {
+            var batch = stationIdList.Skip(i).Take(BatchSize).ToList();
+            totalUpdated += await _unitOfWork.WeatherStations.SetStationsInactiveByProviderAsync(provider, batch, cancellationToken);
+        }
+
+        return totalUpdated;
+    }
+
+    public async Task<int> SetMissingStationsInactiveByProviderAsync(string provider, IEnumerable<string> seenStationIds, CancellationToken cancellationToken = default)
+    {
+        ValidateProvider(provider);
+        var stationIdList = NormalizeStationIds(seenStationIds);
+        return await _unitOfWork.WeatherStations.SetMissingStationsInactiveByProviderAsync(provider, stationIdList, cancellationToken);
     }
 
     public async Task<List<WeatherStation>> GetStationsWithMissingCountryAsync(CancellationToken cancellationToken = default)
@@ -133,6 +183,27 @@ public class WeatherStationService : IWeatherStationService
             _logger.LogError(ex, "Failed to update countries for weather stations batch of {Count} records", batch.Count);
             throw;
         }
+    }
+
+    private static void ValidateProvider(string provider)
+    {
+        if (string.IsNullOrWhiteSpace(provider))
+        {
+            throw new ArgumentException("Provider cannot be null or empty", nameof(provider));
+        }
+    }
+
+    private static List<string> NormalizeStationIds(IEnumerable<string> stationIds)
+    {
+        if (stationIds == null)
+        {
+            return [];
+        }
+
+        return stationIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(ProviderComparer)
+            .ToList();
     }
 
 }

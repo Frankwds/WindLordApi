@@ -8,24 +8,39 @@ namespace WindLordApi.Data.Repositories;
 public interface IWeatherStationRepository : IRepository<WeatherStation>
 {
     /// <summary>
-    /// Gets all active MET station IDs.
+    /// Gets all active station IDs for the given provider.
     /// </summary>
-    Task<IEnumerable<string>> GetActiveMETStationIdsAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<string>> GetActiveStationIdsByProviderAsync(string provider, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets all inactive MET station IDs.
+    /// Gets all inactive station IDs for the given provider.
     /// </summary>
-    Task<IEnumerable<string>> GetInactiveMETStationIdsAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<string>> GetInactiveStationIdsByProviderAsync(string provider, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Sets stations with data to active status (raw SQL).
+    /// Sets inactive stations with persisted data to active for the given provider.
     /// </summary>
-    Task<int> SetAllStationsWithDataToActiveAsync(CancellationToken cancellationToken = default);
+    Task<int> SetAllStationsWithDataToActiveByProviderAsync(string provider, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Sets stations without data to inactive status (raw SQL).
+    /// Sets active stations without persisted data to inactive for the given provider.
     /// </summary>
-    Task<int> SetAllStationsWithoutDataToInactiveAsync(CancellationToken cancellationToken = default);
+    Task<int> SetAllStationsWithoutDataToInactiveByProviderAsync(string provider, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets the provided station IDs to active for the given provider.
+    /// </summary>
+    Task<int> SetStationsActiveByProviderAsync(string provider, IEnumerable<string> stationIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets the provided station IDs to inactive for the given provider.
+    /// </summary>
+    Task<int> SetStationsInactiveByProviderAsync(string provider, IEnumerable<string> stationIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets provider stations missing from the latest maintenance payload to inactive.
+    /// </summary>
+    Task<int> SetMissingStationsInactiveByProviderAsync(string provider, IEnumerable<string> seenStationIds, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Upserts a range of weather stations using FlexLabs upsert.

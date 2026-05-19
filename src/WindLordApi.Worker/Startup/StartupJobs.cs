@@ -79,6 +79,32 @@ public static class StartupJobs
         try
         {
             using var scope = serviceProvider.CreateScope();
+            var syncService = scope.ServiceProvider.GetRequiredService<IPortWindStationRefreshService>();
+            await syncService.SyncWeatherStationsAsync(cancellationToken);
+            logger.LogInformation("PortWind: Completed startup job: SyncWeatherStationsAsync");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "PortWind: Error running SyncWeatherStationsAsync on startup");
+        }
+
+        // Sync PortWind latest data on startup
+        try
+        {
+            using var scope = serviceProvider.CreateScope();
+            var syncService = scope.ServiceProvider.GetRequiredService<IPortWindLatestDataSyncService>();
+            await syncService.SyncLatestStationDataAsync(cancellationToken);
+            logger.LogInformation("PortWind: Completed startup job: SyncLatestStationDataAsync");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "PortWind: Error running SyncLatestStationDataAsync on startup");
+        }
+
+        // Sync all weather stations on startup
+        try
+        {
+            using var scope = serviceProvider.CreateScope();
             var syncService = scope.ServiceProvider.GetRequiredService<IMetFrostSyncService>();
             await syncService.SyncLatestStationDataAsync(cancellationToken);
             logger.LogInformation("MetFrost: Completed startup job: SyncLatestStationDataAsync");

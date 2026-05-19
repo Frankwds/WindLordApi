@@ -34,7 +34,7 @@ public class WeatherStationServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GetActiveMETStationIdsAsync_DelegatesToRepository()
+    public async Task GetActiveStationIdsByProviderAsync_DelegatesToRepository()
     {
         // Arrange
         var station = TestDataBuilders.WeatherStation()
@@ -46,14 +46,14 @@ public class WeatherStationServiceTests : IDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _service.GetActiveMETStationIdsAsync(TestContext.Current.CancellationToken);
+        var result = await _service.GetActiveStationIdsByProviderAsync("MET", TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Contain("MET-001");
     }
 
     [Fact]
-    public async Task GetInactiveMETStationIdsAsync_DelegatesToRepository()
+    public async Task GetInactiveStationIdsByProviderAsync_DelegatesToRepository()
     {
         // Arrange
         var station = TestDataBuilders.WeatherStation()
@@ -65,10 +65,32 @@ public class WeatherStationServiceTests : IDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _service.GetInactiveMETStationIdsAsync(TestContext.Current.CancellationToken);
+        var result = await _service.GetInactiveStationIdsByProviderAsync("MET", TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Contain("MET-001");
+    }
+
+    [Fact]
+    public async Task GetActiveStationIdsByProviderAsync_WithEmptyProvider_ThrowsArgumentException()
+    {
+        // Act
+        var act = async () => await _service.GetActiveStationIdsByProviderAsync(string.Empty, TestContext.Current.CancellationToken);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("Provider cannot be null or empty*");
+    }
+
+    [Fact]
+    public async Task SetStationsActiveByProviderAsync_WithEmptyProvider_ThrowsArgumentException()
+    {
+        // Act
+        var act = async () => await _service.SetStationsActiveByProviderAsync(string.Empty, ["MET-001"], TestContext.Current.CancellationToken);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("Provider cannot be null or empty*");
     }
 
     [Fact]

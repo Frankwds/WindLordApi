@@ -57,7 +57,7 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task SetAllStationsWithDataToActiveAsync_WithInactiveStationsHavingData_ActivatesStations()
+    public async Task SetAllStationsWithDataToActiveByProviderAsync_WithInactiveStationsHavingData_ActivatesStations()
     {
         // Arrange
         var inactiveStationWithData = TestDataBuilders.WeatherStation()
@@ -91,7 +91,7 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.SetAllStationsWithDataToActiveAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.SetAllStationsWithDataToActiveByProviderAsync("MET", TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Be(1); // Only MET-001 should be activated (MET-003 is already active)
@@ -107,7 +107,7 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task SetAllStationsWithDataToActiveAsync_WithNoInactiveStationsHavingData_ReturnsZero()
+    public async Task SetAllStationsWithDataToActiveByProviderAsync_WithNoInactiveStationsHavingData_ReturnsZero()
     {
         // Arrange
         var inactiveStationWithoutData = TestDataBuilders.WeatherStation()
@@ -119,14 +119,14 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.SetAllStationsWithDataToActiveAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.SetAllStationsWithDataToActiveByProviderAsync("MET", TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Be(0);
     }
 
     [Fact]
-    public async Task SetAllStationsWithoutDataToInactiveAsync_WithActiveStationsWithoutData_DeactivatesStations()
+    public async Task SetAllStationsWithoutDataToInactiveByProviderAsync_WithActiveStationsWithoutData_DeactivatesStations()
     {
         // Arrange
         var activeStationWithoutData = TestDataBuilders.WeatherStation()
@@ -157,7 +157,7 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.SetAllStationsWithoutDataToInactiveAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.SetAllStationsWithoutDataToInactiveByProviderAsync("MET", TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().Be(1); // Only MET-001 should be deactivated
@@ -173,7 +173,7 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task SetAllStationsWithoutDataToInactiveAsync_WithNoActiveStationsWithoutData_ReturnsZero()
+    public async Task SetAllStationsWithoutDataToInactiveByProviderAsync_WithNoActiveStationsWithoutData_ReturnsZero()
     {
         // Arrange
         var activeStationWithData = TestDataBuilders.WeatherStation()
@@ -200,7 +200,79 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _repository.SetAllStationsWithoutDataToInactiveAsync(TestContext.Current.CancellationToken);
+        var result = await _repository.SetAllStationsWithoutDataToInactiveByProviderAsync("MET", TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task SetStationsInactiveByProviderAsync_OnlyDeactivatesStationsForRequestedProvider()
+    {
+        // Arrange
+        var activeMetStation = TestDataBuilders.WeatherStation()
+            .WithStationId("MET-001")
+            .WithProvider("MET")
+            .WithIsActive(true)
+            .Build();
+        var activePortWindStation = TestDataBuilders.WeatherStation()
+            .WithStationId("PORTWIND-001")
+            .WithProvider("PortWind")
+            .WithIsActive(true)
+            .Build();
+
+        _context.WeatherStations.AddRange(activeMetStation, activePortWindStation);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.SetStationsInactiveByProviderAsync("MET", ["MET-001", "PORTWIND-001"], TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().Be(1);
+
+        await _context.Entry(activeMetStation).ReloadAsync(TestContext.Current.CancellationToken);
+        await _context.Entry(activePortWindStation).ReloadAsync(TestContext.Current.CancellationToken);
+
+        activeMetStation.IsActive.Should().BeFalse();
+        activePortWindStation.IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SetMissingStationsInactiveByProviderAsync_OnlyDeactivatesMissingStationsForRequestedProvider()
+    {
+        // Arrange
+        var seenPortWindStation = TestDataBuilders.WeatherStation()
+            .WithStationId("VS1285")
+            .WithProvider("PortWind")
+            .WithIsActive(true)
+            .Build();
+        var missingPortWindStation = TestDataBuilders.WeatherStation()
+            .WithStationId("VS1286")
+            .WithProvider("PortWind")
+            .WithIsActive(true)
+            .Build();
+        var activeMetStation = TestDataBuilders.WeatherStation()
+            .WithStationId("MET-001")
+            .WithProvider("MET")
+            .WithIsActive(true)
+            .Build();
+
+        _context.WeatherStations.AddRange(seenPortWindStation, missingPortWindStation, activeMetStation);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.SetMissingStationsInactiveByProviderAsync("PortWind", ["VS1285"], TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().Be(1);
+
+        await _context.Entry(seenPortWindStation).ReloadAsync(TestContext.Current.CancellationToken);
+        await _context.Entry(missingPortWindStation).ReloadAsync(TestContext.Current.CancellationToken);
+        await _context.Entry(activeMetStation).ReloadAsync(TestContext.Current.CancellationToken);
+
+        seenPortWindStation.IsActive.Should().BeTrue();
+        missingPortWindStation.IsActive.Should().BeFalse();
+        activeMetStation.IsActive.Should().BeTrue();
 
         // Assert
         result.Should().Be(0);

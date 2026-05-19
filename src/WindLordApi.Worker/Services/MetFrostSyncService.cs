@@ -5,6 +5,7 @@ namespace WindLordApi.Worker.Services;
 
 public class MetFrostSyncService : IMetFrostSyncService
 {
+    private const string MetProvider = "MET";
     private readonly IWeatherStationService _weatherStationService;
     private readonly IMetFrostClient _metFrostClient;
     private readonly IStationDataService _stationDataService;
@@ -38,8 +39,8 @@ public class MetFrostSyncService : IMetFrostSyncService
     {
         // 1. Fetch station IDs based on active status
         var stationIds = isActive
-            ? (await _weatherStationService.GetActiveMETStationIdsAsync(cancellationToken)).ToList()
-            : (await _weatherStationService.GetInactiveMETStationIdsAsync(cancellationToken)).ToList();
+            ? (await _weatherStationService.GetActiveStationIdsByProviderAsync(MetProvider, cancellationToken)).ToList()
+            : (await _weatherStationService.GetInactiveStationIdsByProviderAsync(MetProvider, cancellationToken)).ToList();
 
         var statusLabel = isActive ? "active" : "inactive";
         if (stationIds.Count == 0)
@@ -144,10 +145,10 @@ public class MetFrostSyncService : IMetFrostSyncService
             var stationDataInserted = await SyncStationDataAsync(isActive: false, cancellationToken);
 
             // 2. Set stations with data to active
-            var activatedCount = await _weatherStationService.SetAllStationsWithDataToActiveAsync(cancellationToken);
+            var activatedCount = await _weatherStationService.SetAllStationsWithDataToActiveByProviderAsync(MetProvider, cancellationToken);
 
             // 3. Set stations without data to inactive
-            var deactivatedCount = await _weatherStationService.SetAllStationsWithoutDataToInactiveAsync(cancellationToken);
+            var deactivatedCount = await _weatherStationService.SetAllStationsWithoutDataToInactiveByProviderAsync(MetProvider, cancellationToken);
 
             _logger.LogInformation("MetFrost: Completed weather station active status sync. New station data inserted: {Inserted}, Status updates: {Activated} activated, {Deactivated} deactivated",
                 stationDataInserted, activatedCount, deactivatedCount);

@@ -14,7 +14,7 @@ namespace WindLordApi.Tests.Integration.Services;
 /// <summary>
 /// Integration tests for WeatherStationService that require a real database.
 /// Tests UpsertManyAsync which uses transactions and batch processing.
-/// Note: Tests for SetAllStationsWithDataToActiveAsync and SetAllStationsWithoutDataToInactiveAsync
+/// Note: Tests for provider-scoped active-state update methods
 /// are in WeatherStationRepositoryIntegrationTests since these are simple pass-through methods.
 /// </summary>
 [Collection("PostgreSQL Integration Tests")]
