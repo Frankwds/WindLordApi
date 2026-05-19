@@ -72,6 +72,49 @@ public class WeatherStationServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetActiveStationIdsByProviderAsync_DelegatesToRepository()
+    {
+        // Arrange
+        var station = TestDataBuilders.WeatherStation()
+            .WithStationId("PW-001")
+            .WithProvider("PortWind")
+            .WithIsActive(true)
+            .Build();
+        await _context.WeatherStations.AddAsync(station, TestContext.Current.CancellationToken);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _service.GetActiveStationIdsByProviderAsync("PortWind", TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().Contain("PW-001");
+    }
+
+    [Fact]
+    public async Task GetStationIdsByProviderAsync_DelegatesToRepository()
+    {
+        // Arrange
+        var activeStation = TestDataBuilders.WeatherStation()
+            .WithStationId("PW-001")
+            .WithProvider("PortWind")
+            .WithIsActive(true)
+            .Build();
+        var inactiveStation = TestDataBuilders.WeatherStation()
+            .WithStationId("PW-002")
+            .WithProvider("PortWind")
+            .WithIsActive(false)
+            .Build();
+        await _context.WeatherStations.AddRangeAsync([activeStation, inactiveStation], TestContext.Current.CancellationToken);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _service.GetStationIdsByProviderAsync("PortWind", TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().BeEquivalentTo(["PW-001", "PW-002"]);
+    }
+
+    [Fact]
     public async Task UpsertManyAsync_WithNullArray_ThrowsArgumentException()
     {
         // Arrange

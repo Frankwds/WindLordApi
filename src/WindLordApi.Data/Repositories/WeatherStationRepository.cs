@@ -18,35 +18,68 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
         _logger = logger;
     }
 
-    public async Task<IEnumerable<string>> GetActiveMETStationIdsAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<string>> GetStationIdsByProviderAsync(string provider, CancellationToken cancellationToken = default)
     {
+        var normalizedProvider = ValidateProvider(provider);
         var stationIds = await _dbSet
-            .Where(ws => ws.IsActive)
-            .Where(ws => ws.Provider == "MET")
+            .Where(ws => ws.Provider == normalizedProvider)
             .Select(ws => ws.StationId)
             .ToListAsync(cancellationToken);
 
-        _logger.LogDebug("MetFrost: Retrieved {Count} active station IDs", stationIds.Count);
+        _logger.LogDebug("Retrieved {Count} station IDs for provider {Provider}", stationIds.Count, normalizedProvider);
         return stationIds;
+    }
+
+    public async Task<IEnumerable<string>> GetActiveStationIdsByProviderAsync(string provider, CancellationToken cancellationToken = default)
+    {
+        var normalizedProvider = ValidateProvider(provider);
+        var stationIds = await _dbSet
+            .Where(ws => ws.IsActive)
+            .Where(ws => ws.Provider == normalizedProvider)
+            .Select(ws => ws.StationId)
+            .ToListAsync(cancellationToken);
+
+        _logger.LogDebug("Retrieved {Count} active station IDs for provider {Provider}", stationIds.Count, normalizedProvider);
+        return stationIds;
+    }
+
+    public async Task<IEnumerable<string>> GetInactiveStationIdsByProviderAsync(string provider, CancellationToken cancellationToken = default)
+    {
+        var normalizedProvider = ValidateProvider(provider);
+        var stationIds = await _dbSet
+            .Where(ws => !ws.IsActive)
+            .Where(ws => ws.Provider == normalizedProvider)
+            .Select(ws => ws.StationId)
+            .ToListAsync(cancellationToken);
+
+        _logger.LogDebug("Retrieved {Count} inactive station IDs for provider {Provider}", stationIds.Count, normalizedProvider);
+        return stationIds;
+    }
+
+    public async Task<IEnumerable<string>> GetActiveMETStationIdsAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetActiveStationIdsByProviderAsync("MET", cancellationToken);
     }
 
     public async Task<IEnumerable<string>> GetInactiveMETStationIdsAsync(CancellationToken cancellationToken = default)
     {
-        var stationIds = await _dbSet
-            .Where(ws => !ws.IsActive)
-            .Where(ws => ws.Provider == "MET")
-            .Select(ws => ws.StationId)
+        return await GetInactiveStationIdsByProviderAsync("MET", cancellationToken);
+    }
+
+    public async Task<List<WeatherStation>> GetStationsByProviderAsync(string provider, CancellationToken cancellationToken = default)
+    {
+        var normalizedProvider = ValidateProvider(provider);
+
+        var stations = await _dbSet
+            .Where(ws => ws.Provider == normalizedProvider)
             .ToListAsync(cancellationToken);
 
-        _logger.LogDebug("MetFrost: Retrieved {Count} inactive station IDs", stationIds.Count);
-        return stationIds;
+        _logger.LogDebug("Retrieved {Count} weather stations for provider {Provider}", stations.Count, normalizedProvider);
+        return stations;
     }
 
     public async Task<int> SetAllStationsWithDataToActiveAsync(CancellationToken cancellationToken = default)
     {
-        // Use ExecuteUpdateAsync for type-safe bulk update without loading entities
-        // Only update stations that are currently inactive (is_active = false)
-        // This ensures we only count actual changes
         var updated = await _dbSet
             .Where(ws => !ws.IsActive)
             .Where(ws => ws.Provider == "MET")
@@ -73,6 +106,49 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
                 cancellationToken);
 
         _logger.LogDebug("MetFrost: Set {Count} stations to inactive (stations without data)", updated);
+        return updated;
+    }
+
+    public async Task<int> SetStationsActiveByProviderAsync(string provider, IEnumerable<string> stationIds, CancellationToken cancellationToken = default)
+    {
+        var normalizedProvider = ValidateProvider(provider);
+        var normalizedStationIds = NormalizeStationIds(stationIds);
+        if (normalizedStationIds.Length == 0)
+        {
+            return 0;
+        }
+
+        var updated = await _dbSet
+            .Where(ws => !ws.IsActive)
+            .Where(ws => ws.Provider == normalizedProvider)
+            .Where(ws => normalizedStationIds.Contains(ws.StationId))
+            .ExecuteUpdateAsync(
+                setter => setter.SetProperty(ws => ws.IsActive, true),
+                cancellationToken);
+
+        _logger.LogDebug("Set {Count} stations to active for provider {Provider}", updated, normalizedProvider);
+        return updated;
+    }
+
+    public async Task<int> SetStationsInactiveByProviderExceptAsync(string provider, IEnumerable<string> stationIds, CancellationToken cancellationToken = default)
+    {
+        var normalizedProvider = ValidateProvider(provider);
+        var normalizedStationIds = NormalizeStationIds(stationIds);
+
+        var query = _dbSet
+            .Where(ws => ws.IsActive)
+            .Where(ws => ws.Provider == normalizedProvider);
+
+        if (normalizedStationIds.Length > 0)
+        {
+            query = query.Where(ws => !normalizedStationIds.Contains(ws.StationId));
+        }
+
+        var updated = await query.ExecuteUpdateAsync(
+            setter => setter.SetProperty(ws => ws.IsActive, false),
+            cancellationToken);
+
+        _logger.LogDebug("Set {Count} stations to inactive for provider {Provider} because they were missing from the latest provider list", updated, normalizedProvider);
         return updated;
     }
 
@@ -126,6 +202,30 @@ public class WeatherStationRepository : Repository<WeatherStation>, IWeatherStat
                 IsMain = incoming.IsMain
             })
             .RunAsync(cancellationToken);
+    }
+
+    private static string ValidateProvider(string provider)
+    {
+        if (string.IsNullOrWhiteSpace(provider))
+        {
+            throw new ArgumentException("Provider cannot be null or empty", nameof(provider));
+        }
+
+        return provider.Trim();
+    }
+
+    private static string[] NormalizeStationIds(IEnumerable<string> stationIds)
+    {
+        if (stationIds == null)
+        {
+            return [];
+        }
+
+        return stationIds
+            .Where(stationId => !string.IsNullOrWhiteSpace(stationId))
+            .Select(stationId => stationId.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
     }
 }
 

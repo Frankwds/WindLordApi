@@ -205,5 +205,74 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
         // Assert
         result.Should().Be(0);
     }
+
+    [Fact]
+    public async Task SetStationsActiveByProviderAsync_WithInactiveMatchingStations_ActivatesOnlyMatchingProviderStations()
+    {
+        // Arrange
+        var inactivePortWindStation = TestDataBuilders.WeatherStation()
+            .WithStationId("PW-001")
+            .WithProvider("PortWind")
+            .WithIsActive(false)
+            .Build();
+        var inactiveOtherProviderStation = TestDataBuilders.WeatherStation()
+            .WithStationId("MET-001")
+            .WithProvider("MET")
+            .WithIsActive(false)
+            .Build();
+
+        _context.WeatherStations.AddRange(inactivePortWindStation, inactiveOtherProviderStation);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.SetStationsActiveByProviderAsync("PortWind", ["PW-001", "MET-001"], TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().Be(1);
+
+        await _context.Entry(inactivePortWindStation).ReloadAsync(TestContext.Current.CancellationToken);
+        await _context.Entry(inactiveOtherProviderStation).ReloadAsync(TestContext.Current.CancellationToken);
+
+        inactivePortWindStation.IsActive.Should().BeTrue();
+        inactiveOtherProviderStation.IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SetStationsInactiveByProviderExceptAsync_DeactivatesMissingProviderStationsAndPreservesListedStations()
+    {
+        // Arrange
+        var activePortWindStationToKeep = TestDataBuilders.WeatherStation()
+            .WithStationId("PW-001")
+            .WithProvider("PortWind")
+            .WithIsActive(true)
+            .Build();
+        var activePortWindStationToDeactivate = TestDataBuilders.WeatherStation()
+            .WithStationId("PW-002")
+            .WithProvider("PortWind")
+            .WithIsActive(true)
+            .Build();
+        var activeMetStation = TestDataBuilders.WeatherStation()
+            .WithStationId("MET-001")
+            .WithProvider("MET")
+            .WithIsActive(true)
+            .Build();
+
+        _context.WeatherStations.AddRange(activePortWindStationToKeep, activePortWindStationToDeactivate, activeMetStation);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.SetStationsInactiveByProviderExceptAsync("PortWind", ["PW-001"], TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().Be(1);
+
+        await _context.Entry(activePortWindStationToKeep).ReloadAsync(TestContext.Current.CancellationToken);
+        await _context.Entry(activePortWindStationToDeactivate).ReloadAsync(TestContext.Current.CancellationToken);
+        await _context.Entry(activeMetStation).ReloadAsync(TestContext.Current.CancellationToken);
+
+        activePortWindStationToKeep.IsActive.Should().BeTrue();
+        activePortWindStationToDeactivate.IsActive.Should().BeFalse();
+        activeMetStation.IsActive.Should().BeTrue();
+    }
 }
 

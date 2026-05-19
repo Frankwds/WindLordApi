@@ -12,6 +12,7 @@ using WindLordApi.Integrations.Holfuy;
 using WindLordApi.Integrations.MetYr;
 using WindLordApi.Integrations.WindsMobi;
 using WindLordApi.Integrations.GoogleGeocoding;
+using WindLordApi.Integrations.PortWind;
 using Serilog;
 using Serilog.Events;
 
@@ -110,6 +111,8 @@ builder.Services.AddScoped<IMetFrostSyncService, MetFrostSyncService>();
 builder.Services.AddScoped<IForecastUpdateService, ForecastUpdateService>();
 builder.Services.AddScoped<IWindsMobiSyncService, WindsMobiSyncService>();
 builder.Services.AddScoped<ICountryLocatorService, CountryLocatorService>();
+builder.Services.AddScoped<IPortWindStationRefreshService, PortWindStationRefreshService>();
+builder.Services.AddScoped<IPortWindObservationSyncService, PortWindObservationSyncService>();
 
 // Register Schedulers (singleton since Worker is singleton)
 builder.Services.AddSingleton<CronScheduler<IMetFrostSyncService>>();
@@ -117,6 +120,8 @@ builder.Services.AddSingleton<CronScheduler<IHolfuySyncService>>();
 builder.Services.AddSingleton<CronScheduler<IForecastUpdateService>>();
 builder.Services.AddSingleton<CronScheduler<IWindsMobiSyncService>>();
 builder.Services.AddSingleton<CronScheduler<ICountryLocatorService>>();
+builder.Services.AddSingleton<CronScheduler<IPortWindStationRefreshService>>();
+builder.Services.AddSingleton<CronScheduler<IPortWindObservationSyncService>>();
 
 // Register MET Frost Client
 // 1. Configure Options (binds from appsettings) with validation
@@ -140,18 +145,23 @@ builder.Services.AddWindsMobiClient(builder.Configuration);
 // Register Google Geocoding Client
 builder.Services.AddGoogleGeocodingClient(builder.Configuration);
 
+// Register PortWind Client
+builder.Services.AddPortWindClient(builder.Configuration);
+
 // Register Health Check Services
 builder.Services.AddScoped<DatabaseHealthCheck>();
 builder.Services.AddScoped<MetFrostHealthCheck>();
 builder.Services.AddScoped<HolfuyHealthCheck>();
 builder.Services.AddScoped<MetYrHealthCheck>();
+builder.Services.AddScoped<PortWindHealthCheck>();
 
 // Register Health Checks
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database", tags: ["db", "database"])
     .AddCheck<MetFrostHealthCheck>("metfrost", tags: ["api", "metfrost"])
     .AddCheck<HolfuyHealthCheck>("holfuy", tags: ["api", "holfuy"])
-    .AddCheck<MetYrHealthCheck>("metyr", tags: ["api", "metyr"]);
+    .AddCheck<MetYrHealthCheck>("metyr", tags: ["api", "metyr"])
+    .AddCheck<PortWindHealthCheck>("portwind", tags: ["api", "portwind"]);
 
 builder.Services.AddHostedService<Worker>();
 

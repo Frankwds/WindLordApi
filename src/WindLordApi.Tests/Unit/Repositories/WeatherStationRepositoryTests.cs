@@ -138,6 +138,66 @@ public class WeatherStationRepositoryTests : IDisposable
         result.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task GetStationIdsByProviderAsync_WithMatchingProvider_ReturnsAllProviderStations()
+    {
+        // Arrange
+        var activePortWindStation = TestDataBuilders.WeatherStation()
+            .WithStationId("PW-001")
+            .WithProvider("PortWind")
+            .WithIsActive(true)
+            .Build();
+        var inactivePortWindStation = TestDataBuilders.WeatherStation()
+            .WithStationId("PW-002")
+            .WithProvider("PortWind")
+            .WithIsActive(false)
+            .Build();
+        var otherProviderStation = TestDataBuilders.WeatherStation()
+            .WithStationId("MET-001")
+            .WithProvider("MET")
+            .WithIsActive(true)
+            .Build();
+
+        _context.WeatherStations.AddRange(activePortWindStation, inactivePortWindStation, otherProviderStation);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.GetStationIdsByProviderAsync("PortWind", TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().BeEquivalentTo(["PW-001", "PW-002"]);
+    }
+
+    [Fact]
+    public async Task GetActiveStationIdsByProviderAsync_WithMatchingProvider_ReturnsOnlyActiveProviderStations()
+    {
+        // Arrange
+        var activePortWindStation = TestDataBuilders.WeatherStation()
+            .WithStationId("PW-001")
+            .WithProvider("PortWind")
+            .WithIsActive(true)
+            .Build();
+        var inactivePortWindStation = TestDataBuilders.WeatherStation()
+            .WithStationId("PW-002")
+            .WithProvider("PortWind")
+            .WithIsActive(false)
+            .Build();
+        var activeMetStation = TestDataBuilders.WeatherStation()
+            .WithStationId("MET-001")
+            .WithProvider("MET")
+            .WithIsActive(true)
+            .Build();
+
+        _context.WeatherStations.AddRange(activePortWindStation, inactivePortWindStation, activeMetStation);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.GetActiveStationIdsByProviderAsync("PortWind", TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().BeEquivalentTo(["PW-001"]);
+    }
+
     public void Dispose()
     {
         _context.Dispose();

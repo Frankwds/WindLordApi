@@ -8,6 +8,26 @@ namespace WindLordApi.Data.Repositories;
 public interface IWeatherStationRepository : IRepository<WeatherStation>
 {
     /// <summary>
+    /// Gets all station IDs for a provider.
+    /// </summary>
+    Task<IEnumerable<string>> GetStationIdsByProviderAsync(string provider, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all active station IDs for a provider.
+    /// </summary>
+    Task<IEnumerable<string>> GetActiveStationIdsByProviderAsync(string provider, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all inactive station IDs for a provider.
+    /// </summary>
+    Task<IEnumerable<string>> GetInactiveStationIdsByProviderAsync(string provider, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all weather stations for a provider.
+    /// </summary>
+    Task<List<WeatherStation>> GetStationsByProviderAsync(string provider, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets all active MET station IDs.
     /// </summary>
     Task<IEnumerable<string>> GetActiveMETStationIdsAsync(CancellationToken cancellationToken = default);
@@ -26,6 +46,16 @@ public interface IWeatherStationRepository : IRepository<WeatherStation>
     /// Sets stations without data to inactive status (raw SQL).
     /// </summary>
     Task<int> SetAllStationsWithoutDataToInactiveAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets matching provider stations to active.
+    /// </summary>
+    Task<int> SetStationsActiveByProviderAsync(string provider, IEnumerable<string> stationIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets provider stations to inactive when their station IDs are missing from the current provider list.
+    /// </summary>
+    Task<int> SetStationsInactiveByProviderExceptAsync(string provider, IEnumerable<string> stationIds, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Upserts a range of weather stations using FlexLabs upsert.

@@ -18,6 +18,21 @@ public class WeatherStationService : IWeatherStationService
         _logger = logger;
     }
 
+    public async Task<IEnumerable<string>> GetStationIdsByProviderAsync(string provider, CancellationToken cancellationToken = default)
+    {
+        return await _unitOfWork.WeatherStations.GetStationIdsByProviderAsync(provider, cancellationToken);
+    }
+
+    public async Task<IEnumerable<string>> GetActiveStationIdsByProviderAsync(string provider, CancellationToken cancellationToken = default)
+    {
+        return await _unitOfWork.WeatherStations.GetActiveStationIdsByProviderAsync(provider, cancellationToken);
+    }
+
+    public async Task<IEnumerable<string>> GetInactiveStationIdsByProviderAsync(string provider, CancellationToken cancellationToken = default)
+    {
+        return await _unitOfWork.WeatherStations.GetInactiveStationIdsByProviderAsync(provider, cancellationToken);
+    }
+
     public async Task<IEnumerable<string>> GetActiveMETStationIdsAsync(CancellationToken cancellationToken = default)
     {
         return await _unitOfWork.WeatherStations.GetActiveMETStationIdsAsync(cancellationToken);
@@ -26,6 +41,11 @@ public class WeatherStationService : IWeatherStationService
     public async Task<IEnumerable<string>> GetInactiveMETStationIdsAsync(CancellationToken cancellationToken = default)
     {
         return await _unitOfWork.WeatherStations.GetInactiveMETStationIdsAsync(cancellationToken);
+    }
+
+    public async Task<List<WeatherStation>> GetStationsByProviderAsync(string provider, CancellationToken cancellationToken = default)
+    {
+        return await _unitOfWork.WeatherStations.GetStationsByProviderAsync(provider, cancellationToken);
     }
 
     public async Task<int> UpsertManyAsync(WeatherStation[] weatherStations, CancellationToken cancellationToken = default)
@@ -82,6 +102,16 @@ public class WeatherStationService : IWeatherStationService
     public async Task<int> SetAllStationsWithoutDataToInactiveAsync(CancellationToken cancellationToken = default)
     {
         return await _unitOfWork.WeatherStations.SetAllStationsWithoutDataToInactiveAsync(cancellationToken);
+    }
+
+    public async Task<int> SetStationsActiveByProviderAsync(string provider, IEnumerable<string> stationIds, CancellationToken cancellationToken = default)
+    {
+        return await _unitOfWork.WeatherStations.SetStationsActiveByProviderAsync(provider, stationIds, cancellationToken);
+    }
+
+    public async Task<int> SetStationsInactiveByProviderExceptAsync(string provider, IEnumerable<string> stationIds, CancellationToken cancellationToken = default)
+    {
+        return await _unitOfWork.WeatherStations.SetStationsInactiveByProviderExceptAsync(provider, stationIds, cancellationToken);
     }
 
     public async Task<List<WeatherStation>> GetStationsWithMissingCountryAsync(CancellationToken cancellationToken = default)

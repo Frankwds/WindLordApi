@@ -23,6 +23,19 @@ public static class StartupJobs
     {
         logger.LogInformation("Running startup jobs...");
 
+        // Sync PortWind observations on startup
+        try
+        {
+            using var scope = serviceProvider.CreateScope();
+            var syncService = scope.ServiceProvider.GetRequiredService<IPortWindObservationSyncService>();
+            await syncService.SyncLatestStationDataAsync(cancellationToken);
+            logger.LogInformation("PortWind: Completed startup job: SyncLatestStationDataAsync");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "PortWind: Error running SyncLatestStationDataAsync on startup");
+        }
+        
         // Sync WindsMobi data on startup
         try
         {
@@ -112,6 +125,19 @@ public static class StartupJobs
         catch (Exception ex)
         {
             logger.LogError(ex, "MetFrost: Error running SyncWeatherStationsActiveStatusAsync on startup");
+        }
+
+        // Refresh PortWind weather stations on startup
+        try
+        {
+            using var scope = serviceProvider.CreateScope();
+            var syncService = scope.ServiceProvider.GetRequiredService<IPortWindStationRefreshService>();
+            await syncService.SyncWeatherStationsAsync(cancellationToken);
+            logger.LogInformation("PortWind: Completed startup job: SyncWeatherStationsAsync");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "PortWind: Error running SyncWeatherStationsAsync on startup");
         }
 
         logger.LogInformation("Startup jobs completed");

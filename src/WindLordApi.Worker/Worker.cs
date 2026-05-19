@@ -14,6 +14,8 @@ public class Worker : BackgroundService
     private readonly CronScheduler<IForecastUpdateService> _forecastUpdateScheduler;
     private readonly CronScheduler<IWindsMobiSyncService> _windsMobiScheduler;
     private readonly CronScheduler<ICountryLocatorService> _countryLocatorScheduler;
+    private readonly CronScheduler<IPortWindStationRefreshService> _portWindStationRefreshScheduler;
+    private readonly CronScheduler<IPortWindObservationSyncService> _portWindObservationScheduler;
 
     public Worker(
         ILogger<Worker> logger,
@@ -22,7 +24,9 @@ public class Worker : BackgroundService
         CronScheduler<IHolfuySyncService> holfuyScheduler,
         CronScheduler<IForecastUpdateService> forecastUpdateScheduler,
         CronScheduler<IWindsMobiSyncService> windsMobiScheduler,
-        CronScheduler<ICountryLocatorService> countryLocatorScheduler)
+        CronScheduler<ICountryLocatorService> countryLocatorScheduler,
+        CronScheduler<IPortWindStationRefreshService> portWindStationRefreshScheduler,
+        CronScheduler<IPortWindObservationSyncService> portWindObservationScheduler)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
@@ -31,6 +35,8 @@ public class Worker : BackgroundService
         _forecastUpdateScheduler = forecastUpdateScheduler;
         _windsMobiScheduler = windsMobiScheduler;
         _countryLocatorScheduler = countryLocatorScheduler;
+        _portWindStationRefreshScheduler = portWindStationRefreshScheduler;
+        _portWindObservationScheduler = portWindObservationScheduler;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -50,6 +56,8 @@ public class Worker : BackgroundService
         var metFrostActiveStatusCron = "0 0 4 * * SUN"; // Sundays at 4:00 AM (2s duration)
         var windsMobiCron = "0 */5 * * * *";              // Every 5 min at :00 seconds (~30s duration)
         var countryLocatorCron = "0 0 5 * * SUN";          // Sundays at 5:00 AM
+        var portWindObservationCron = "0 4/5 * * * *";     // Every 5 min starting at minute 4
+        var portWindStationRefreshCron = "0 0 6 * * SUN";  // Sundays at 6:00 AM
 
         // Calculate next run times for all jobs
         var forecastUpdateNextRun = CronScheduler<IForecastUpdateService>.CalculateNextRunTime(forecastUpdateCron);
@@ -59,6 +67,8 @@ public class Worker : BackgroundService
         var metFrostActiveStatusNextRun = CronScheduler<IMetFrostSyncService>.CalculateNextRunTime(metFrostActiveStatusCron);
         var windsMobiNextRun = CronScheduler<IWindsMobiSyncService>.CalculateNextRunTime(windsMobiCron);
         var countryLocatorNextRun = CronScheduler<ICountryLocatorService>.CalculateNextRunTime(countryLocatorCron);
+        var portWindObservationNextRun = CronScheduler<IPortWindObservationSyncService>.CalculateNextRunTime(portWindObservationCron);
+        var portWindStationRefreshNextRun = CronScheduler<IPortWindStationRefreshService>.CalculateNextRunTime(portWindStationRefreshCron);
 
         // Add jobs to schedule
         jobSchedule.Add(("UpdateForecastsAsync", forecastUpdateCron, forecastUpdateNextRun?.DateTime, 34));
@@ -68,6 +78,8 @@ public class Worker : BackgroundService
         jobSchedule.Add(("SyncWeatherStationActiveStatusAsync", metFrostActiveStatusCron, metFrostActiveStatusNextRun?.DateTime, 2));
         jobSchedule.Add(("SyncWindsMobiDataAsync", windsMobiCron, windsMobiNextRun?.DateTime, 30));
         jobSchedule.Add(("LocateCountriesAsync", countryLocatorCron, countryLocatorNextRun?.DateTime, 10));
+        jobSchedule.Add(("SyncPortWindLatestStationDataAsync", portWindObservationCron, portWindObservationNextRun?.DateTime, 30));
+        jobSchedule.Add(("SyncPortWindWeatherStationsAsync", portWindStationRefreshCron, portWindStationRefreshNextRun?.DateTime, 10));
 
         // Print schedule visualization
         PrintJobSchedule(jobSchedule, scheduleStartTime);
@@ -115,8 +127,29 @@ public class Worker : BackgroundService
             "LocateCountriesAsync",
             stoppingToken);
 
+        var portWindObservationTask = _portWindObservationScheduler.RunAsync(
+            portWindObservationCron,
+            async (service, ct) => { await service.SyncLatestStationDataAsync(ct); },
+            "SyncPortWindLatestStationDataAsync",
+            stoppingToken);
+
+        var portWindStationRefreshTask = _portWindStationRefreshScheduler.RunAsync(
+            portWindStationRefreshCron,
+            async (service, ct) => { await service.SyncWeatherStationsAsync(ct); },
+            "SyncPortWindWeatherStationsAsync",
+            stoppingToken);
+
         // Wait for all tasks (they will run until cancellation is requested)
-        await Task.WhenAll(syncDataTask, syncStationsTask, syncStatusTask, holfuySyncTask, forecastUpdateTask, windsMobiSyncTask, countryLocatorTask);
+        await Task.WhenAll(
+            syncDataTask,
+            syncStationsTask,
+            syncStatusTask,
+            holfuySyncTask,
+            forecastUpdateTask,
+            windsMobiSyncTask,
+            countryLocatorTask,
+            portWindObservationTask,
+            portWindStationRefreshTask);
     }
 
     private void PrintJobSchedule(List<(string Name, string CronExpression, DateTime? FirstRun, int ExpectedDuration)> schedule, DateTime startTime)
