@@ -55,18 +55,6 @@ nunit-*.xml
 
 .vs/
 
-.codex/
-.agents
-.claude/*
-!.claude/rules/
-!.claude/rules/**
-.github/skills
-.github/agents/*
-!.github/agents/
-!.github/agents/**
-.github/instructions/*
-!.github/instructions/
-!.github/instructions/**
-.github/prompts
+
 .openspec-bootstrap-tmp/
 .openspec-bootstrap-venv/

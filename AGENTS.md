@@ -5,6 +5,7 @@ WindLordApi is a .NET 9 scheduled worker that ingests weather-station observatio
 
 ## Repository Expectations
 - Read `openspec/specs/` before changing behavior.
+- Use root and local `CONTEXT.md` files for current repo-state facts, hotspots, and operational caveats that are too volatile for stable rule files.
 - Use the `/opsx:propose -> /opsx:apply -> /opsx:archive` workflow for behavior changes.
 - Validate behavior with focused commands such as `openspec validate --specs`, `dotnet build WindLordApi.sln`, and `dotnet test src/WindLordApi.Tests/WindLordApi.Tests.csproj`.
 - Do not commit secrets or provider credentials; use user secrets and environment-backed configuration.
@@ -13,7 +14,7 @@ WindLordApi is a .NET 9 scheduled worker that ingests weather-station observatio
 - C# / .NET 9
 - Worker host with Cronos scheduling and Serilog
 - EF Core 9 with Npgsql/PostgreSQL and FlexLabs upsert
-- Integrations: Holfuy, MetFrost, MetYr, WindsMobi, Google Geocoding
+- Integrations: Holfuy, MetFrost, MetYr, PortWind, WindsMobi, Google Geocoding
 - xUnit v3, FluentAssertions, Moq, Testcontainers
 
 ## Architecture
