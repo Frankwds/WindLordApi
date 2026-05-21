@@ -155,15 +155,16 @@ Optimize for these qualities in every generated spec set:
 
 4. **Present the capability list and stop for user direction**
 
-   After exploration, Reply with an enumerate list of specs. For each one, include:
+   After exploration, Reply with an enumerate list of specs followed by the "next step" section. For each one, include:
 
    - capability name
    - one-line purpose
 
-   FIRST reply with the complete list of specs. Make sure the user can see all the specs
-   THEN follow these instructions exactly:
-
-   Step 1. Give the user the choice to approve the list of specs as is or provide feedback to refine it.
+   Next step: Give the user these choices: 
+   (make sure they are not a part of the list of specs, but seperate)
+   - Approve the list of specs and recieve guiding on creating them.
+   - Provide the user with different directions and modifcations to apply to the list provided. Based on alternative slicings and organizations that the user may consider instead. Spend a second thinking here, before 
+   - Finally ask the user "Anything else you would like to change or discuss?"
 
    Handle any custom answer or instruction given by the user, refining the list of specs, repeat until the user approves.
    If the user chooses to approve, respond with Step 2 below and do not start writing specs in the same reply.
@@ -183,29 +184,7 @@ Optimize for these qualities in every generated spec set:
 
    Do not use a blocking question tool for capability confirmation in this skill. The enumerated list plus the three explicit user choices is the required handoff format.
 
-5. **Handle existing specs intentionally when writing an individual spec**
-
-   In a fork dedicated to one capability:
-
-   - check whether `openspec/specs/<capability>/spec.md` already exists
-   - read it before deciding what to do
-   - ask the user whether to `overwrite`, `merge`, or `skip`
-
-   Ask one spec at a time:
-
-   > "Spec for <capability> already exists. Overwrite, merge, or skip?"
-
-   Interpret the choices this way:
-
-   - `overwrite`: replace the file with a fresh spec that matches the current goal and evidence
-   - `merge`: preserve valid content and add or refine missing material
-   - `skip`: leave the file unchanged
-
-6. **Track work explicitly when drafting or reconciling specs**
-
-   Use `TodoWrite` or the platform's equivalent task-tracking tool when writing a spec in a fork or performing the final verification pass. Create one item per capability being processed and update statuses as you inspect, draft, validate, and finish it.
-
-7. **Write an individual spec file**
+5. **Write an individual spec file**
 
    In a fork for capability `<capability>`, create `openspec/specs/<capability>/spec.md` when needed and use this structure:
 
@@ -243,7 +222,7 @@ Optimize for these qualities in every generated spec set:
 
    Prefer a few strong requirements over many shallow ones. Capture the rules that make the capability safe to build or modify.
 
-8. **Write requirements from the right evidence**
+6. **Write requirements from the right evidence**
 
    Anchor requirements primarily in code and tests, then refine them with design docs, issues, pull requests, and descriptive documentation when those sources help explain the implemented behavior.
 
@@ -264,7 +243,7 @@ Optimize for these qualities in every generated spec set:
 
    When merging into an existing spec, preserve valid content and improve coherence only as needed.
 
-9. **Validate each written spec and the final reconciled set**
+7. **Validate each written spec and the final reconciled set**
 
    If an OpenSpec validator is available, run:
 
@@ -285,7 +264,12 @@ Optimize for these qualities in every generated spec set:
 
    If not, refine the capability boundary or the wording before finishing.
 
-10. **Show progress and final summary**
+8. **Involve the user**
+    This steps aims at deriving high-value insights from the user that can sharpen or add to the spec.
+    Ask the user for insights in relation to the capability in question in order to capture important context that may not be explicit in the codebase, but is important for future developers to understand when working with the capability.
+
+
+9. **Show progress and final summary**
 
    During forked spec writing, confirm that each written file exists and give a brief progress update.
 
