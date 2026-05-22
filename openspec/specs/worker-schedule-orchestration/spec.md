@@ -13,7 +13,7 @@ The system SHALL define recurring workflow cadence in `src/WindLordApi.Worker/Wo
 - **WHEN** it finishes `StartupJobs.RunStartupJobsAsync`
 - **THEN** it SHALL start recurring scheduler loops for these workflows using the configured cron expressions:
 - **THEN** `SyncWindsMobiDataAsync` runs on `0 */5 * * * *`
-- **THEN** `UpdateForecastsAsync` runs on `0 1/5 * * * *`
+- **THEN** `UpdateForecastsAsync` runs on `0 1/8 * * * *`
 - **THEN** `SyncLatestStationDataAsync` for MetFrost runs on `0 2/5 * * * *`
 - **THEN** `SyncPortWindLatestStationDataAsync` runs on `0 3 * * * *`
 - **THEN** `SyncHolfuyDataAsync` runs on `30 */15 * * * *`
