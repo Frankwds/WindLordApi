@@ -20,6 +20,7 @@
 
 ## Architecture
 - Behavioral source of truth is `openspec/specs/`; use the OpenSpec workflow when behavior changes. `confirmed`
+- Forecast behavior is now split across `metyr-forecast-refresh`, `openmeteo-forecast-supplement`, `forecast-cache-lifecycle`, `worker-schedule-orchestration`, and `worker-startup-sequence`. `confirmed`
 - Safe flow is provider client -> mapping -> worker service -> data service or repository -> PostgreSQL. New code that jumps layers is usually wrong. `confirmed`
 - `src/WindLordApi.Integrations` owns HTTP clients, DTOs, options, and mappings. `src/WindLordApi.Worker` owns startup jobs, schedules, health checks, and orchestration. `src/WindLordApi.Data` owns EF Core models, views, upsert keys, repositories, and transaction boundaries. `confirmed`
 
@@ -27,7 +28,8 @@
 - Provider weather-station metadata must exist before persisting dependent observations. Startup ordering and sync services assume that invariant. `confirmed`
 - Station observations are unique by `(StationId, UpdatedAt)`. Forecast cache is unique by `(LocationId, Time)`. Latest station data is a separate read-optimized projection with one row per station. `confirmed`
 - Forecast refresh consumes externally managed paragliding locations; this repo currently reads that metadata but does not own the location authoring lifecycle. `user-confirmed` for ownership, `confirmed` for code surface
-- Forecast refresh deletes expired forecast rows before fetching or upserting new data, and work selection prefers locations with no forecasts before merely stale locations. `confirmed`
+- The authoritative MetYr refresh deletes expired forecast rows before fetching or upserting new data, and its work selection prefers locations with no forecasts before merely stale locations. `confirmed`
+- The Open-Meteo supplement does not own cleanup; it selects active main locations by the shortest Open-Meteo forecast tail, with locations that have no Open-Meteo-backed rows first. `confirmed`
 - Forecast refresh ultimately processes only active main paragliding locations because ID materialization filters by `IsActive && IsMain`. `confirmed`
 - Country enrichment is best-effort: the worker retries stations whose country is `null` or `"UKJENT"`, persists successful resolutions, and leaves unresolved stations in place for later attempts. `confirmed`
 - Schedules are code, not configuration: current cron expressions live in `src/WindLordApi.Worker/Worker.cs` and use six-field UTC Cronos expressions with seconds. `confirmed`
@@ -43,9 +45,9 @@
 ## Hot Spots
 - `src/WindLordApi.Data/ApplicationDbContext.cs`: upsert keys, filtered indexes, keyless view mappings, and the `DateTimeKind.Unspecified` conversion for some PostgreSQL `timestamp without time zone` fields. `confirmed`
 - `src/WindLordApi.Data/Repositories/WeatherStationRepository.cs`: weather-station upsert intentionally preserves existing `IsActive` except Holfuy inputs, and excludes `Country` and `IsMain` from normal upserts. `confirmed`
-- `src/WindLordApi.Data/Repositories/ParaglidingLocationRepository.cs`: forecast candidate selection depends on database views plus an `IsActive && IsMain` filter when IDs are materialized. `confirmed`
+- `src/WindLordApi.Data/Repositories/ParaglidingLocationRepository.cs`: MetYr candidate selection still depends on database views, while Open-Meteo candidate selection is an inline shortest-tail query; both paths still rely on `IsActive && IsMain` during ID materialization. `confirmed`
 - `src/WindLordApi.Worker/Services/CountryLocatorService.cs`: best-effort reverse geocoding, batching, retry shape, and `Country`/`IsMain` updates for unresolved weather stations. `confirmed`
-- `src/WindLordApi.Worker/Startup/StartupJobs.cs`: startup ordering is operational behavior, especially PortWind station refresh before PortWind latest-data sync. `confirmed`
+- `src/WindLordApi.Worker/Startup/StartupJobs.cs`: startup ordering is operational behavior, especially Open-Meteo before MetYr and PortWind station refresh before PortWind latest-data sync. `confirmed`
 - `src/WindLordApi.Worker/Worker.cs`: schedule offsets appear intentionally staggered to reduce collisions and startup load. `strongly inferred`
 
 ## Local Guidance Map

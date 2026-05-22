@@ -7,6 +7,7 @@
 - `StationId` is the durable provider key used for weather-station relationships and upsert matching. Entity `Id` is not the cross-layer provider key. `confirmed`
 - `Latest station data` is its own read-optimized store, not "the latest row in station_data". `confirmed`
 - `LocationsWithoutForecast` and `LocationsWithOldestForecast` are database views surfaced as keyless EF entities, not simple in-memory query DTOs. `confirmed`
+- Open-Meteo refresh candidates are not backed by a keyless view; that selection is an inline repository query over `ParaglidingLocation` and `ForecastCache`. `confirmed`
 
 ## Local Intent
 - This layer keeps persistence rules, transactional batching, and PostgreSQL-specific behavior out of Worker and Integrations. `confirmed`
@@ -21,8 +22,9 @@
 - `WeatherStation` is unique by `StationId`. Normal weather-station upserts update metadata but intentionally do not overwrite `Country` or `IsMain`; those are reserved for `UpdateCountriesAsync`. `confirmed`
 - Normal weather-station upsert also preserves existing `IsActive`, except Holfuy inputs force `IsActive = true`. Provider active-state workflows own the rest of the active-flag lifecycle. `confirmed`
 - `StationData` upsert matching is `(StationId, UpdatedAt)`. `ForecastCache` upsert matching is `(LocationId, Time)`. Breaking those keys breaks idempotency. `confirmed`
+- `ForecastCache` upsert also enforces provider precedence: an incoming Open-Meteo row does not overwrite an existing Yr-backed row for the same `(LocationId, Time)`, but a later Yr-backed row can replace an Open-Meteo-backed row. `confirmed`
 - `GetStationsWithMissingCountryAsync` treats both `null` and `"UKJENT"` as missing. `confirmed`
-- `GetByIdsAsync` for paragliding locations returns only rows where `IsActive && IsMain`, so forecast refresh ignores inactive or secondary locations even if their IDs were selected earlier. `confirmed`
+- `GetByIdsAsync` for paragliding locations returns only rows where `IsActive && IsMain`, so both MetYr refresh and Open-Meteo supplementation ignore inactive or secondary locations even if their IDs were selected earlier. `confirmed`
 - `WeatherStationService` and `ForecastCacheService` batch at 1000 records and wrap each batch in an explicit transaction for Supabase pooler compatibility. `confirmed`
 - Some DateTime fields are stored in PostgreSQL `timestamp without time zone`; `WeatherStation.UpdatedAt` is explicitly converted to `DateTimeKind.Unspecified` on write. Treat DateTime-kind edits as persistence changes, not cleanup. `confirmed`
 
@@ -32,6 +34,6 @@
 - Schema or migration changes also need migration-specific validation because the normal test harness uses `EnsureCreatedAsync`. `confirmed`
 
 ## Watchouts
-- Renaming or dropping the forecast-selection views requires coordinated changes in `ApplicationDbContext` and the repositories that consume them. `confirmed`
+- Renaming or dropping the MetYr forecast-selection views requires coordinated changes in `ApplicationDbContext` and the repositories that consume them; the Open-Meteo refresh-candidate query lives inline in `ParaglidingLocationRepository`. `confirmed`
 - FlexLabs upsert match columns must stay aligned across model configuration, repository `.On(...)` clauses, and database constraints or indexes. `confirmed`
 - A repository update projection is usually intentional. If a field is absent in `WhenMatched`, check whether another workflow owns it before adding it. `confirmed`

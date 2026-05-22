@@ -18,13 +18,15 @@
 
 ## Local Rules
 - Startup order matters: PortWind station refresh runs before PortWind latest-data sync so provider station metadata exists before dependent observations. `confirmed`
+- Forecast startup order also matters: Open-Meteo supplement runs before the authoritative MetYr refresh, but MetYr still owns cleanup and remains the authoritative writer on overlapping forecast-cache rows. `confirmed`
 - Startup job failures are logged and isolated; one failure does not stop later startup jobs. `confirmed`
 - Scheduled-job failures are logged inside `CronScheduler` and the loop continues on the next occurrence. `confirmed`
 - All cron expressions are UTC and currently hard-coded in `Worker.cs`; changing cadence requires code changes and should be reviewed against the existing staggered schedule. `confirmed`
-- Open-Meteo currently runs behind an external free-tier request limit of 10,000 requests per day. At the current 5-minute forecast cadence and present batch shape, the worker is expected to exhaust that quota after roughly 16 hours, after which forecast refresh degrades to Yr-only rows until the provider quota resets. Treat that as an operational expectation, not a behavioral guarantee. `user-confirmed`
+- Open-Meteo currently runs behind an external free-tier request limit of 10,000 requests per day. Treat provider quota exhaustion as an operational expectation that degrades forecast coverage back toward Yr-only rows rather than as a behavioral guarantee. `user-confirmed`
 - Current staggered cadence is:
   - WindsMobi every 5 minutes at second 0. `confirmed`
-  - Forecast update every 5 minutes at minute offset 1. `confirmed`
+- Authoritative MetYr refresh every 5 minutes at minute offset 1. `confirmed`
+- Open-Meteo supplement every 10 minutes at minute offset 6. `confirmed`
   - MetFrost latest data every 5 minutes at minute offset 2. `confirmed`
   - PortWind latest data hourly at minute 3. `confirmed`
   - Holfuy every 15 minutes at second 30. `confirmed`
