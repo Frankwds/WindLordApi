@@ -111,7 +111,8 @@ builder.Services.AddScoped<IHolfuySyncService, HolfuySyncService>();
 builder.Services.AddScoped<IMetFrostSyncService, MetFrostSyncService>();
 builder.Services.AddScoped<IPortWindStationRefreshService, PortWindStationRefreshService>();
 builder.Services.AddScoped<IPortWindLatestDataSyncService, PortWindLatestDataSyncService>();
-builder.Services.AddScoped<IForecastUpdateService, ForecastUpdateService>();
+builder.Services.AddScoped<IMetYrForecastRefreshService, MetYrForecastRefreshService>();
+builder.Services.AddScoped<IOpenMeteoForecastSupplementService, OpenMeteoForecastSupplementService>();
 builder.Services.AddScoped<IWindsMobiSyncService, WindsMobiSyncService>();
 builder.Services.AddScoped<ICountryLocatorService, CountryLocatorService>();
 
@@ -120,7 +121,8 @@ builder.Services.AddSingleton<CronScheduler<IMetFrostSyncService>>();
 builder.Services.AddSingleton<CronScheduler<IPortWindStationRefreshService>>();
 builder.Services.AddSingleton<CronScheduler<IPortWindLatestDataSyncService>>();
 builder.Services.AddSingleton<CronScheduler<IHolfuySyncService>>();
-builder.Services.AddSingleton<CronScheduler<IForecastUpdateService>>();
+builder.Services.AddSingleton<CronScheduler<IMetYrForecastRefreshService>>();
+builder.Services.AddSingleton<CronScheduler<IOpenMeteoForecastSupplementService>>();
 builder.Services.AddSingleton<CronScheduler<IWindsMobiSyncService>>();
 builder.Services.AddSingleton<CronScheduler<ICountryLocatorService>>();
 

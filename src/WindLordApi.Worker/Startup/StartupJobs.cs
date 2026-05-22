@@ -23,21 +23,35 @@ public static class StartupJobs
     {
         logger.LogInformation("Running startup jobs...");
 
-        // Update forecasts on startup
+        // Refresh Open-Meteo forecasts
         try
         {
-            using var forecastUpdateScope = serviceProvider.CreateScope();
-            var forecastUpdateService = forecastUpdateScope.ServiceProvider.GetRequiredService<IForecastUpdateService>();
+            using var openMeteoForecastSupplementScope = serviceProvider.CreateScope();
+            var openMeteoForecastSupplementService = openMeteoForecastSupplementScope.ServiceProvider.GetRequiredService<IOpenMeteoForecastSupplementService>();
 
-            await forecastUpdateService.UpdateForecastsAsync(cancellationToken);
-            logger.LogInformation("ForecastUpdate: Completed startup job: UpdateForecastsAsync");
+            await openMeteoForecastSupplementService.SupplementForecastsAsync(cancellationToken);
+            logger.LogInformation("OpenMeteoForecastSupplement: Completed startup job: SupplementForecastsAsync");
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "ForecastUpdate: Error running UpdateForecastsAsync on startup");
+            logger.LogError(ex, "OpenMeteoForecastSupplement: Error running SupplementForecastsAsync on startup");
+        }
+
+        // Refresh authoritative MetYr forecasts
+        try
+        {
+            using var metYrForecastRefreshScope = serviceProvider.CreateScope();
+            var metYrForecastRefreshService = metYrForecastRefreshScope.ServiceProvider.GetRequiredService<IMetYrForecastRefreshService>();
+
+            await metYrForecastRefreshService.UpdateForecastsAsync(cancellationToken);
+            logger.LogInformation("MetYrForecastRefresh: Completed startup job: UpdateForecastsAsync");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "MetYrForecastRefresh: Error running UpdateForecastsAsync on startup");
         }
         
-        // Refresh PortWind stations before any other startup job so metadata exists for dependent syncs.
+        // Refresh PortWind stations and data
         try
         {
             using var scope = serviceProvider.CreateScope();
@@ -50,7 +64,7 @@ public static class StartupJobs
             logger.LogError(ex, "PortWind: Error running SyncWeatherStationsAsync on startup");
         }
 
-        // Sync PortWind latest data immediately after station refresh.
+        // Refresh latest PortWind station data on startup
         try
         {
             using var scope = serviceProvider.CreateScope();

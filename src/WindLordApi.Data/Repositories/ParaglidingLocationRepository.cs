@@ -40,6 +40,28 @@ public class ParaglidingLocationRepository : Repository<ParaglidingLocation>, IP
         return locations;
     }
 
+    public async Task<IEnumerable<Guid>> GetOpenMeteoRefreshCandidatesAsync(int limit, CancellationToken cancellationToken = default)
+    {
+        var locationIds = await _dbSet
+            .Where(pl => pl.IsActive && pl.IsMain)
+            .Select(pl => new
+            {
+                pl.Id,
+                LatestOpenMeteoForecastTime = _context.ForecastCaches
+                    .Where(fc => fc.LocationId == pl.Id && !fc.IsYrData)
+                    .Max(fc => (DateTime?)fc.Time)
+            })
+            .OrderBy(location => location.LatestOpenMeteoForecastTime.HasValue)
+            .ThenBy(location => location.LatestOpenMeteoForecastTime)
+            .ThenBy(location => location.Id)
+            .Take(limit)
+            .Select(location => location.Id)
+            .ToListAsync(cancellationToken);
+
+        _logger.LogDebug("Retrieved {Count} locations with the shortest Open-Meteo forecast tail (limit: {Limit})", locationIds.Count, limit);
+        return locationIds;
+    }
+
     public async Task<IEnumerable<ParaglidingLocation>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
     {
         var idsList = ids.ToList();

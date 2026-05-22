@@ -19,15 +19,22 @@ The worker SHALL execute the startup job sequence once before it initializes rec
 The startup runner SHALL execute startup jobs sequentially in the order declared in `StartupJobs.cs`.
 
 The current implemented order is:
+- Open-Meteo forecast supplement
+- MetYr forecast refresh
 - PortWind station refresh
 - PortWind latest-station-data sync
 - WindsMobi sync
 - Country locator
-- Forecast update
 - Holfuy sync
 - MetFrost latest-station-data sync
 - MetFrost weather-station sync
 - MetFrost weather-station active-status sync
+
+#### Scenario: Open-Meteo startup runs before MetYr startup
+- **GIVEN** the worker is executing startup jobs
+- **WHEN** the forecast startup workflows run
+- **THEN** `IOpenMeteoForecastSupplementService.SupplementForecastsAsync(...)` runs before `IMetYrForecastRefreshService.UpdateForecastsAsync(...)`
+- **AND** the later MetYr startup refresh remains able to take precedence on overlapping forecast-cache rows
 
 #### Scenario: PortWind metadata is loaded before PortWind latest data
 - **GIVEN** the worker is executing startup jobs

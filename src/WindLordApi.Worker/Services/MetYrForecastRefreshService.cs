@@ -2,44 +2,31 @@ using Microsoft.Extensions.Logging;
 using WindLordApi.Data.Models;
 using WindLordApi.Data.Services;
 using WindLordApi.Integrations.MetYr;
-using WindLordApi.Integrations.OpenMeteo;
 
 namespace WindLordApi.Worker.Services;
 
 /// <summary>
-/// Service for updating forecast data for paragliding locations.
-/// Fetches MetYr forecast data and supplements later timestamps with Open-Meteo forecast data.
+/// Service for refreshing authoritative MetYr forecast data for paragliding locations.
 /// </summary>
-public class ForecastUpdateService : IForecastUpdateService
+public class MetYrForecastRefreshService : IMetYrForecastRefreshService
 {
     private readonly IMetYrClient _metYrClient;
     private readonly IMetYrMapping _metYrMapping;
-    private readonly IOpenMeteoClient _openMeteoClient;
-    private readonly IOpenMeteoMapping _openMeteoMapping;
     private readonly IParaglidingLocationService _paraglidingLocationService;
     private readonly IForecastCacheService _forecastCacheService;
-    private readonly ILogger<ForecastUpdateService> _logger;
+    private readonly ILogger<MetYrForecastRefreshService> _logger;
 
     private const int BatchSize = 50;
 
-    private sealed record ProcessedLocationForecast(
-        int LocationIndex,
-        ParaglidingLocation Location,
-        IReadOnlyList<ForecastCache> ForecastData);
-
-    public ForecastUpdateService(
+    public MetYrForecastRefreshService(
         IMetYrClient metYrClient,
         IMetYrMapping metYrMapping,
-        IOpenMeteoClient openMeteoClient,
-        IOpenMeteoMapping openMeteoMapping,
         IParaglidingLocationService paraglidingLocationService,
         IForecastCacheService forecastCacheService,
-        ILogger<ForecastUpdateService> logger)
+        ILogger<MetYrForecastRefreshService> logger)
     {
         _metYrClient = metYrClient;
         _metYrMapping = metYrMapping;
-        _openMeteoClient = openMeteoClient;
-        _openMeteoMapping = openMeteoMapping;
         _paraglidingLocationService = paraglidingLocationService;
         _forecastCacheService = forecastCacheService;
         _logger = logger;
@@ -119,8 +106,6 @@ public class ForecastUpdateService : IForecastUpdateService
     private async Task ProcessBatchAsync(List<ParaglidingLocation> locations, CancellationToken cancellationToken)
     {
         var currentTime = DateTime.UtcNow;
-        var processedLocations = new List<ProcessedLocationForecast>(locations.Count);
-        var openMeteoForecastTask = FetchOpenMeteoForecastsAsync(locations, currentTime, cancellationToken);
 
         for (int index = 0; index < locations.Count; index++)
         {
@@ -150,8 +135,7 @@ public class ForecastUpdateService : IForecastUpdateService
                     forecastData = MergeLandingData(forecastData, mappedYrLandingData.MetYrDto);
                 }
 
-                processedLocations.Add(new ProcessedLocationForecast(index, location, forecastData));
-
+                await _forecastCacheService.UpsertManyAsync(forecastData.ToArray(), cancellationToken);
             }
             catch (Exception ex)
             {
@@ -159,98 +143,6 @@ public class ForecastUpdateService : IForecastUpdateService
                 // Continue processing other locations
             }
         }
-
-        var openMeteoForecasts = await TryGetOpenMeteoForecastsAsync(locations, openMeteoForecastTask);
-
-        foreach (var processedLocation in processedLocations)
-        {
-            var forecastData = MergeOpenMeteoData(
-                processedLocation.ForecastData,
-                processedLocation.Location,
-                processedLocation.LocationIndex,
-                openMeteoForecasts,
-                currentTime);
-
-            await _forecastCacheService.UpsertManyAsync(forecastData.ToArray(), cancellationToken);
-        }
-    }
-
-    private async Task<IReadOnlyList<OpenMeteoLocationForecast>> FetchOpenMeteoForecastsAsync(
-        IReadOnlyList<ParaglidingLocation> locations,
-        DateTime currentTime,
-        CancellationToken cancellationToken)
-    {
-        var requestLocations = locations
-            .Select(location => new OpenMeteoRequestLocation(location.Latitude, location.Longitude))
-            .ToArray();
-
-        var openMeteoResponses = await _openMeteoClient.FetchForecastAsync(
-            requestLocations,
-            currentTime.AddHours(48),
-            currentTime.AddHours(96),
-            cancellationToken);
-
-        return _openMeteoMapping.MapForecasts(openMeteoResponses);
-    }
-
-    private async Task<IReadOnlyList<OpenMeteoLocationForecast>?> TryGetOpenMeteoForecastsAsync(
-        IReadOnlyList<ParaglidingLocation> locations,
-        Task<IReadOnlyList<OpenMeteoLocationForecast>> openMeteoForecastTask)
-    {
-        try
-        {
-            var openMeteoForecasts = await openMeteoForecastTask;
-            ValidateOpenMeteoForecasts(locations, openMeteoForecasts);
-            return openMeteoForecasts;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(
-                ex,
-                "Open-Meteo forecast supplement batch failed for {LocationCount} locations. Persisting Yr-only rows.",
-                locations.Count);
-            return null;
-        }
-    }
-
-    private static void ValidateOpenMeteoForecasts(
-        IReadOnlyList<ParaglidingLocation> locations,
-        IReadOnlyList<OpenMeteoLocationForecast> openMeteoForecasts)
-    {
-        if (openMeteoForecasts.Count != locations.Count)
-        {
-            throw new InvalidOperationException(
-                $"Open-Meteo returned {openMeteoForecasts.Count} location blocks for {locations.Count} requested locations.");
-        }
-    }
-
-    private IReadOnlyList<ForecastCache> MergeOpenMeteoData(
-        IReadOnlyList<ForecastCache> yrForecastData,
-        ParaglidingLocation location,
-        int locationIndex,
-        IReadOnlyList<OpenMeteoLocationForecast>? openMeteoForecasts,
-        DateTime currentTime)
-    {
-        if (openMeteoForecasts is null || yrForecastData.Count == 0)
-        {
-            return yrForecastData;
-        }
-
-        var latestYrTimestamp = yrForecastData.Max(forecast => forecast.Time);
-        var supplementalRows = openMeteoForecasts[locationIndex].Forecasts
-            .Where(forecast => forecast.Time > latestYrTimestamp)
-            .Select(forecast => ConvertToForecastCache(forecast, location.Id, currentTime))
-            .ToArray();
-
-        if (supplementalRows.Length == 0)
-        {
-            return yrForecastData;
-        }
-
-        return yrForecastData
-            .Concat(supplementalRows)
-            .OrderBy(forecast => forecast.Time)
-            .ToArray();
     }
 
     /// <summary>
@@ -332,60 +224,6 @@ public class ForecastUpdateService : IForecastUpdateService
         return result;
     }
 
-    private static ForecastCache ConvertToForecastCache(
-        OpenMeteoForecastPoint forecastPoint,
-        Guid locationId,
-        DateTime currentTime)
-    {
-        return new ForecastCache
-        {
-            Time = forecastPoint.Time,
-            LocationId = locationId,
-            IsYrData = false,
-            UpdatedAt = currentTime,
-            CreatedAt = currentTime,
-            Temperature = forecastPoint.Temperature,
-            WindSpeed = forecastPoint.WindSpeed,
-            WindDirection = forecastPoint.WindDirection,
-            WindGusts = null,
-            Precipitation = forecastPoint.Precipitation,
-            PrecipitationMax = null,
-            PrecipitationMin = null,
-            PrecipitationProbability = forecastPoint.PrecipitationProbability,
-            PressureMsl = forecastPoint.PressureMsl,
-            WeatherCode = forecastPoint.WeatherCode,
-            IsDay = forecastPoint.IsDay,
-            LandingWind = null,
-            LandingGust = null,
-            LandingWindDirection = null,
-            WindSpeed1000hpa = null,
-            WindDirection1000hpa = null,
-            WindSpeed925hpa = null,
-            WindDirection925hpa = null,
-            WindSpeed850hpa = null,
-            WindDirection850hpa = null,
-            WindSpeed700hpa = null,
-            WindDirection700hpa = null,
-            Temperature1000hpa = null,
-            Temperature925hpa = null,
-            Temperature850hpa = null,
-            Temperature700hpa = null,
-            CloudCover = null,
-            CloudCoverLow = null,
-            CloudCoverMid = null,
-            CloudCoverHigh = null,
-            Cape = null,
-            ConvectiveInhibition = null,
-            LiftedIndex = null,
-            BoundaryLayerHeight = null,
-            FreezingLevelHeight = null,
-            GeopotentialHeight1000hpa = null,
-            GeopotentialHeight925hpa = null,
-            GeopotentialHeight850hpa = null,
-            GeopotentialHeight700hpa = null
-        };
-    }
-
     /// <summary>
     /// Merges landing wind data into forecast data by matching time strings.
     /// </summary>
@@ -424,4 +262,3 @@ public class ForecastUpdateService : IForecastUpdateService
         return result;
     }
 }
-

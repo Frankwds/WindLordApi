@@ -126,12 +126,12 @@ This remains the correct selection model for the authoritative five-minute refre
 
 ### Open-Meteo selection
 
-The Open-Meteo workflow should prioritize longer-horizon supplement gaps using Open-Meteo-specific freshness signals:
+The Open-Meteo workflow should prioritize longer-horizon supplement gaps using one universal tail-ordering query:
 
-1. locations with no Open-Meteo-backed forecast rows first
-2. then locations whose Open-Meteo-backed forecast rows were updated longest ago
+1. locations with no Open-Meteo-backed forecast rows first because they have no forecast tail
+2. then locations whose latest Open-Meteo-backed forecast timestamp is earliest
 
-The controlling freshness signal is not generic forecast `updated_at`, because recent Yr writes should not make a location look fresh for Open-Meteo supplementation. The query or repository abstraction therefore needs to distinguish Open-Meteo-backed rows from Yr-backed rows when computing the supplement queue.
+The controlling signal is the latest Open-Meteo-backed forecast `Time`, not `UpdatedAt`. Recent Yr writes should not make a location look fresh for Open-Meteo supplementation, and recent Open-Meteo write time is only a proxy for the horizon that actually matters. The query or repository abstraction therefore needs to distinguish Open-Meteo-backed rows from Yr-backed rows and order by the shortest remaining Open-Meteo forecast tail.
 
 ## Scheduling Design
 

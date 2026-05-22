@@ -29,5 +29,13 @@ public interface IParaglidingLocationService
     /// <param name="limit">Maximum number of locations to return.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<IEnumerable<LocationsWithoutForecast>> GetLocationsWithoutForecastAsync(int limit, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets active main locations with the shortest Open-Meteo forecast tail.
+    /// Locations without Open-Meteo-backed forecasts are returned first, then locations whose latest Open-Meteo-backed forecast time is earliest.
+    /// </summary>
+    /// <param name="limit">Maximum number of locations to return.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<IEnumerable<Guid>> GetOpenMeteoRefreshCandidatesAsync(int limit, CancellationToken cancellationToken = default);
 }
 

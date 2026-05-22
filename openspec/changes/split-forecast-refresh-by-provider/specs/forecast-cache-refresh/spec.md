@@ -65,21 +65,23 @@ Open-Meteo-supplemented rows SHALL set `IsYrData = false`, SHALL populate only t
 - **THEN** the persisted rows are marked with `IsYrData = false`
 - **AND** landing forecast fields remain unset for those rows
 
-### Requirement: Open-Meteo supplement selection SHALL prioritize missing or oldest Open-Meteo coverage
-The Open-Meteo supplement workflow SHALL prioritize locations with no Open-Meteo-backed forecast rows before locations that already have Open-Meteo-backed coverage.
+### Requirement: Open-Meteo supplement selection SHALL prioritize the shortest Open-Meteo forecast tail
+The Open-Meteo supplement workflow SHALL choose candidate locations through one ordering that uses the latest Open-Meteo-backed forecast timestamp as the tail signal.
 
-When multiple eligible locations already have Open-Meteo-backed coverage, the workflow SHALL prefer the locations whose Open-Meteo-backed forecast rows were updated longest ago.
+Locations with no Open-Meteo-backed forecast rows SHALL sort ahead of locations that already have Open-Meteo-backed coverage.
 
-This priority SHALL be based on Open-Meteo-backed forecast freshness rather than generic forecast freshness from Yr-backed rows.
+When multiple eligible locations already have Open-Meteo-backed coverage, the workflow SHALL prefer the locations whose latest Open-Meteo-backed forecast timestamp is earliest.
 
-#### Scenario: Locations without Open-Meteo coverage are selected first
+This priority SHALL be based on Open-Meteo-backed forecast horizon rather than generic forecast freshness or `UpdatedAt` values from Yr-backed rows.
+
+#### Scenario: Locations without Open-Meteo coverage have the shortest tail
 - **GIVEN** active main paragliding locations exist
-- **AND** some locations have no Open-Meteo-backed forecast rows while others have older Open-Meteo-backed rows
+- **AND** some locations have no Open-Meteo-backed forecast rows while others have existing Open-Meteo-backed rows
 - **WHEN** the Open-Meteo supplement workflow selects its next batch
-- **THEN** locations with no Open-Meteo-backed forecast rows are selected before locations with older Open-Meteo-backed rows
+- **THEN** locations with no Open-Meteo-backed forecast rows are selected before locations whose Open-Meteo-backed forecast horizon already extends into the future
 
-#### Scenario: Recent Yr writes do not make a location fresh for Open-Meteo supplementation
-- **GIVEN** a paragliding location has recent Yr-backed forecast rows
-- **AND** the same location has no Open-Meteo-backed forecast rows or only stale Open-Meteo-backed rows
+#### Scenario: Shorter Open-Meteo horizons are selected before longer horizons
+- **GIVEN** multiple active main paragliding locations already have Open-Meteo-backed forecast rows
+- **AND** those locations have different latest Open-Meteo-backed forecast timestamps
 - **WHEN** the Open-Meteo supplement workflow selects its next batch
-- **THEN** the location remains eligible according to its Open-Meteo-backed forecast freshness rather than the recent Yr write time
+- **THEN** the location whose latest Open-Meteo-backed forecast timestamp is earliest is selected before locations with later Open-Meteo-backed forecast timestamps

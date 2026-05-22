@@ -4,62 +4,34 @@ using Moq;
 using WindLordApi.Data.Models;
 using WindLordApi.Data.Services;
 using WindLordApi.Integrations.MetYr;
-using WindLordApi.Integrations.OpenMeteo;
 using WindLordApi.Tests.Helpers;
 using WindLordApi.Worker.Services;
-using System.Globalization;
 
 namespace WindLordApi.Tests.Unit.Services;
 
 /// <summary>
-/// Unit tests for ForecastUpdateService with MetYr-only data flow.
+/// Unit tests for MetYrForecastRefreshService.
 /// </summary>
-public class ForecastUpdateServiceTests
+public class MetYrForecastRefreshServiceTests
 {
     private readonly Mock<IMetYrClient> _metYrClientMock;
     private readonly Mock<IMetYrMapping> _metYrMappingMock;
-    private readonly Mock<IOpenMeteoClient> _openMeteoClientMock;
-    private readonly Mock<IOpenMeteoMapping> _openMeteoMappingMock;
     private readonly Mock<IParaglidingLocationService> _paraglidingLocationServiceMock;
     private readonly Mock<IForecastCacheService> _forecastCacheServiceMock;
-    private readonly Mock<ILogger<ForecastUpdateService>> _loggerMock;
-    private readonly ForecastUpdateService _service;
+    private readonly Mock<ILogger<MetYrForecastRefreshService>> _loggerMock;
+    private readonly MetYrForecastRefreshService _service;
 
-    public ForecastUpdateServiceTests()
+    public MetYrForecastRefreshServiceTests()
     {
         _metYrClientMock = new Mock<IMetYrClient>();
         _metYrMappingMock = new Mock<IMetYrMapping>();
-        _openMeteoClientMock = new Mock<IOpenMeteoClient>();
-        _openMeteoMappingMock = new Mock<IOpenMeteoMapping>();
         _paraglidingLocationServiceMock = new Mock<IParaglidingLocationService>();
         _forecastCacheServiceMock = new Mock<IForecastCacheService>();
-        _loggerMock = new Mock<ILogger<ForecastUpdateService>>();
+        _loggerMock = new Mock<ILogger<MetYrForecastRefreshService>>();
 
-        _openMeteoClientMock
-            .Setup(x => x.FetchForecastAsync(It.IsAny<IReadOnlyList<OpenMeteoRequestLocation>>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IReadOnlyList<OpenMeteoRequestLocation> locations, DateTime _, DateTime _, CancellationToken _) =>
-                locations.Select(location => new OpenMeteoForecastResponse
-                {
-                    Latitude = OpenMeteoCoordinates.TruncateToRequestPrecision(location.Latitude),
-                    Longitude = OpenMeteoCoordinates.TruncateToRequestPrecision(location.Longitude),
-                    Hourly = new OpenMeteoHourlyForecast()
-                }).ToArray());
-
-        _openMeteoMappingMock
-            .Setup(x => x.MapForecasts(It.IsAny<IReadOnlyList<OpenMeteoForecastResponse>>()))
-            .Returns((IReadOnlyList<OpenMeteoForecastResponse> responses) =>
-                responses.Select(response => new OpenMeteoLocationForecast
-                {
-                    Latitude = response.Latitude,
-                    Longitude = response.Longitude,
-                    Forecasts = Array.Empty<OpenMeteoForecastPoint>()
-                }).ToArray());
-
-        _service = new ForecastUpdateService(
+        _service = new MetYrForecastRefreshService(
             _metYrClientMock.Object,
             _metYrMappingMock.Object,
-            _openMeteoClientMock.Object,
-            _openMeteoMappingMock.Object,
             _paraglidingLocationServiceMock.Object,
             _forecastCacheServiceMock.Object,
             _loggerMock.Object);
@@ -589,309 +561,4 @@ public class ForecastUpdateServiceTests
             It.Is<ForecastCache[]>(fc => fc[0].LocationId == locationId2),
             It.IsAny<CancellationToken>()), Times.Once);
     }
-
-    [Fact]
-    public async Task UpdateForecastsAsync_WhenOpenMeteoReturnsLaterRows_ShouldAppendSupplementalRows()
-    {
-        // Arrange
-        var locationId = Guid.NewGuid();
-        var location = TestDataBuilders.ParaglidingLocation()
-            .WithId(locationId)
-            .WithCoordinates(60.1234f, 10.5678f)
-            .Build();
-
-        var yrDto = TestDataBuilders.MetYrDto()
-            .WithTime("2024-01-01T12:00:00Z")
-            .WithAirTemperature(12.3m)
-            .WithSymbolCode("clearsky_day")
-            .Build();
-
-        var yrModel = new WeatherDataYr
-        {
-            MetYrDto = new[] { yrDto },
-            UpdatedAt = "2024-01-01T12:00:00Z",
-            Elevation = 100.0,
-            Location = new LocationInfo { Latitude = 60.1234, Longitude = 10.5678 }
-        };
-
-        _paraglidingLocationServiceMock
-            .Setup(x => x.GetLocationsWithoutForecastAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { new LocationsWithoutForecast { LocationId = locationId } });
-
-        _paraglidingLocationServiceMock
-            .Setup(x => x.GetByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { location });
-
-        _metYrClientMock
-            .Setup(x => x.FetchYrDataAsync(location.Latitude, location.Longitude, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Mock.Of<MetYrResponse>());
-
-        _metYrMappingMock
-            .Setup(x => x.MapYrData(It.IsAny<MetYrResponse>()))
-            .Returns(yrModel);
-
-        _openMeteoMappingMock
-            .Setup(x => x.MapForecasts(It.IsAny<IReadOnlyList<OpenMeteoForecastResponse>>()))
-            .Returns(new[]
-            {
-                new OpenMeteoLocationForecast
-                {
-                    Latitude = OpenMeteoCoordinates.TruncateToRequestPrecision(location.Latitude),
-                    Longitude = OpenMeteoCoordinates.TruncateToRequestPrecision(location.Longitude),
-                    Forecasts = new[]
-                    {
-                        new OpenMeteoForecastPoint
-                        {
-                            Time = DateTime.Parse("2024-01-01T13:00:00Z", null, DateTimeStyles.AdjustToUniversal),
-                            Temperature = 10.1m,
-                            WindSpeed = 6.2m,
-                            WindDirection = 190,
-                            WindGusts = 7.3m,
-                            Precipitation = 0.25m,
-                            PrecipitationProbability = 25f,
-                            PressureMsl = 1010.1m,
-                            WeatherCode = "cloudy",
-                            IsDay = 1
-                        }
-                    }
-                }
-            });
-
-        _forecastCacheServiceMock
-            .Setup(x => x.DeleteOldForecastsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(0);
-
-        ForecastCache[]? capturedForecastCache = null;
-        _forecastCacheServiceMock
-            .Setup(x => x.UpsertManyAsync(It.IsAny<ForecastCache[]>(), It.IsAny<CancellationToken>()))
-            .Callback<ForecastCache[], CancellationToken>((fc, _) => capturedForecastCache = fc)
-            .ReturnsAsync(2);
-
-        // Act
-        await _service.UpdateForecastsAsync(TestContext.Current.CancellationToken);
-
-        // Assert
-        capturedForecastCache.Should().NotBeNull();
-        capturedForecastCache.Should().HaveCount(2);
-        capturedForecastCache![0].IsYrData.Should().BeTrue();
-        capturedForecastCache[1].IsYrData.Should().BeFalse();
-        capturedForecastCache[1].Time.Should().Be(DateTime.Parse("2024-01-01T13:00:00Z").ToUniversalTime());
-        capturedForecastCache[1].WindGusts.Should().BeNull();
-        capturedForecastCache[1].PrecipitationMax.Should().BeNull();
-        capturedForecastCache[1].PrecipitationMin.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task UpdateForecastsAsync_WhenOpenMeteoBatchFails_ShouldPersistYrOnlyRows()
-    {
-        // Arrange
-        var locationId = Guid.NewGuid();
-        var location = TestDataBuilders.ParaglidingLocation()
-            .WithId(locationId)
-            .WithCoordinates(60.1234f, 10.5678f)
-            .Build();
-
-        var yrDto = TestDataBuilders.MetYrDto()
-            .WithTime("2024-01-01T12:00:00Z")
-            .WithSymbolCode("clearsky_day")
-            .Build();
-
-        var yrModel = new WeatherDataYr
-        {
-            MetYrDto = new[] { yrDto },
-            UpdatedAt = "2024-01-01T12:00:00Z",
-            Elevation = 100.0,
-            Location = new LocationInfo { Latitude = 60.1234, Longitude = 10.5678 }
-        };
-
-        _paraglidingLocationServiceMock
-            .Setup(x => x.GetLocationsWithoutForecastAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { new LocationsWithoutForecast { LocationId = locationId } });
-
-        _paraglidingLocationServiceMock
-            .Setup(x => x.GetByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { location });
-
-        _metYrClientMock
-            .Setup(x => x.FetchYrDataAsync(location.Latitude, location.Longitude, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Mock.Of<MetYrResponse>());
-
-        _metYrMappingMock
-            .Setup(x => x.MapYrData(It.IsAny<MetYrResponse>()))
-            .Returns(yrModel);
-
-        _openMeteoClientMock
-            .Setup(x => x.FetchForecastAsync(It.IsAny<IReadOnlyList<OpenMeteoRequestLocation>>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new HttpRequestException("batch failure"));
-
-        _forecastCacheServiceMock
-            .Setup(x => x.DeleteOldForecastsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(0);
-
-        ForecastCache[]? capturedForecastCache = null;
-        _forecastCacheServiceMock
-            .Setup(x => x.UpsertManyAsync(It.IsAny<ForecastCache[]>(), It.IsAny<CancellationToken>()))
-            .Callback<ForecastCache[], CancellationToken>((fc, _) => capturedForecastCache = fc)
-            .ReturnsAsync(1);
-
-        // Act
-        await _service.UpdateForecastsAsync(TestContext.Current.CancellationToken);
-
-        // Assert
-        capturedForecastCache.Should().NotBeNull();
-        capturedForecastCache.Should().HaveCount(1);
-        capturedForecastCache![0].IsYrData.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task UpdateForecastsAsync_WhenOpenMeteoResponseCountDoesNotMatchSelectedLocations_ShouldPersistYrOnlyRows()
-    {
-        // Arrange
-        var locationId = Guid.NewGuid();
-        var location = TestDataBuilders.ParaglidingLocation()
-            .WithId(locationId)
-            .WithCoordinates(60.1234f, 10.5678f)
-            .Build();
-
-        var yrDto = TestDataBuilders.MetYrDto()
-            .WithTime("2024-01-01T12:00:00Z")
-            .WithSymbolCode("clearsky_day")
-            .Build();
-
-        var yrModel = new WeatherDataYr
-        {
-            MetYrDto = new[] { yrDto },
-            UpdatedAt = "2024-01-01T12:00:00Z",
-            Elevation = 100.0,
-            Location = new LocationInfo { Latitude = 60.1234, Longitude = 10.5678 }
-        };
-
-        _paraglidingLocationServiceMock
-            .Setup(x => x.GetLocationsWithoutForecastAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { new LocationsWithoutForecast { LocationId = locationId } });
-
-        _paraglidingLocationServiceMock
-            .Setup(x => x.GetByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { location });
-
-        _metYrClientMock
-            .Setup(x => x.FetchYrDataAsync(location.Latitude, location.Longitude, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Mock.Of<MetYrResponse>());
-
-        _metYrMappingMock
-            .Setup(x => x.MapYrData(It.IsAny<MetYrResponse>()))
-            .Returns(yrModel);
-
-        _openMeteoMappingMock
-            .Setup(x => x.MapForecasts(It.IsAny<IReadOnlyList<OpenMeteoForecastResponse>>()))
-            .Returns(Array.Empty<OpenMeteoLocationForecast>());
-
-        _forecastCacheServiceMock
-            .Setup(x => x.DeleteOldForecastsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(0);
-
-        ForecastCache[]? capturedForecastCache = null;
-        _forecastCacheServiceMock
-            .Setup(x => x.UpsertManyAsync(It.IsAny<ForecastCache[]>(), It.IsAny<CancellationToken>()))
-            .Callback<ForecastCache[], CancellationToken>((fc, _) => capturedForecastCache = fc)
-            .ReturnsAsync(1);
-
-        // Act
-        await _service.UpdateForecastsAsync(TestContext.Current.CancellationToken);
-
-        // Assert
-        capturedForecastCache.Should().NotBeNull();
-        capturedForecastCache.Should().HaveCount(1);
-        capturedForecastCache![0].IsYrData.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task UpdateForecastsAsync_WhenOpenMeteoCoordinatesDoNotMatchSelectedLocations_ShouldUseRequestOrderForSupplementalRows()
-    {
-        // Arrange
-        var locationId = Guid.NewGuid();
-        var location = TestDataBuilders.ParaglidingLocation()
-            .WithId(locationId)
-            .WithCoordinates(60.1234f, 10.5678f)
-            .Build();
-
-        var yrDto = TestDataBuilders.MetYrDto()
-            .WithTime("2024-01-01T12:00:00Z")
-            .WithAirTemperature(12.3m)
-            .WithSymbolCode("clearsky_day")
-            .Build();
-
-        var yrModel = new WeatherDataYr
-        {
-            MetYrDto = new[] { yrDto },
-            UpdatedAt = "2024-01-01T12:00:00Z",
-            Elevation = 100.0,
-            Location = new LocationInfo { Latitude = 60.1234, Longitude = 10.5678 }
-        };
-
-        _paraglidingLocationServiceMock
-            .Setup(x => x.GetLocationsWithoutForecastAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { new LocationsWithoutForecast { LocationId = locationId } });
-
-        _paraglidingLocationServiceMock
-            .Setup(x => x.GetByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { location });
-
-        _metYrClientMock
-            .Setup(x => x.FetchYrDataAsync(location.Latitude, location.Longitude, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Mock.Of<MetYrResponse>());
-
-        _metYrMappingMock
-            .Setup(x => x.MapYrData(It.IsAny<MetYrResponse>()))
-            .Returns(yrModel);
-
-        _openMeteoMappingMock
-            .Setup(x => x.MapForecasts(It.IsAny<IReadOnlyList<OpenMeteoForecastResponse>>()))
-            .Returns(new[]
-            {
-                new OpenMeteoLocationForecast
-                {
-                    Latitude = 60.999,
-                    Longitude = 10.999,
-                    Forecasts = new[]
-                    {
-                        new OpenMeteoForecastPoint
-                        {
-                            Time = DateTime.Parse("2024-01-01T13:00:00Z", null, DateTimeStyles.AdjustToUniversal),
-                            Temperature = 10.1m,
-                            WindSpeed = 6.2m,
-                            WindDirection = 190,
-                            WindGusts = 7.3m,
-                            Precipitation = 0.25m,
-                            PrecipitationProbability = 25f,
-                            PressureMsl = 1010.1m,
-                            WeatherCode = "cloudy",
-                            IsDay = 1
-                        }
-                    }
-                }
-            });
-
-        _forecastCacheServiceMock
-            .Setup(x => x.DeleteOldForecastsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(0);
-
-        ForecastCache[]? capturedForecastCache = null;
-        _forecastCacheServiceMock
-            .Setup(x => x.UpsertManyAsync(It.IsAny<ForecastCache[]>(), It.IsAny<CancellationToken>()))
-            .Callback<ForecastCache[], CancellationToken>((fc, _) => capturedForecastCache = fc)
-            .ReturnsAsync(2);
-
-        // Act
-        await _service.UpdateForecastsAsync(TestContext.Current.CancellationToken);
-
-        // Assert
-        capturedForecastCache.Should().NotBeNull();
-        capturedForecastCache.Should().HaveCount(2);
-        capturedForecastCache![0].IsYrData.Should().BeTrue();
-        capturedForecastCache[1].IsYrData.Should().BeFalse();
-        capturedForecastCache[1].Time.Should().Be(DateTime.Parse("2024-01-01T13:00:00Z", null, DateTimeStyles.AdjustToUniversal));
-        capturedForecastCache[1].WindGusts.Should().BeNull();
-    }
 }
-

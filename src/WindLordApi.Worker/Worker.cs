@@ -13,7 +13,8 @@ public class Worker : BackgroundService
     private readonly CronScheduler<IPortWindStationRefreshService> _portWindStationRefreshScheduler;
     private readonly CronScheduler<IPortWindLatestDataSyncService> _portWindLatestDataScheduler;
     private readonly CronScheduler<IHolfuySyncService> _holfuyScheduler;
-    private readonly CronScheduler<IForecastUpdateService> _forecastUpdateScheduler;
+    private readonly CronScheduler<IMetYrForecastRefreshService> _metYrForecastRefreshScheduler;
+    private readonly CronScheduler<IOpenMeteoForecastSupplementService> _openMeteoForecastSupplementScheduler;
     private readonly CronScheduler<IWindsMobiSyncService> _windsMobiScheduler;
     private readonly CronScheduler<ICountryLocatorService> _countryLocatorScheduler;
 
@@ -24,7 +25,8 @@ public class Worker : BackgroundService
         CronScheduler<IPortWindStationRefreshService> portWindStationRefreshScheduler,
         CronScheduler<IPortWindLatestDataSyncService> portWindLatestDataScheduler,
         CronScheduler<IHolfuySyncService> holfuyScheduler,
-        CronScheduler<IForecastUpdateService> forecastUpdateScheduler,
+        CronScheduler<IMetYrForecastRefreshService> metYrForecastRefreshScheduler,
+        CronScheduler<IOpenMeteoForecastSupplementService> openMeteoForecastSupplementScheduler,
         CronScheduler<IWindsMobiSyncService> windsMobiScheduler,
         CronScheduler<ICountryLocatorService> countryLocatorScheduler)
     {
@@ -34,7 +36,8 @@ public class Worker : BackgroundService
         _portWindStationRefreshScheduler = portWindStationRefreshScheduler;
         _portWindLatestDataScheduler = portWindLatestDataScheduler;
         _holfuyScheduler = holfuyScheduler;
-        _forecastUpdateScheduler = forecastUpdateScheduler;
+        _metYrForecastRefreshScheduler = metYrForecastRefreshScheduler;
+        _openMeteoForecastSupplementScheduler = openMeteoForecastSupplementScheduler;
         _windsMobiScheduler = windsMobiScheduler;
         _countryLocatorScheduler = countryLocatorScheduler;
     }
@@ -49,7 +52,8 @@ public class Worker : BackgroundService
         var jobSchedule = new List<(string Name, string CronExpression, DateTime? FirstRun, int ExpectedDuration)>();
 
         // Define cron schedules with expected execution times
-        var forecastUpdateCron = "0 1/5 * * * *";      // Every 5 min at :01:00 seconds (34s duration)
+        var metYrForecastRefreshCron = "0 1/5 * * * *";      // Every 5 min at :01:00 seconds (34s duration)
+        var openMeteoForecastSupplementCron = "0 6/10 * * * *"; // Every 10 min at :06:00 seconds (15s duration)
         var holfuyCron = "30 */15 * * * *";             // Every 15 min at :30 seconds (18s duration)
         var metFrostDataCron = "0 2/5 * * * *";         // Every 5 min at :02:00 (35s duration)
         var portWindLatestDataCron = "0 3 * * * *";    // Hourly at :03:00 (~5s duration)
@@ -60,7 +64,8 @@ public class Worker : BackgroundService
         var countryLocatorCron = "0 0 5 * * SUN";          // Sundays at 5:00 AM
 
         // Calculate next run times for all jobs
-        var forecastUpdateNextRun = CronScheduler<IForecastUpdateService>.CalculateNextRunTime(forecastUpdateCron);
+        var metYrForecastRefreshNextRun = CronScheduler<IMetYrForecastRefreshService>.CalculateNextRunTime(metYrForecastRefreshCron);
+        var openMeteoForecastSupplementNextRun = CronScheduler<IOpenMeteoForecastSupplementService>.CalculateNextRunTime(openMeteoForecastSupplementCron);
         var holfuyNextRun = CronScheduler<IHolfuySyncService>.CalculateNextRunTime(holfuyCron);
         var metFrostDataNextRun = CronScheduler<IMetFrostSyncService>.CalculateNextRunTime(metFrostDataCron);
         var portWindLatestDataNextRun = CronScheduler<IPortWindLatestDataSyncService>.CalculateNextRunTime(portWindLatestDataCron);
@@ -71,7 +76,8 @@ public class Worker : BackgroundService
         var countryLocatorNextRun = CronScheduler<ICountryLocatorService>.CalculateNextRunTime(countryLocatorCron);
 
         // Add jobs to schedule
-        jobSchedule.Add(("UpdateForecastsAsync", forecastUpdateCron, forecastUpdateNextRun?.DateTime, 34));
+        jobSchedule.Add(("RefreshMetYrForecastsAsync", metYrForecastRefreshCron, metYrForecastRefreshNextRun?.DateTime, 34));
+        jobSchedule.Add(("SupplementOpenMeteoForecastsAsync", openMeteoForecastSupplementCron, openMeteoForecastSupplementNextRun?.DateTime, 15));
         jobSchedule.Add(("SyncHolfuyDataAsync", holfuyCron, holfuyNextRun?.DateTime, 18));
         jobSchedule.Add(("SyncLatestStationDataAsync", metFrostDataCron, metFrostDataNextRun?.DateTime, 35));
         jobSchedule.Add(("SyncPortWindLatestStationDataAsync", portWindLatestDataCron, portWindLatestDataNextRun?.DateTime, 5));
@@ -85,10 +91,16 @@ public class Worker : BackgroundService
         PrintJobSchedule(jobSchedule, scheduleStartTime);
 
         // Start all scheduled tasks
-        var forecastUpdateTask = _forecastUpdateScheduler.RunAsync(
-            forecastUpdateCron,
+        var metYrForecastRefreshTask = _metYrForecastRefreshScheduler.RunAsync(
+            metYrForecastRefreshCron,
             async (service, ct) => { await service.UpdateForecastsAsync(ct); },
-            "UpdateForecastsAsync",
+            "RefreshMetYrForecastsAsync",
+            stoppingToken);
+
+        var openMeteoForecastSupplementTask = _openMeteoForecastSupplementScheduler.RunAsync(
+            openMeteoForecastSupplementCron,
+            async (service, ct) => { await service.SupplementForecastsAsync(ct); },
+            "SupplementOpenMeteoForecastsAsync",
             stoppingToken);
 
         var holfuySyncTask = _holfuyScheduler.RunAsync(
@@ -140,7 +152,7 @@ public class Worker : BackgroundService
             stoppingToken);
 
         // Wait for all tasks (they will run until cancellation is requested)
-        await Task.WhenAll(syncDataTask, portWindLatestDataTask, syncStationsTask, syncStatusTask, portWindStationRefreshTask, holfuySyncTask, forecastUpdateTask, windsMobiSyncTask, countryLocatorTask);
+        await Task.WhenAll(syncDataTask, portWindLatestDataTask, syncStationsTask, syncStatusTask, portWindStationRefreshTask, holfuySyncTask, metYrForecastRefreshTask, openMeteoForecastSupplementTask, windsMobiSyncTask, countryLocatorTask);
     }
 
     private void PrintJobSchedule(List<(string Name, string CronExpression, DateTime? FirstRun, int ExpectedDuration)> schedule, DateTime startTime)

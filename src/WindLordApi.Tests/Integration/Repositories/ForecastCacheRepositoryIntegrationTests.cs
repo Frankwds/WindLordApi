@@ -168,6 +168,106 @@ public class ForecastCacheRepositoryIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task UpsertRangeAsync_WithExistingYrForecast_DoesNotOverwriteWithOpenMeteo()
+    {
+        // Arrange
+        var location = TestDataBuilders.ParaglidingLocation().Build();
+        await _context.ParaglidingLocations.AddAsync(location, TestContext.Current.CancellationToken);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var forecastTime = DateTime.UtcNow.AddHours(1);
+        var existingYrForecast = TestDataBuilders.ForecastCache()
+            .WithLocationId(location.Id)
+            .WithTime(forecastTime)
+            .WithTemperature(15.5m)
+            .WithWindSpeed(10.0m)
+            .WithWeatherCode("partlycloudy_day")
+            .WithIsYrData(true)
+            .Build();
+        await _context.ForecastCaches.AddAsync(existingYrForecast, TestContext.Current.CancellationToken);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _context.ChangeTracker.Clear();
+
+        var incomingOpenMeteoForecast = TestDataBuilders.ForecastCache()
+            .WithLocationId(location.Id)
+            .WithTime(forecastTime)
+            .WithTemperature(21.0m)
+            .WithWindSpeed(13.0m)
+            .WithWeatherCode("rain")
+            .WithIsYrData(false)
+            .Build();
+
+        // Act
+        var result = await _repository.UpsertRangeAsync(new[] { incomingOpenMeteoForecast }, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().Be(0, "a conflicting Open-Meteo row should be ignored when the existing row is Yr-backed");
+
+        _context.ChangeTracker.Clear();
+        var savedForecast = await _context.ForecastCaches
+            .SingleAsync(f => f.LocationId == location.Id && f.Time == forecastTime, TestContext.Current.CancellationToken);
+
+        savedForecast.IsYrData.Should().BeTrue("existing Yr-backed rows should keep precedence over Open-Meteo conflicts");
+        savedForecast.Temperature.Should().Be(15.5m);
+        savedForecast.WindSpeed.Should().Be(10.0m);
+        savedForecast.WeatherCode.Should().Be("partlycloudy_day");
+
+        var totalCount = await _context.ForecastCaches.CountAsync(TestContext.Current.CancellationToken);
+        totalCount.Should().Be(1, "conflicting Open-Meteo upserts should not create duplicates");
+    }
+
+    [Fact]
+    public async Task UpsertRangeAsync_WithExistingOpenMeteoForecast_UpdatesWithYr()
+    {
+        // Arrange
+        var location = TestDataBuilders.ParaglidingLocation().Build();
+        await _context.ParaglidingLocations.AddAsync(location, TestContext.Current.CancellationToken);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var forecastTime = DateTime.UtcNow.AddHours(1);
+        var existingOpenMeteoForecast = TestDataBuilders.ForecastCache()
+            .WithLocationId(location.Id)
+            .WithTime(forecastTime)
+            .WithTemperature(15.5m)
+            .WithWindSpeed(10.0m)
+            .WithWeatherCode("rain")
+            .WithIsYrData(false)
+            .Build();
+        await _context.ForecastCaches.AddAsync(existingOpenMeteoForecast, TestContext.Current.CancellationToken);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _context.ChangeTracker.Clear();
+
+        var incomingYrForecast = TestDataBuilders.ForecastCache()
+            .WithLocationId(location.Id)
+            .WithTime(forecastTime)
+            .WithTemperature(18.0m)
+            .WithWindSpeed(12.0m)
+            .WithWeatherCode("clearsky_day")
+            .WithIsYrData(true)
+            .Build();
+
+        // Act
+        var result = await _repository.UpsertRangeAsync(new[] { incomingYrForecast }, TestContext.Current.CancellationToken);
+
+        // Assert
+        result.Should().Be(1);
+
+        _context.ChangeTracker.Clear();
+        var savedForecast = await _context.ForecastCaches
+            .SingleAsync(f => f.LocationId == location.Id && f.Time == forecastTime, TestContext.Current.CancellationToken);
+
+        savedForecast.IsYrData.Should().BeTrue("a later Yr-backed row should replace an existing Open-Meteo row for the same key");
+        savedForecast.Temperature.Should().Be(18.0m);
+        savedForecast.WindSpeed.Should().Be(12.0m);
+        savedForecast.WeatherCode.Should().Be("clearsky_day");
+
+        var totalCount = await _context.ForecastCaches.CountAsync(TestContext.Current.CancellationToken);
+        totalCount.Should().Be(1, "conflicting Yr upserts should update the existing row instead of inserting a duplicate");
+    }
+
+    [Fact]
     public async Task UpsertRangeAsync_WithMixedInsertAndUpdate_HandlesCorrectly()
     {
         // Arrange

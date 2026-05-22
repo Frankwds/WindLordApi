@@ -1,10 +1,9 @@
 namespace WindLordApi.Worker.Services;
 
 /// <summary>
-/// Service interface for updating forecast data for paragliding locations.
-/// Combines data from OpenMeteo and MetYr APIs.
+/// Service interface for refreshing authoritative MetYr forecast data for paragliding locations.
 /// </summary>
-public interface IForecastUpdateService
+public interface IMetYrForecastRefreshService
 {
     /// <summary>
     /// Updates forecasts for locations with oldest or missing forecast data.
@@ -13,4 +12,3 @@ public interface IForecastUpdateService
     /// <param name="cancellationToken">Cancellation token.</param>
     Task UpdateForecastsAsync(CancellationToken cancellationToken = default);
 }
-

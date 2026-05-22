@@ -26,6 +26,7 @@ public class ForecastCacheRepository : Repository<ForecastCache>, IForecastCache
         // Use FlexLabs upsert: ON CONFLICT (location_id, time) DO UPDATE
         return await _context.UpsertRange<ForecastCache>(entitiesList)
             .On(fc => new { fc.LocationId, fc.Time })
+            .UpdateIf((existing, incoming) => incoming.IsYrData || existing.IsYrData == false)
             .WhenMatched((existing, incoming) => new ForecastCache
             {
                 Temperature = incoming.Temperature,

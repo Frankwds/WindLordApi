@@ -29,5 +29,10 @@ public class ParaglidingLocationService : IParaglidingLocationService
     {
         return await _unitOfWork.ParaglidingLocations.GetLocationsWithoutForecastAsync(limit, cancellationToken);
     }
+
+    public async Task<IEnumerable<Guid>> GetOpenMeteoRefreshCandidatesAsync(int limit, CancellationToken cancellationToken = default)
+    {
+        return await _unitOfWork.ParaglidingLocations.GetOpenMeteoRefreshCandidatesAsync(limit, cancellationToken);
+    }
 }
 
