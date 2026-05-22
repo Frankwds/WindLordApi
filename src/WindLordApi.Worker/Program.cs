@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using WindLordApi.Integrations.MetFrost;
 using WindLordApi.Integrations.Holfuy;
 using WindLordApi.Integrations.MetYr;
+using WindLordApi.Integrations.OpenMeteo;
 using WindLordApi.Integrations.WindsMobi;
 using WindLordApi.Integrations.PortWind;
 using WindLordApi.Integrations.GoogleGeocoding;
@@ -139,6 +140,9 @@ builder.Services.AddHolfuyClient(builder.Configuration);
 // Register MetYr Client
 builder.Services.AddMetYrClient(builder.Configuration);
 
+// Register Open-Meteo Client
+builder.Services.AddOpenMeteoClient(builder.Configuration);
+
 // Register WindsMobi Client
 builder.Services.AddWindsMobiClient(builder.Configuration);
 
@@ -153,6 +157,7 @@ builder.Services.AddScoped<DatabaseHealthCheck>();
 builder.Services.AddScoped<MetFrostHealthCheck>();
 builder.Services.AddScoped<HolfuyHealthCheck>();
 builder.Services.AddScoped<MetYrHealthCheck>();
+builder.Services.AddScoped<OpenMeteoHealthCheck>();
 builder.Services.AddScoped<PortWindHealthCheck>();
 
 // Register Health Checks
@@ -161,6 +166,7 @@ builder.Services.AddHealthChecks()
     .AddCheck<MetFrostHealthCheck>("metfrost", tags: ["api", "metfrost"])
     .AddCheck<HolfuyHealthCheck>("holfuy", tags: ["api", "holfuy"])
     .AddCheck<MetYrHealthCheck>("metyr", tags: ["api", "metyr"])
+    .AddCheck<OpenMeteoHealthCheck>("openmeteo", tags: ["api", "openmeteo"])
     .AddCheck<PortWindHealthCheck>("portwind", tags: ["api", "portwind"]);
 
 builder.Services.AddHostedService<Worker>();

@@ -274,8 +274,11 @@ public class WeatherStationRepositoryIntegrationTests : IAsyncLifetime
         missingPortWindStation.IsActive.Should().BeFalse();
         activeMetStation.IsActive.Should().BeTrue();
 
+        // Act
+        var secondResult = await _repository.SetMissingStationsInactiveByProviderAsync("PortWind", ["VS1285"], TestContext.Current.CancellationToken);
+
         // Assert
-        result.Should().Be(0);
+        secondResult.Should().Be(0);
     }
 }
 
