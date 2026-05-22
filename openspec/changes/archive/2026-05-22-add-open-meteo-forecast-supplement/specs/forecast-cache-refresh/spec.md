@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Populate forecast cache from forecast-provider data with MetYr precedence
+### Requirement: Populate forecast cache from MetYr data
 The system SHALL fetch MetYr forecast data for each selected location's takeoff coordinates and map each returned time point to a forecast cache entry for that location.
 
 Each Yr-derived entry SHALL set the location id, parsed forecast time, `IsYrData = true`, and the surface forecast fields derived from the MetYr payload.
@@ -28,7 +28,7 @@ Open-Meteo-supplemented rows SHALL set `IsYrData = false`, SHALL populate only t
 - **AND** only Open-Meteo rows whose timestamp is strictly later than the latest MetYr timestamp are appended
 - **AND** appended Open-Meteo rows set `IsYrData` to `false`
 
-### Requirement: Isolate per-location failures while preserving MetYr-first persistence
+### Requirement: Isolate per-location failures
 The system SHALL continue processing the remaining selected locations when forecast fetch, mapping, or persistence fails for one location, and it SHALL log the failed location.
 
 The system SHALL fail the overall refresh when cleanup or location-selection fails before per-location isolation applies.

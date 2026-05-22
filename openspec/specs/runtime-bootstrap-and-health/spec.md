@@ -4,9 +4,7 @@
 This capability owns the worker host bootstrap that happens before recurring jobs begin. It covers host configuration, connection-string selection, integration and service registration, startup validation, the pending-migration diagnostic, and the startup health-check pass. The primary implementation anchors are `src/WindLordApi.Worker/Program.cs`, `src/WindLordApi.Data/Extensions/ConfigurationExtensions.cs`, and the health-check classes under `src/WindLordApi.Worker/Startup/`.
 
 This capability does not own startup job ordering or recurring cron execution. Those behaviors belong to separate worker orchestration capabilities.
-
 ## Requirements
-
 ### Requirement: Host bootstrap SHALL compose the worker runtime before the background service starts
 The system SHALL configure logging, configuration-backed dependencies, data services, integration clients, startup health checks, and the hosted worker before calling `RunAsync` on the host.
 
@@ -39,12 +37,12 @@ If the selected connection string is missing when `ApplicationDbContext` is reso
 - **AND** the outer program startup path logs fatal termination instead of continuing into worker execution
 
 ### Requirement: Startup validation SHALL fail fast for validated integration options
-The system SHALL validate configured options at startup for MetFrost, Holfuy, MetYr, PortWind, and Google Geocoding registrations.
+The system SHALL validate configured options at startup for MetFrost, Holfuy, MetYr, Open-Meteo, PortWind, and Google Geocoding registrations.
 
 This capability SHOULD treat WindsMobi differently because the current registration does not define startup option validation for that provider.
 
 #### Scenario: Required provider configuration is validated before the worker starts
-- **GIVEN** startup registers the MetFrost, Holfuy, MetYr, PortWind, and Google Geocoding integrations
+- **GIVEN** startup registers the MetFrost, Holfuy, MetYr, Open-Meteo, PortWind, and Google Geocoding integrations
 - **WHEN** the host starts
 - **THEN** their bound options are validated using the configured startup validation path
 - **AND** invalid required configuration prevents normal host startup
@@ -69,7 +67,7 @@ If the migration query reports pending migrations, the system SHALL log the migr
 - **AND** bootstrap still proceeds to startup health checks
 
 ### Requirement: Startup health checks SHALL report dependency status without gating worker execution
-The system SHALL run the registered startup health checks after the migration diagnostic and before `host.RunAsync`. The current startup health-check set SHALL include database, MetFrost, Holfuy, MetYr, and PortWind.
+The system SHALL run the registered startup health checks after the migration diagnostic and before `host.RunAsync`. The current startup health-check set SHALL include database, MetFrost, Holfuy, MetYr, Open-Meteo, and PortWind.
 
 The health-check runner SHALL log the overall report status and each individual check result. Unhealthy or degraded results SHALL be logged, but SHALL NOT by themselves stop worker startup.
 
@@ -87,3 +85,15 @@ This capability MAY omit dependencies from the startup health-check set; in the 
 - **WHEN** the startup health-check runner completes
 - **THEN** bootstrap logs those failures
 - **AND** the program still proceeds to `host.RunAsync` unless a separate fatal bootstrap exception has already occurred
+
+### Requirement: Open-Meteo startup health reporting SHALL use the same advisory pattern as other integrations
+The system SHALL include an Open-Meteo-specific startup health check in the advisory startup health-check pass.
+
+That check SHALL verify forecast endpoint accessibility using a deterministic request shape without changing the non-blocking behavior of the startup health-check runner.
+
+#### Scenario: Open-Meteo startup health is reported with the other dependencies
+- **GIVEN** the worker host has built the registered health checks
+- **WHEN** the startup health-check runner executes before `host.RunAsync`
+- **THEN** the Open-Meteo health check is included in the report alongside the other registered startup checks
+- **AND** its result is logged as part of the overall dependency report
+
