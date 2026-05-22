@@ -1,9 +1,9 @@
 # Paragliding Location Queries
 
 ## Purpose
-This capability documents the read-side query contract that forecast refresh uses to choose which paragliding locations should receive forecast updates next. It exists to separate location-selection rules from forecast fetching and persistence, and to preserve the database-backed prioritization behavior that the worker depends on.
+This capability documents the read-side query contract that forecast workflows use to choose which paragliding locations should receive updates next. It exists to separate location-selection rules from forecast fetching and persistence, and to preserve the database-backed prioritization behavior that the worker depends on.
 
-This capability is implemented primarily in `ParaglidingLocationRepository`, the `locations_without_forecast` and `locations_with_oldest_forecast` database views, and the `ParaglidingLocationService` pass-through used by `ForecastUpdateService`. It does not include forecast fetching or forecast-cache persistence beyond the location-selection behavior those workflows depend on.
+This capability is implemented primarily in `ParaglidingLocationRepository`, the `locations_without_forecast` and `locations_with_oldest_forecast` database views, the inline Open-Meteo refresh-candidate query, and the `ParaglidingLocationService` pass-through used by `MetYrForecastRefreshService` and `OpenMeteoForecastSupplementService`. It does not include forecast fetching or forecast-cache persistence beyond the location-selection behavior those workflows depend on.
 
 ## Requirements
 
@@ -51,14 +51,34 @@ This filter is applied in `GetByIdsAsync(...)` even if an earlier priority query
 - **WHEN** `GetByIdsAsync(ids, ...)` is called
 - **THEN** the repository returns an empty result without querying for any location rows
 
-### Requirement: Forecast refresh consumes query results in a two-stage priority flow
-The system SHALL let forecast refresh fill its location batch by taking IDs from `GetLocationsWithoutForecastAsync(...)` first, then filling any remaining slots from `GetLocationsWithOldestForecastAsync(...)`, and finally materializing full `ParaglidingLocation` rows through `GetByIdsAsync(...)`.
+### Requirement: MetYr refresh consumes query results in a two-stage priority flow
+The system SHALL let the authoritative MetYr refresh workflow fill its location batch by taking IDs from `GetLocationsWithoutForecastAsync(...)` first, then filling any remaining slots from `GetLocationsWithOldestForecastAsync(...)`, and finally materializing full `ParaglidingLocation` rows through `GetByIdsAsync(...)`.
 
 This means the final batch ultimately processes only active main locations, because full location materialization applies the active-main filter even after IDs are selected from the priority views.
 
 #### Scenario: Locations without forecast coverage are prioritized before stale coverage
-- **GIVEN** forecast refresh is selecting up to its configured batch size of paragliding locations
+- **GIVEN** the authoritative MetYr refresh workflow is selecting up to its configured batch size of paragliding locations
 - **WHEN** it builds the next batch of location IDs
 - **THEN** it first adds IDs returned by `GetLocationsWithoutForecastAsync(...)`
 - **AND** it only queries `GetLocationsWithOldestForecastAsync(...)` if there are remaining slots after that first query
 - **AND** it materializes the final batch through `GetByIdsAsync(...)` before any forecast fetch begins
+
+### Requirement: Open-Meteo refresh candidates are ordered by the shortest Open-Meteo forecast tail
+The system SHALL expose Open-Meteo refresh candidates through one query that orders active main paragliding locations by the latest Open-Meteo-backed forecast timestamp for each location.
+
+Locations with no Open-Meteo-backed forecast rows SHALL sort ahead of locations that already have Open-Meteo-backed coverage.
+
+When multiple locations already have Open-Meteo-backed coverage, the query SHALL prefer the locations whose latest Open-Meteo-backed forecast timestamp is earliest.
+
+#### Scenario: Locations without Open-Meteo rows are returned first
+- **GIVEN** active main paragliding locations exist
+- **AND** some locations have no Open-Meteo-backed forecast rows while others have Open-Meteo-backed rows
+- **WHEN** `GetOpenMeteoRefreshCandidatesAsync(limit, ...)` is called
+- **THEN** locations with no Open-Meteo-backed forecast rows are ordered ahead of locations with existing Open-Meteo-backed coverage
+
+#### Scenario: Shorter Open-Meteo tails are prioritized before longer ones
+- **GIVEN** multiple active main paragliding locations already have Open-Meteo-backed forecast rows
+- **AND** those locations have different latest Open-Meteo-backed forecast timestamps
+- **WHEN** `GetOpenMeteoRefreshCandidatesAsync(limit, ...)` is called
+- **THEN** the repository orders those locations by the earliest latest Open-Meteo-backed forecast timestamp
+- **AND** it returns no more than `limit` rows
