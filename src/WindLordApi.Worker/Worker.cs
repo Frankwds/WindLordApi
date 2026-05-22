@@ -49,7 +49,7 @@ public class Worker : BackgroundService
         var jobSchedule = new List<(string Name, string CronExpression, DateTime? FirstRun, int ExpectedDuration)>();
 
         // Define cron schedules with expected execution times
-        var forecastUpdateCron = "0 1/8 * * * *";      // Every 8 min at :01:00 seconds (34s duration)
+        var forecastUpdateCron = "0 1/5 * * * *";      // Every 5 min at :01:00 seconds (34s duration)
         var holfuyCron = "30 */15 * * * *";             // Every 15 min at :30 seconds (18s duration)
         var metFrostDataCron = "0 2/5 * * * *";         // Every 5 min at :02:00 (35s duration)
         var portWindLatestDataCron = "0 3 * * * *";    // Hourly at :03:00 (~5s duration)
