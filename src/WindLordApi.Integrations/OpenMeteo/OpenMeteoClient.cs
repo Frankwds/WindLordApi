@@ -96,7 +96,7 @@ public class OpenMeteoClient : IOpenMeteoClient
         {
             ["latitude"] = latitudes,
             ["longitude"] = longitudes,
-            ["hourly"] = "temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,precipitation_probability,pressure_msl,weather_code,is_day",
+            ["hourly"] = "temperature_2m,wind_speed_10m,wind_direction_10m,precipitation,precipitation_probability,pressure_msl,weather_code,is_day",
             ["start_hour"] = startUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm"),
             ["end_hour"] = endUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm"),
             ["wind_speed_unit"] = "ms",

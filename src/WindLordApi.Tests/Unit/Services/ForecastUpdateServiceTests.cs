@@ -676,6 +676,7 @@ public class ForecastUpdateServiceTests
         capturedForecastCache![0].IsYrData.Should().BeTrue();
         capturedForecastCache[1].IsYrData.Should().BeFalse();
         capturedForecastCache[1].Time.Should().Be(DateTime.Parse("2024-01-01T13:00:00Z").ToUniversalTime());
+        capturedForecastCache[1].WindGusts.Should().BeNull();
         capturedForecastCache[1].PrecipitationMax.Should().BeNull();
         capturedForecastCache[1].PrecipitationMin.Should().BeNull();
     }
@@ -890,6 +891,7 @@ public class ForecastUpdateServiceTests
         capturedForecastCache![0].IsYrData.Should().BeTrue();
         capturedForecastCache[1].IsYrData.Should().BeFalse();
         capturedForecastCache[1].Time.Should().Be(DateTime.Parse("2024-01-01T13:00:00Z", null, DateTimeStyles.AdjustToUniversal));
+        capturedForecastCache[1].WindGusts.Should().BeNull();
     }
 }
 

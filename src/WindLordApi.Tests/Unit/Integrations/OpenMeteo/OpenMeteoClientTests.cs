@@ -30,7 +30,6 @@ public class OpenMeteoClientTests
                           "temperature_2m": [],
                           "wind_speed_10m": [],
                           "wind_direction_10m": [],
-                          "wind_gusts_10m": [],
                           "precipitation": [],
                           "precipitation_probability": [],
                           "pressure_msl": [],
@@ -46,7 +45,6 @@ public class OpenMeteoClientTests
                           "temperature_2m": [],
                           "wind_speed_10m": [],
                           "wind_direction_10m": [],
-                          "wind_gusts_10m": [],
                           "precipitation": [],
                           "precipitation_probability": [],
                           "pressure_msl": [],
@@ -77,6 +75,8 @@ public class OpenMeteoClientTests
         capturedRequest.Should().NotBeNull();
         capturedRequest!.RequestUri!.ToString().Should().Contain("latitude=60.123%2C61.987");
         capturedRequest.RequestUri!.ToString().Should().Contain("longitude=10.567%2C11.543");
+        capturedRequest.RequestUri!.ToString().Should().Contain("hourly=temperature_2m%2Cwind_speed_10m%2Cwind_direction_10m%2Cprecipitation%2Cprecipitation_probability%2Cpressure_msl%2Cweather_code%2Cis_day");
+        capturedRequest.RequestUri!.ToString().Should().NotContain("wind_gusts_10m");
         capturedRequest.RequestUri!.ToString().Should().Contain("start_hour=2026-05-24T10%3A15");
         capturedRequest.RequestUri!.ToString().Should().Contain("wind_speed_unit=ms");
         capturedRequest.RequestUri!.ToString().Should().Contain("timezone=GMT");
@@ -98,7 +98,6 @@ public class OpenMeteoClientTests
                     "temperature_2m": [],
                     "wind_speed_10m": [],
                     "wind_direction_10m": [],
-                    "wind_gusts_10m": [],
                     "precipitation": [],
                     "precipitation_probability": [],
                     "pressure_msl": [],

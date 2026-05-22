@@ -39,7 +39,6 @@ public class OpenMeteoMappingService : IOpenMeteoMapping
         ValidateAlignedArray(nameof(hourly.Temperature2m), timeCount, hourly.Temperature2m.Count);
         ValidateAlignedArray(nameof(hourly.WindSpeed10m), timeCount, hourly.WindSpeed10m.Count);
         ValidateAlignedArray(nameof(hourly.WindDirection10m), timeCount, hourly.WindDirection10m.Count);
-        ValidateAlignedArray(nameof(hourly.WindGusts10m), timeCount, hourly.WindGusts10m.Count);
         ValidateAlignedArray(nameof(hourly.Precipitation), timeCount, hourly.Precipitation.Count);
         ValidateAlignedArray(nameof(hourly.PrecipitationProbability), timeCount, hourly.PrecipitationProbability.Count);
         ValidateAlignedArray(nameof(hourly.PressureMsl), timeCount, hourly.PressureMsl.Count);
@@ -62,7 +61,6 @@ public class OpenMeteoMappingService : IOpenMeteoMapping
                 Temperature = RoundDecimal(hourly.Temperature2m[index], 1),
                 WindSpeed = RoundDecimal(hourly.WindSpeed10m[index], 1),
                 WindDirection = RoundInteger(hourly.WindDirection10m[index]),
-                WindGusts = RoundDecimal(hourly.WindGusts10m[index], 1),
                 Precipitation = RoundDecimal(hourly.Precipitation[index], 2),
                 PrecipitationProbability = RoundFloat(hourly.PrecipitationProbability[index], 2),
                 PressureMsl = RoundDecimal(hourly.PressureMsl[index], 1),

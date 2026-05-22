@@ -23,7 +23,6 @@ public class OpenMeteoMappingTests
                     Temperature2m = new double?[] { 12.3 },
                     WindSpeed10m = new double?[] { 6.1 },
                     WindDirection10m = new double?[] { 180 },
-                    WindGusts10m = new double?[] { 8.4 },
                     Precipitation = new double?[] { 0.2 },
                     PrecipitationProbability = new double?[] { 35 },
                     PressureMsl = new double?[] { 1010.1 },
@@ -58,7 +57,6 @@ public class OpenMeteoMappingTests
                     Temperature2m = new double?[] { 12.34 },
                     WindSpeed10m = new double?[] { 6.16 },
                     WindDirection10m = new double?[] { 180.6 },
-                    WindGusts10m = new double?[] { 8.44 },
                     Precipitation = new double?[] { 0.256 },
                     PrecipitationProbability = new double?[] { 35.556 },
                     PressureMsl = new double?[] { 1010.16 },
@@ -76,7 +74,7 @@ public class OpenMeteoMappingTests
         forecast.Temperature.Should().Be(12.3m);
         forecast.WindSpeed.Should().Be(6.2m);
         forecast.WindDirection.Should().Be(181);
-        forecast.WindGusts.Should().Be(8.4m);
+        forecast.WindGusts.Should().BeNull();
         forecast.Precipitation.Should().Be(0.26m);
         forecast.PrecipitationProbability.Should().BeApproximately(35.56f, 0.001f);
         forecast.PressureMsl.Should().Be(1010.2m);
@@ -100,7 +98,6 @@ public class OpenMeteoMappingTests
                     Temperature2m = new double?[] { 12.3 },
                     WindSpeed10m = new double?[] { 6.1, 6.2 },
                     WindDirection10m = new double?[] { 180, 181 },
-                    WindGusts10m = new double?[] { 8.4, 8.5 },
                     Precipitation = new double?[] { 0.2, 0.3 },
                     PrecipitationProbability = new double?[] { 35, 40 },
                     PressureMsl = new double?[] { 1010.1, 1010.2 },

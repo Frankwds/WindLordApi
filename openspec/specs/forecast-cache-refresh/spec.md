@@ -42,7 +42,7 @@ When landing coordinates exist, the system SHOULD fetch landing forecasts from M
 
 The workflow SHALL issue one batched Open-Meteo takeoff forecast request for all selected locations in the current refresh batch, using takeoff coordinates truncated to three decimals. For each location whose MetYr fetch succeeds, the workflow SHALL append only Open-Meteo rows whose timestamp is strictly later than the latest MetYr timestamp returned for that location in the current run.
 
-Open-Meteo-supplemented rows SHALL set `IsYrData = false`, SHALL populate only the currently persisted takeoff surface fields, SHALL round mapped numeric values to match the destination forecast-cache precision, and SHALL leave unsupported or unavailable fields unset in this capability.
+Open-Meteo-supplemented rows SHALL set `IsYrData = false`, SHALL populate only the currently persisted takeoff surface fields other than wind gusts, SHALL round mapped numeric values to match the destination forecast-cache precision, and SHALL leave wind gusts plus any other unsupported or unavailable fields unset in this capability.
 
 #### Scenario: Landing coordinates add landing wind fields
 - **GIVEN** a selected active main paragliding location has landing latitude and longitude

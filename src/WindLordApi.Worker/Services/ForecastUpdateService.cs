@@ -347,7 +347,7 @@ public class ForecastUpdateService : IForecastUpdateService
             Temperature = forecastPoint.Temperature,
             WindSpeed = forecastPoint.WindSpeed,
             WindDirection = forecastPoint.WindDirection,
-            WindGusts = forecastPoint.WindGusts,
+            WindGusts = null,
             Precipitation = forecastPoint.Precipitation,
             PrecipitationMax = null,
             PrecipitationMin = null,
