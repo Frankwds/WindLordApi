@@ -93,14 +93,13 @@ If MetYr fails for a location, the workflow SHALL skip persistence for that loca
 ### Requirement: Batched Open-Meteo responses SHALL correlate predictably to selected locations
 The system SHALL correlate each Open-Meteo response block back to the selected paragliding location set without relying exclusively on a provider-supplied `location_id` field.
 
-Request order SHALL be the primary correlation key, and returned coordinates SHALL be used as a sanity check for the corresponding location after both sides have been normalized to the truncated three-decimal request precision.
+Request order SHALL be the primary correlation key.
 
 #### Scenario: Request order correlates batched response blocks
 - **GIVEN** a forecast refresh batch contains multiple selected takeoff locations
 - **AND** the workflow submits those locations to Open-Meteo in a defined request order
 - **WHEN** the Open-Meteo response returns one forecast block per requested coordinate pair
 - **THEN** each response block is matched back to the location at the same request position
-- **AND** the returned coordinates are checked against that location before rows are merged
 
 ### Requirement: Open-Meteo weather normalization SHALL map WMO codes into the existing app vocabulary
 The system SHALL map Open-Meteo WMO `weather_code` values plus `is_day` into the Yr-compatible weather-code vocabulary consumed by WindLord.

@@ -23,6 +23,20 @@ public static class StartupJobs
     {
         logger.LogInformation("Running startup jobs...");
 
+        // Update forecasts on startup
+        try
+        {
+            using var forecastUpdateScope = serviceProvider.CreateScope();
+            var forecastUpdateService = forecastUpdateScope.ServiceProvider.GetRequiredService<IForecastUpdateService>();
+
+            await forecastUpdateService.UpdateForecastsAsync(cancellationToken);
+            logger.LogInformation("ForecastUpdate: Completed startup job: UpdateForecastsAsync");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "ForecastUpdate: Error running UpdateForecastsAsync on startup");
+        }
+        
         // Refresh PortWind stations before any other startup job so metadata exists for dependent syncs.
         try
         {
@@ -75,19 +89,6 @@ public static class StartupJobs
             logger.LogError(ex, "CountryLocator: Error running LocateCountriesAsync on startup");
         }
 
-        // Update forecasts on startup
-        try
-        {
-            using var forecastUpdateScope = serviceProvider.CreateScope();
-            var forecastUpdateService = forecastUpdateScope.ServiceProvider.GetRequiredService<IForecastUpdateService>();
-
-            await forecastUpdateService.UpdateForecastsAsync(cancellationToken);
-            logger.LogInformation("ForecastUpdate: Completed startup job: UpdateForecastsAsync");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "ForecastUpdate: Error running UpdateForecastsAsync on startup");
-        }
         // Sync Holfuy data on startup 
         try
         {

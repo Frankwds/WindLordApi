@@ -805,7 +805,7 @@ public class ForecastUpdateServiceTests
     }
 
     [Fact]
-    public async Task UpdateForecastsAsync_WhenOpenMeteoCoordinatesDoNotMatchSelectedLocations_ShouldPersistYrOnlyRows()
+    public async Task UpdateForecastsAsync_WhenOpenMeteoCoordinatesDoNotMatchSelectedLocations_ShouldUseRequestOrderForSupplementalRows()
     {
         // Arrange
         var locationId = Guid.NewGuid();
@@ -816,6 +816,7 @@ public class ForecastUpdateServiceTests
 
         var yrDto = TestDataBuilders.MetYrDto()
             .WithTime("2024-01-01T12:00:00Z")
+            .WithAirTemperature(12.3m)
             .WithSymbolCode("clearsky_day")
             .Build();
 
@@ -851,7 +852,22 @@ public class ForecastUpdateServiceTests
                 {
                     Latitude = 60.999,
                     Longitude = 10.999,
-                    Forecasts = Array.Empty<OpenMeteoForecastPoint>()
+                    Forecasts = new[]
+                    {
+                        new OpenMeteoForecastPoint
+                        {
+                            Time = DateTime.Parse("2024-01-01T13:00:00Z", null, DateTimeStyles.AdjustToUniversal),
+                            Temperature = 10.1m,
+                            WindSpeed = 6.2m,
+                            WindDirection = 190,
+                            WindGusts = 7.3m,
+                            Precipitation = 0.25m,
+                            PrecipitationProbability = 25f,
+                            PressureMsl = 1010.1m,
+                            WeatherCode = "cloudy",
+                            IsDay = 1
+                        }
+                    }
                 }
             });
 
@@ -863,15 +879,17 @@ public class ForecastUpdateServiceTests
         _forecastCacheServiceMock
             .Setup(x => x.UpsertManyAsync(It.IsAny<ForecastCache[]>(), It.IsAny<CancellationToken>()))
             .Callback<ForecastCache[], CancellationToken>((fc, _) => capturedForecastCache = fc)
-            .ReturnsAsync(1);
+            .ReturnsAsync(2);
 
         // Act
         await _service.UpdateForecastsAsync(TestContext.Current.CancellationToken);
 
         // Assert
         capturedForecastCache.Should().NotBeNull();
-        capturedForecastCache.Should().HaveCount(1);
+        capturedForecastCache.Should().HaveCount(2);
         capturedForecastCache![0].IsYrData.Should().BeTrue();
+        capturedForecastCache[1].IsYrData.Should().BeFalse();
+        capturedForecastCache[1].Time.Should().Be(DateTime.Parse("2024-01-01T13:00:00Z", null, DateTimeStyles.AdjustToUniversal));
     }
 }
 

@@ -222,19 +222,6 @@ public class ForecastUpdateService : IForecastUpdateService
             throw new InvalidOperationException(
                 $"Open-Meteo returned {openMeteoForecasts.Count} location blocks for {locations.Count} requested locations.");
         }
-
-        for (int index = 0; index < locations.Count; index++)
-        {
-            var requestedLocation = locations[index];
-            var openMeteoForecast = openMeteoForecasts[index];
-
-            if (!OpenMeteoCoordinates.MatchesRequestPrecision(openMeteoForecast.Latitude, requestedLocation.Latitude)
-                || !OpenMeteoCoordinates.MatchesRequestPrecision(openMeteoForecast.Longitude, requestedLocation.Longitude))
-            {
-                throw new InvalidOperationException(
-                    $"Open-Meteo response block at index {index} did not match the requested coordinates for location '{requestedLocation.Id}'.");
-            }
-        }
     }
 
     private IReadOnlyList<ForecastCache> MergeOpenMeteoData(
