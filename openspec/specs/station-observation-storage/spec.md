@@ -69,3 +69,24 @@ The system SHALL wrap each batch in an explicit unit-of-work transaction, commit
 - **THEN** the service rolls back that transaction
 - **AND** it logs the batch failure
 - **AND** it rethrows the exception to the caller
+
+### Requirement: Historical observations older than the retention window are removed
+The system SHALL delete `station_data` rows whose `UpdatedAt` is strictly earlier than `UtcNow` minus the configured retention window.
+
+Rows at the cutoff time or later SHALL remain.
+
+Retention cleanup SHALL apply across all weather stations and providers rather than a single provider.
+
+The worker SHALL run retention cleanup on a daily schedule via `StationDataRetentionService` and SHALL NOT delete from `latest_station_data`.
+
+#### Scenario: Cleanup preserves rows at and after the cutoff
+- **GIVEN** stored observations before, at, and after a cutoff time
+- **WHEN** old observations are deleted using that cutoff
+- **THEN** only rows earlier than the cutoff SHALL be removed
+- **AND** rows exactly at the cutoff and after the cutoff SHALL remain
+
+#### Scenario: Cleanup deletes outdated rows across stations
+- **GIVEN** multiple weather stations each have outdated and current observations
+- **WHEN** old observations are deleted
+- **THEN** outdated rows SHALL be removed for every station
+- **AND** current rows SHALL remain regardless of station

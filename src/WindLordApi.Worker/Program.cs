@@ -115,6 +115,7 @@ builder.Services.AddScoped<IMetYrForecastRefreshService, MetYrForecastRefreshSer
 builder.Services.AddScoped<IOpenMeteoForecastSupplementService, OpenMeteoForecastSupplementService>();
 builder.Services.AddScoped<IWindsMobiSyncService, WindsMobiSyncService>();
 builder.Services.AddScoped<ICountryLocatorService, CountryLocatorService>();
+builder.Services.AddScoped<IStationDataRetentionService, StationDataRetentionService>();
 
 // Register Schedulers (singleton since Worker is singleton)
 builder.Services.AddSingleton<CronScheduler<IMetFrostSyncService>>();
@@ -125,6 +126,7 @@ builder.Services.AddSingleton<CronScheduler<IMetYrForecastRefreshService>>();
 builder.Services.AddSingleton<CronScheduler<IOpenMeteoForecastSupplementService>>();
 builder.Services.AddSingleton<CronScheduler<IWindsMobiSyncService>>();
 builder.Services.AddSingleton<CronScheduler<ICountryLocatorService>>();
+builder.Services.AddSingleton<CronScheduler<IStationDataRetentionService>>();
 
 // Register MET Frost Client
 // 1. Configure Options (binds from appsettings) with validation

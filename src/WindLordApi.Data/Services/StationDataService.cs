@@ -62,4 +62,17 @@ public class StationDataService : IStationDataService
             throw;
         }
     }
+
+    public async Task<int> DeleteOlderThanAsync(TimeSpan retention, CancellationToken cancellationToken = default)
+    {
+        var cutoffTime = DateTime.UtcNow - retention;
+
+        _logger.LogDebug("Deleting station data older than: {CutoffTime}", cutoffTime);
+
+        var deletedCount = await _unitOfWork.StationData.DeleteOlderThanAsync(cutoffTime, cancellationToken);
+
+        _logger.LogDebug("Station data cleanup completed successfully. Deleted {Count} records", deletedCount);
+
+        return deletedCount;
+    }
 }

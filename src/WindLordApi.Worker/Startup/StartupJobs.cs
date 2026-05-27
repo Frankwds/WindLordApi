@@ -23,6 +23,19 @@ public static class StartupJobs
     {
         logger.LogInformation("Running startup jobs...");
 
+        // Retain only recent station observations on startup
+        try
+        {
+            using var stationDataRetentionScope = serviceProvider.CreateScope();
+            var stationDataRetentionService = stationDataRetentionScope.ServiceProvider.GetRequiredService<IStationDataRetentionService>();
+            await stationDataRetentionService.CleanupOldObservationsAsync(cancellationToken);
+            logger.LogInformation("StationDataRetention: Completed startup job: CleanupOldObservationsAsync");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "StationDataRetention: Error running CleanupOldObservationsAsync on startup");
+        }
+
         // Refresh Open-Meteo forecasts
         try
         {
@@ -50,7 +63,7 @@ public static class StartupJobs
         {
             logger.LogError(ex, "MetYrForecastRefresh: Error running UpdateForecastsAsync on startup");
         }
-        
+
         // Refresh PortWind stations and data
         try
         {

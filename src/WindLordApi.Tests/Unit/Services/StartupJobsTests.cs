@@ -63,6 +63,10 @@ public class StartupJobsTests
         metFrostServiceMock
             .Setup(service => service.SyncWeatherStationsActiveStatusAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(0);
+        var stationDataRetentionServiceMock = new Mock<IStationDataRetentionService>();
+        stationDataRetentionServiceMock
+            .Setup(service => service.CleanupOldObservationsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
 
         var serviceProvider = BuildServiceProvider(
             openMeteoServiceMock,
@@ -72,7 +76,8 @@ public class StartupJobsTests
             windsMobiServiceMock,
             countryLocatorServiceMock,
             holfuyServiceMock,
-            metFrostServiceMock);
+            metFrostServiceMock,
+            stationDataRetentionServiceMock);
 
         var loggerMock = new Mock<ILogger>();
 
@@ -129,6 +134,10 @@ public class StartupJobsTests
         metFrostServiceMock
             .Setup(service => service.SyncWeatherStationsActiveStatusAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(0);
+        var stationDataRetentionServiceMock = new Mock<IStationDataRetentionService>();
+        stationDataRetentionServiceMock
+            .Setup(service => service.CleanupOldObservationsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
 
         var serviceProvider = BuildServiceProvider(
             openMeteoServiceMock,
@@ -138,13 +147,15 @@ public class StartupJobsTests
             windsMobiServiceMock,
             countryLocatorServiceMock,
             holfuyServiceMock,
-            metFrostServiceMock);
+            metFrostServiceMock,
+            stationDataRetentionServiceMock);
 
         var loggerMock = new Mock<ILogger>();
 
         await StartupJobs.RunStartupJobsAsync(serviceProvider, loggerMock.Object, TestContext.Current.CancellationToken);
 
         metYrServiceMock.Verify(service => service.UpdateForecastsAsync(It.IsAny<CancellationToken>()), Times.Once);
+        stationDataRetentionServiceMock.Verify(service => service.CleanupOldObservationsAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private static ServiceProvider BuildServiceProvider(
@@ -155,7 +166,8 @@ public class StartupJobsTests
         Mock<IWindsMobiSyncService> windsMobiServiceMock,
         Mock<ICountryLocatorService> countryLocatorServiceMock,
         Mock<IHolfuySyncService> holfuyServiceMock,
-        Mock<IMetFrostSyncService> metFrostServiceMock)
+        Mock<IMetFrostSyncService> metFrostServiceMock,
+        Mock<IStationDataRetentionService> stationDataRetentionServiceMock)
     {
         var services = new ServiceCollection();
         services.AddScoped(_ => openMeteoServiceMock.Object);
@@ -166,6 +178,7 @@ public class StartupJobsTests
         services.AddScoped(_ => countryLocatorServiceMock.Object);
         services.AddScoped(_ => holfuyServiceMock.Object);
         services.AddScoped(_ => metFrostServiceMock.Object);
+        services.AddScoped(_ => stationDataRetentionServiceMock.Object);
         return services.BuildServiceProvider();
     }
 }

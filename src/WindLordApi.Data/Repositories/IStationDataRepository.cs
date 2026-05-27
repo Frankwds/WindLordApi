@@ -11,5 +11,10 @@ public interface IStationDataRepository : IRepository<StationData>
     /// Upserts a range of station data using FlexLabs upsert.
     /// </summary>
     Task<int> UpsertRangeAsync(IEnumerable<StationData> entities, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes station observations whose <see cref="StationData.UpdatedAt"/> is strictly earlier than the cutoff.
+    /// </summary>
+    Task<int> DeleteOlderThanAsync(DateTime cutoffTime, CancellationToken cancellationToken = default);
 }
 

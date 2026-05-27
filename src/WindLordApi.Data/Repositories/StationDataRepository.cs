@@ -26,5 +26,12 @@ public class StationDataRepository : Repository<StationData>, IStationDataReposi
             .NoUpdate()
             .RunAsync(cancellationToken);
     }
+
+    public async Task<int> DeleteOlderThanAsync(DateTime cutoffTime, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Where(sd => sd.UpdatedAt < cutoffTime)
+            .ExecuteDeleteAsync(cancellationToken);
+    }
 }
 
