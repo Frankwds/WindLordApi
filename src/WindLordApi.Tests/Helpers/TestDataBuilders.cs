@@ -663,31 +663,6 @@ public class ForecastCacheBuilder
     private decimal? _landingWind = 8.0m;
     private decimal? _landingGust = 12.0m;
     private int? _landingWindDirection = 180;
-    private decimal? _windSpeed1000hpa = 12.0m;
-    private int? _windDirection1000hpa = 180;
-    private decimal? _windSpeed925hpa = 14.0m;
-    private int? _windDirection925hpa = 180;
-    private decimal? _windSpeed850hpa = 16.0m;
-    private int? _windDirection850hpa = 180;
-    private decimal? _windSpeed700hpa = 18.0m;
-    private int? _windDirection700hpa = 180;
-    private decimal? _temperature1000hpa = 10.0m;
-    private decimal? _temperature925hpa = 8.0m;
-    private decimal? _temperature850hpa = 5.0m;
-    private decimal? _temperature700hpa = 0.0m;
-    private int? _cloudCover = 20;
-    private int? _cloudCoverLow = 10;
-    private int? _cloudCoverMid = 5;
-    private int? _cloudCoverHigh = 5;
-    private decimal? _cape = 0.0m;
-    private decimal? _convectiveInhibition = 0.0m;
-    private decimal? _liftedIndex = 0.0m;
-    private decimal? _boundaryLayerHeight = 1000.0m;
-    private decimal? _freezingLevelHeight = 2000.0m;
-    private decimal? _geopotentialHeight1000hpa = 100.0m;
-    private decimal? _geopotentialHeight925hpa = 800.0m;
-    private decimal? _geopotentialHeight850hpa = 1500.0m;
-    private decimal? _geopotentialHeight700hpa = 3000.0m;
     private DateTime? _createdAt = DateTime.UtcNow;
     private DateTime? _updatedAt = DateTime.UtcNow;
     private double? _precipitationMax = 0.0;
@@ -784,12 +759,6 @@ public class ForecastCacheBuilder
         return this;
     }
 
-    public ForecastCacheBuilder WithCloudCover(int? cloudCover)
-    {
-        _cloudCover = cloudCover;
-        return this;
-    }
-
     public ForecastCacheBuilder WithIsYrData(bool isYrData)
     {
         _isYrData = isYrData;
@@ -821,31 +790,6 @@ public class ForecastCacheBuilder
             LandingWind = _landingWind,
             LandingGust = _landingGust,
             LandingWindDirection = _landingWindDirection,
-            WindSpeed1000hpa = _windSpeed1000hpa,
-            WindDirection1000hpa = _windDirection1000hpa,
-            WindSpeed925hpa = _windSpeed925hpa,
-            WindDirection925hpa = _windDirection925hpa,
-            WindSpeed850hpa = _windSpeed850hpa,
-            WindDirection850hpa = _windDirection850hpa,
-            WindSpeed700hpa = _windSpeed700hpa,
-            WindDirection700hpa = _windDirection700hpa,
-            Temperature1000hpa = _temperature1000hpa,
-            Temperature925hpa = _temperature925hpa,
-            Temperature850hpa = _temperature850hpa,
-            Temperature700hpa = _temperature700hpa,
-            CloudCover = _cloudCover,
-            CloudCoverLow = _cloudCoverLow,
-            CloudCoverMid = _cloudCoverMid,
-            CloudCoverHigh = _cloudCoverHigh,
-            Cape = _cape,
-            ConvectiveInhibition = _convectiveInhibition,
-            LiftedIndex = _liftedIndex,
-            BoundaryLayerHeight = _boundaryLayerHeight,
-            FreezingLevelHeight = _freezingLevelHeight,
-            GeopotentialHeight1000hpa = _geopotentialHeight1000hpa,
-            GeopotentialHeight925hpa = _geopotentialHeight925hpa,
-            GeopotentialHeight850hpa = _geopotentialHeight850hpa,
-            GeopotentialHeight700hpa = _geopotentialHeight700hpa,
             CreatedAt = _createdAt,
             UpdatedAt = _updatedAt,
             PrecipitationMax = _precipitationMax,

@@ -269,32 +269,9 @@ public class MetYrForecastRefreshServiceTests
         capturedForecastCache.Should().NotBeNull();
         var forecast = capturedForecastCache![0];
 
-        // Verify atmospheric fields are null
-        forecast.WindSpeed1000hpa.Should().BeNull();
-        forecast.WindDirection1000hpa.Should().BeNull();
-        forecast.WindSpeed925hpa.Should().BeNull();
-        forecast.WindDirection925hpa.Should().BeNull();
-        forecast.WindSpeed850hpa.Should().BeNull();
-        forecast.WindDirection850hpa.Should().BeNull();
-        forecast.WindSpeed700hpa.Should().BeNull();
-        forecast.WindDirection700hpa.Should().BeNull();
-        forecast.Temperature1000hpa.Should().BeNull();
-        forecast.Temperature925hpa.Should().BeNull();
-        forecast.Temperature850hpa.Should().BeNull();
-        forecast.Temperature700hpa.Should().BeNull();
-        forecast.CloudCover.Should().BeNull();
-        forecast.CloudCoverLow.Should().BeNull();
-        forecast.CloudCoverMid.Should().BeNull();
-        forecast.CloudCoverHigh.Should().BeNull();
-        forecast.Cape.Should().BeNull();
-        forecast.ConvectiveInhibition.Should().BeNull();
-        forecast.LiftedIndex.Should().BeNull();
-        forecast.BoundaryLayerHeight.Should().BeNull();
-        forecast.FreezingLevelHeight.Should().BeNull();
-        forecast.GeopotentialHeight1000hpa.Should().BeNull();
-        forecast.GeopotentialHeight925hpa.Should().BeNull();
-        forecast.GeopotentialHeight850hpa.Should().BeNull();
-        forecast.GeopotentialHeight700hpa.Should().BeNull();
+        // Verify the reduced write contract still populates the retained forecast fields.
+        forecast.LocationId.Should().Be(locationId);
+        forecast.IsYrData.Should().BeTrue();
     }
 
     [Fact]

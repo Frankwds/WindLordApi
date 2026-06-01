@@ -188,34 +188,7 @@ public class MetYrForecastRefreshService : IMetYrForecastRefreshService
                 // Landing conditions (not yet populated)
                 LandingWind = null,
                 LandingGust = null,
-                LandingWindDirection = null,
-
-                // Atmospheric conditions - set to null (not provided by MetYr)
-                WindSpeed1000hpa = null,
-                WindDirection1000hpa = null,
-                WindSpeed925hpa = null,
-                WindDirection925hpa = null,
-                WindSpeed850hpa = null,
-                WindDirection850hpa = null,
-                WindSpeed700hpa = null,
-                WindDirection700hpa = null,
-                Temperature1000hpa = null,
-                Temperature925hpa = null,
-                Temperature850hpa = null,
-                Temperature700hpa = null,
-                CloudCover = null,
-                CloudCoverLow = null,
-                CloudCoverMid = null,
-                CloudCoverHigh = null,
-                Cape = null,
-                ConvectiveInhibition = null,
-                LiftedIndex = null,
-                BoundaryLayerHeight = null,
-                FreezingLevelHeight = null,
-                GeopotentialHeight1000hpa = null,
-                GeopotentialHeight925hpa = null,
-                GeopotentialHeight850hpa = null,
-                GeopotentialHeight700hpa = null
+                LandingWindDirection = null
             };
 
             result.Add(forecastCache);
