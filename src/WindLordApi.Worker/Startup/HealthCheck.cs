@@ -9,6 +9,8 @@ namespace WindLordApi.Worker.Startup;
 /// </summary>
 public static class HealthCheck
 {
+    private const string SchemaTag = "schema";
+
     /// <summary>
     /// Runs all registered health checks and logs their status.
     /// </summary>
@@ -73,6 +75,18 @@ public static class HealthCheck
                     duration,
                     exception != null ? $" Exception: {exception.Message}" : string.Empty);
             }
+        }
+
+        var blockingSchemaFailures = healthReport.Entries
+            .Where(entry => entry.Value.Status == HealthStatus.Unhealthy)
+            .Where(entry => entry.Value.Tags.Contains(SchemaTag, StringComparer.OrdinalIgnoreCase))
+            .Select(entry => $"{entry.Key}: {entry.Value.Description ?? "No description"}")
+            .ToArray();
+
+        if (blockingSchemaFailures.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"Startup aborted because required schema health checks failed: {string.Join(" | ", blockingSchemaFailures)}");
         }
 
         logger.LogInformation("Health checks completed");
