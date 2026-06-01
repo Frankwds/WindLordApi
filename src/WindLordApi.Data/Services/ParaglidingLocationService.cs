@@ -20,14 +20,9 @@ public class ParaglidingLocationService : IParaglidingLocationService
         return await _unitOfWork.ParaglidingLocations.GetByIdsAsync(ids, cancellationToken);
     }
 
-    public async Task<IEnumerable<LocationsWithOldestForecast>> GetLocationsWithOldestForecastAsync(int limit, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Guid>> GetMetYrRefreshCandidatesAsync(int limit, CancellationToken cancellationToken = default)
     {
-        return await _unitOfWork.ParaglidingLocations.GetLocationsWithOldestForecastAsync(limit, cancellationToken);
-    }
-
-    public async Task<IEnumerable<LocationsWithoutForecast>> GetLocationsWithoutForecastAsync(int limit, CancellationToken cancellationToken = default)
-    {
-        return await _unitOfWork.ParaglidingLocations.GetLocationsWithoutForecastAsync(limit, cancellationToken);
+        return await _unitOfWork.ParaglidingLocations.GetMetYrRefreshCandidatesAsync(limit, cancellationToken);
     }
 
     public async Task<IEnumerable<Guid>> GetOpenMeteoRefreshCandidatesAsync(int limit, CancellationToken cancellationToken = default)

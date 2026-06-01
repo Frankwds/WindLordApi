@@ -16,19 +16,12 @@ public interface IParaglidingLocationService
     Task<IEnumerable<ParaglidingLocation>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets locations with their oldest forecast update time (from view).
-    /// Returns only main locations that have forecasts, ordered by oldest update time.
+    /// Gets active main locations prioritized for authoritative MetYr refresh.
+    /// Locations without forecasts are returned first, then locations whose forecast rows have the oldest update time.
     /// </summary>
     /// <param name="limit">Maximum number of locations to return.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    Task<IEnumerable<LocationsWithOldestForecast>> GetLocationsWithOldestForecastAsync(int limit, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Gets active main locations that don't have any forecasts yet (from view).
-    /// </summary>
-    /// <param name="limit">Maximum number of locations to return.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    Task<IEnumerable<LocationsWithoutForecast>> GetLocationsWithoutForecastAsync(int limit, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Guid>> GetMetYrRefreshCandidatesAsync(int limit, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets active main locations with the shortest Open-Meteo forecast tail.

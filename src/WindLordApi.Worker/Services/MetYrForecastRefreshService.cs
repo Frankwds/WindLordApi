@@ -39,7 +39,7 @@ public class MetYrForecastRefreshService : IMetYrForecastRefreshService
         try
         {
             await CleanupOldForecastDataAsync(cancellationToken);
-            await ProcessLocationsWithOldestForecastDataAsync(cancellationToken);
+            await ProcessRefreshCandidatesAsync(cancellationToken);
         }
         catch (Exception ex)
         {
@@ -61,29 +61,11 @@ public class MetYrForecastRefreshService : IMetYrForecastRefreshService
         _logger.LogInformation("Forecast data cleanup completed successfully. Deleted {Count} records of forecast cache", deletedCount);
     }
 
-    private async Task ProcessLocationsWithOldestForecastDataAsync(CancellationToken cancellationToken)
+    private async Task ProcessRefreshCandidatesAsync(CancellationToken cancellationToken)
     {
         try
         {
-            // Get locations without any forecast data (up to BATCH_SIZE)
-            var locationsWithoutForecast = await _paraglidingLocationService.GetLocationsWithoutForecastAsync(BatchSize, cancellationToken);
-            var locationIdsNoData = locationsWithoutForecast
-                .Select(l => l.LocationId)
-                .ToList();
-
-            var remainingSlots = BatchSize - locationIdsNoData.Count;
-            var locationIds = new List<Guid>(locationIdsNoData);
-
-            // Fill remaining slots with locations that have oldest forecast data
-            if (remainingSlots > 0)
-            {
-                var locationsWithOldest = await _paraglidingLocationService.GetLocationsWithOldestForecastAsync(remainingSlots, cancellationToken);
-                var locationIdsOldestData = locationsWithOldest
-                    .Select(l => l.LocationId)
-                    .ToList();
-
-                locationIds.AddRange(locationIdsOldestData);
-            }
+            var locationIds = (await _paraglidingLocationService.GetMetYrRefreshCandidatesAsync(BatchSize, cancellationToken)).ToList();
 
             // Fetch full location details by IDs
             var locations = await _paraglidingLocationService.GetByIdsAsync(locationIds, cancellationToken);

@@ -18,26 +18,46 @@ public class ParaglidingLocationRepository : Repository<ParaglidingLocation>, IP
         _logger = logger;
     }
 
-    public async Task<IEnumerable<LocationsWithOldestForecast>> GetLocationsWithOldestForecastAsync(int limit, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Guid>> GetMetYrRefreshCandidatesAsync(int limit, CancellationToken cancellationToken = default)
     {
-        var locations = await _context.LocationsWithOldestForecast
-            .OrderBy(l => l.OldestUpdatedAt)
+        var locationsWithoutForecast = await _dbSet
+            .Where(location => location.IsActive && location.IsMain)
+            .Where(location => !_context.ForecastCaches.Any(forecast => forecast.LocationId == location.Id))
+            .OrderBy(location => location.Name)
+            .Select(location => location.Id)
             .Take(limit)
             .ToListAsync(cancellationToken);
 
-        _logger.LogDebug("Retrieved {Count} locations with oldest forecast from view (limit: {Limit})", locations.Count, limit);
-        return locations;
-    }
+        var remainingSlots = limit - locationsWithoutForecast.Count;
+        if (remainingSlots <= 0)
+        {
+            _logger.LogDebug("Retrieved {Count} MetYr refresh candidates without existing forecast coverage (limit: {Limit})", locationsWithoutForecast.Count, limit);
+            return locationsWithoutForecast;
+        }
 
-    public async Task<IEnumerable<LocationsWithoutForecast>> GetLocationsWithoutForecastAsync(int limit, CancellationToken cancellationToken = default)
-    {
-        var locations = await _context.LocationsWithoutForecast
-            .OrderBy(l => l.Name)
-            .Take(limit)
+        var locationsWithOldestForecast = await _dbSet
+            .Where(location => location.IsActive && location.IsMain)
+            .Where(location => !locationsWithoutForecast.Contains(location.Id))
+            .Select(location => new
+            {
+                location.Id,
+                OldestUpdatedAt = _context.ForecastCaches
+                    .Where(forecast => forecast.LocationId == location.Id)
+                    .Min(forecast => (DateTime?)forecast.UpdatedAt)
+            })
+            .Where(location => location.OldestUpdatedAt.HasValue)
+            .OrderBy(location => location.OldestUpdatedAt)
+            .ThenBy(location => location.Id)
+            .Take(remainingSlots)
+            .Select(location => location.Id)
             .ToListAsync(cancellationToken);
 
-        _logger.LogDebug("Retrieved {Count} locations without forecast from view (limit: {Limit})", locations.Count, limit);
-        return locations;
+        var locationIds = locationsWithoutForecast
+            .Concat(locationsWithOldestForecast)
+            .ToList();
+
+        _logger.LogDebug("Retrieved {Count} MetYr refresh candidates prioritized by missing then oldest forecast coverage (limit: {Limit})", locationIds.Count, limit);
+        return locationIds;
     }
 
     public async Task<IEnumerable<Guid>> GetOpenMeteoRefreshCandidatesAsync(int limit, CancellationToken cancellationToken = default)

@@ -6,15 +6,14 @@
 ## Language
 - `StationId` is the durable provider key used for weather-station relationships and upsert matching. Entity `Id` is not the cross-layer provider key. `confirmed`
 - `Latest station data` is its own read-optimized store, not "the latest row in station_data". `confirmed`
-- `LocationsWithoutForecast` and `LocationsWithOldestForecast` are database views surfaced as keyless EF entities, not simple in-memory query DTOs. `confirmed`
-- Open-Meteo refresh candidates are not backed by a keyless view; that selection is an inline repository query over `ParaglidingLocation` and `ForecastCache`. `confirmed`
+- Forecast refresh candidate selection is implemented as inline repository queries over `ParaglidingLocation` and `ForecastCache`, not keyless EF view entities. `confirmed`
 
 ## Local Intent
 - This layer keeps persistence rules, transactional batching, and PostgreSQL-specific behavior out of Worker and Integrations. `confirmed`
-- If a change affects keys, check constraints, views, or upsert match columns, assume repository behavior and integration tests are coupled to it. `confirmed`
+- If a change affects keys, check constraints, inline selection queries, or upsert match columns, assume repository behavior and integration tests are coupled to it. `confirmed`
 
 ## Structure
-- `ApplicationDbContext.cs` is the source of truth for keys, indexes, check constraints, default values, and view mappings. `confirmed`
+- `ApplicationDbContext.cs` is the source of truth for keys, indexes, check constraints, and default values. Repository queries own selection-specific projections and ordering. `confirmed`
 - Repositories hold the actual upsert and update projections; services add input validation, batching, and explicit transaction boundaries. `confirmed`
 - `Extensions/ConfigurationExtensions.cs` owns environment-based connection-string selection. `confirmed`
 - Archived EF migrations live under `archive/ef-migrations/` and are retained as historical reference only, not as the active schema workflow. `confirmed`
@@ -35,6 +34,6 @@
 - Upstream schema changes should be validated through the startup schema-contract health checks because the normal test harness uses `EnsureCreatedAsync` from the current EF model. `confirmed`
 
 ## Watchouts
-- Renaming or dropping the MetYr forecast-selection views requires coordinated changes in `ApplicationDbContext` and the repositories that consume them; the Open-Meteo refresh-candidate query lives inline in `ParaglidingLocationRepository`. `confirmed`
+- Forecast refresh selection now lives inline in `ParaglidingLocationRepository` for both MetYr and Open-Meteo. Changes to selection ordering, missing-coverage priority, or freshness semantics are repository behavior changes even when no EF model changes are involved. `confirmed`
 - FlexLabs upsert match columns must stay aligned across model configuration, repository `.On(...)` clauses, and database constraints or indexes. `confirmed`
 - A repository update projection is usually intentional. If a field is absent in `WhenMatched`, check whether another workflow owns it before adding it. `confirmed`
