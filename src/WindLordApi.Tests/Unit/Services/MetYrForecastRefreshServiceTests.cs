@@ -64,8 +64,8 @@ public class MetYrForecastRefreshServiceTests
         };
 
         _paraglidingLocationServiceMock
-            .Setup(x => x.GetLocationsWithoutForecastAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { new LocationsWithoutForecast { LocationId = locationId } });
+            .Setup(x => x.GetMetYrRefreshCandidatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { locationId });
 
         _paraglidingLocationServiceMock
             .Setup(x => x.GetByIdsAsync(It.Is<List<Guid>>(ids => ids.Contains(locationId)), It.IsAny<CancellationToken>()))
@@ -121,8 +121,8 @@ public class MetYrForecastRefreshServiceTests
         };
 
         _paraglidingLocationServiceMock
-            .Setup(x => x.GetLocationsWithoutForecastAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { new LocationsWithoutForecast { LocationId = locationId } });
+            .Setup(x => x.GetMetYrRefreshCandidatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { locationId });
 
         _paraglidingLocationServiceMock
             .Setup(x => x.GetByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
@@ -179,8 +179,8 @@ public class MetYrForecastRefreshServiceTests
         };
 
         _paraglidingLocationServiceMock
-            .Setup(x => x.GetLocationsWithoutForecastAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { new LocationsWithoutForecast { LocationId = locationId } });
+            .Setup(x => x.GetMetYrRefreshCandidatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { locationId });
 
         _paraglidingLocationServiceMock
             .Setup(x => x.GetByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
@@ -237,8 +237,8 @@ public class MetYrForecastRefreshServiceTests
         };
 
         _paraglidingLocationServiceMock
-            .Setup(x => x.GetLocationsWithoutForecastAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { new LocationsWithoutForecast { LocationId = locationId } });
+            .Setup(x => x.GetMetYrRefreshCandidatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { locationId });
 
         _paraglidingLocationServiceMock
             .Setup(x => x.GetByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
@@ -298,8 +298,8 @@ public class MetYrForecastRefreshServiceTests
         };
 
         _paraglidingLocationServiceMock
-            .Setup(x => x.GetLocationsWithoutForecastAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { new LocationsWithoutForecast { LocationId = locationId } });
+            .Setup(x => x.GetMetYrRefreshCandidatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { locationId });
 
         _paraglidingLocationServiceMock
             .Setup(x => x.GetByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
@@ -355,8 +355,8 @@ public class MetYrForecastRefreshServiceTests
         };
 
         _paraglidingLocationServiceMock
-            .Setup(x => x.GetLocationsWithoutForecastAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { new LocationsWithoutForecast { LocationId = locationId } });
+            .Setup(x => x.GetMetYrRefreshCandidatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { locationId });
 
         _paraglidingLocationServiceMock
             .Setup(x => x.GetByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
@@ -429,8 +429,8 @@ public class MetYrForecastRefreshServiceTests
         };
 
         _paraglidingLocationServiceMock
-            .Setup(x => x.GetLocationsWithoutForecastAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { new LocationsWithoutForecast { LocationId = locationId } });
+            .Setup(x => x.GetMetYrRefreshCandidatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { locationId });
 
         _paraglidingLocationServiceMock
             .Setup(x => x.GetByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
@@ -501,8 +501,8 @@ public class MetYrForecastRefreshServiceTests
         };
 
         _paraglidingLocationServiceMock
-            .Setup(x => x.GetLocationsWithoutForecastAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { new LocationsWithoutForecast { LocationId = locationId1 }, new LocationsWithoutForecast { LocationId = locationId2 } });
+            .Setup(x => x.GetMetYrRefreshCandidatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { locationId1, locationId2 });
 
         _paraglidingLocationServiceMock
             .Setup(x => x.GetByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))

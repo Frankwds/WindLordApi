@@ -8,7 +8,7 @@ flowchart TB
     UpdateForecasts -->|Step 1| Cleanup[CleanupOldForecastDataAsync]
     Cleanup -->|Delete| DeleteOld[Delete forecasts > 2hrs old]
 
-    UpdateForecasts -->|Step 2| ProcessLocations[ProcessLocationsWithOldestForecastDataAsync]
+   UpdateForecasts -->|Step 2| ProcessLocations[ProcessRefreshCandidatesAsync]
     ProcessLocations -->|Priority 1| NoForecast[Get locations without forecast<br/>up to BatchSize=50]
     ProcessLocations -->|Priority 2<br/>Fill remaining slots| OldForecast[Get locations with oldest forecast]
     ProcessLocations -->|Fetch full details| GetByIds[GetByIdsAsync]
@@ -37,10 +37,10 @@ flowchart TB
 - Deletes all forecast data older than 2 hours from current UTC time
 - Runs via `ForecastCacheService.DeleteOldForecastsAsync()`
 
-### 2. Location Selection (ProcessLocationsWithOldestForecastDataAsync)
+### 2. Location Selection (ProcessRefreshCandidatesAsync)
 
-- **Priority 1**: Gets locations without any forecast data (up to BatchSize=50)
-- **Priority 2**: Fills remaining slots with locations having the oldest forecast data
+- **Priority 1**: Inline repository query gets active main locations without any forecast data (up to BatchSize=50)
+- **Priority 2**: Inline repository query fills remaining slots with active main locations having the oldest forecast update time
 - Fetches full `ParaglidingLocation` details for all selected location IDs
 - Batch size: 50 locations per cycle
 
