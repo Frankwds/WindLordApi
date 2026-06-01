@@ -133,6 +133,8 @@ builder.Services.AddScoped<DatabaseHealthCheck>();
 builder.Services.AddScoped<TableSchemaValidationService>();
 builder.Services.AddScoped<ForecastCacheSchemaHealthCheck>();
 builder.Services.AddScoped<StationDataSchemaHealthCheck>();
+builder.Services.AddScoped<WeatherStationSchemaHealthCheck>();
+builder.Services.AddScoped<LatestStationDataSchemaHealthCheck>();
 builder.Services.AddScoped<MetFrostHealthCheck>();
 builder.Services.AddScoped<HolfuyHealthCheck>();
 builder.Services.AddScoped<MetYrHealthCheck>();
@@ -144,6 +146,8 @@ builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database", tags: ["db", "database"])
     .AddCheck<ForecastCacheSchemaHealthCheck>("forecast-cache-schema", tags: ["db", "database", "schema"])
     .AddCheck<StationDataSchemaHealthCheck>("station-data-schema", tags: ["db", "database", "schema"])
+    .AddCheck<WeatherStationSchemaHealthCheck>("weather-station-schema", tags: ["db", "database", "schema"])
+    .AddCheck<LatestStationDataSchemaHealthCheck>("latest-station-data-schema", tags: ["db", "database", "schema"])
     .AddCheck<MetFrostHealthCheck>("metfrost", tags: ["api", "metfrost"])
     .AddCheck<HolfuyHealthCheck>("holfuy", tags: ["api", "holfuy"])
     .AddCheck<MetYrHealthCheck>("metyr", tags: ["api", "metyr"])
