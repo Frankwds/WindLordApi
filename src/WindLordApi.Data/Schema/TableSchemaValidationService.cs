@@ -51,13 +51,13 @@ public sealed class TableSchemaValidationService
         }
     }
 
-    private async Task<Dictionary<string, string>> GetActualColumnsAsync(
+    private async Task<Dictionary<string, ColumnSchemaContract>> GetActualColumnsAsync(
         TableSchemaContract contract,
         CancellationToken cancellationToken)
     {
         await using var command = _dbContext.Database.GetDbConnection().CreateCommand();
         command.CommandText = @"
-SELECT column_name, data_type, udt_name
+SELECT column_name, data_type, udt_name, is_nullable, character_maximum_length, numeric_precision, numeric_scale
 FROM information_schema.columns
 WHERE table_schema = @schema
   AND table_name = @tableName;";
@@ -65,7 +65,7 @@ WHERE table_schema = @schema
         AddParameter(command, "@schema", contract.SchemaName);
         AddParameter(command, "@tableName", contract.TableName);
 
-        var columns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var columns = new Dictionary<string, ColumnSchemaContract>(StringComparer.OrdinalIgnoreCase);
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
@@ -73,8 +73,17 @@ WHERE table_schema = @schema
             var columnName = reader.GetString(0);
             var dataType = reader.GetString(1);
             var udtName = reader.GetString(2);
+            var isNullable = string.Equals(reader.GetString(3), "YES", StringComparison.OrdinalIgnoreCase);
+            var maxLength = GetNullableInt32(reader, 4);
+            var precision = GetNullableInt32(reader, 5);
+            var scale = GetNullableInt32(reader, 6);
 
-            columns[columnName] = NormalizeActualType(dataType, udtName);
+            columns[columnName] = new ColumnSchemaContract(
+                StoreType: NormalizeActualType(dataType, udtName),
+                IsNullable: isNullable,
+                MaxLength: maxLength,
+                Precision: precision,
+                Scale: scale);
         }
 
         return columns;
@@ -82,7 +91,7 @@ WHERE table_schema = @schema
 
     private static string? GetColumnFailureMessage(
         TableSchemaContract contract,
-        IReadOnlyDictionary<string, string> actualColumns)
+        IReadOnlyDictionary<string, ColumnSchemaContract> actualColumns)
     {
         if (actualColumns.Count == 0)
         {
@@ -100,8 +109,9 @@ WHERE table_schema = @schema
         }
 
         var mismatchedColumns = contract.Columns
-            .Where(column => !string.Equals(column.Value, actualColumns[column.Key], StringComparison.OrdinalIgnoreCase))
-            .Select(column => $"{column.Key} (expected {column.Value}, actual {actualColumns[column.Key]})")
+            .Select(column => GetColumnMismatchMessage(column.Key, column.Value, actualColumns[column.Key]))
+            .Where(message => message is not null)
+            .Select(message => message!)
             .OrderBy(message => message)
             .ToArray();
 
@@ -111,6 +121,43 @@ WHERE table_schema = @schema
         }
 
         return null;
+    }
+
+    private static string? GetColumnMismatchMessage(
+        string columnName,
+        ColumnSchemaContract expectedColumn,
+        ColumnSchemaContract actualColumn)
+    {
+        var mismatches = new List<string>();
+
+        if (!string.Equals(expectedColumn.StoreType, actualColumn.StoreType, StringComparison.OrdinalIgnoreCase))
+        {
+            mismatches.Add($"type expected {expectedColumn.StoreType}, actual {actualColumn.StoreType}");
+        }
+
+        if (expectedColumn.IsNullable != actualColumn.IsNullable)
+        {
+            mismatches.Add($"nullability expected {FormatNullability(expectedColumn.IsNullable)}, actual {FormatNullability(actualColumn.IsNullable)}");
+        }
+
+        if (expectedColumn.MaxLength.HasValue && expectedColumn.MaxLength != actualColumn.MaxLength)
+        {
+            mismatches.Add($"max length expected {FormatOptionalInt(expectedColumn.MaxLength)}, actual {FormatOptionalInt(actualColumn.MaxLength)}");
+        }
+
+        if (expectedColumn.Precision.HasValue && expectedColumn.Precision != actualColumn.Precision)
+        {
+            mismatches.Add($"precision expected {FormatOptionalInt(expectedColumn.Precision)}, actual {FormatOptionalInt(actualColumn.Precision)}");
+        }
+
+        if (expectedColumn.Scale.HasValue && expectedColumn.Scale != actualColumn.Scale)
+        {
+            mismatches.Add($"scale expected {FormatOptionalInt(expectedColumn.Scale)}, actual {FormatOptionalInt(actualColumn.Scale)}");
+        }
+
+        return mismatches.Count == 0
+            ? null
+            : $"{columnName} ({string.Join(", ", mismatches)})";
     }
 
     private async Task<List<string[]>> GetActualUniqueConstraintsAsync(
@@ -180,6 +227,17 @@ WHERE table_constraints.table_schema = @schema
         parameter.Value = value;
         command.Parameters.Add(parameter);
     }
+
+    private static int? GetNullableInt32(IDataReader reader, int ordinal)
+    {
+        return reader.IsDBNull(ordinal)
+            ? null
+            : Convert.ToInt32(reader.GetValue(ordinal));
+    }
+
+    private static string FormatNullability(bool isNullable) => isNullable ? "nullable" : "not null";
+
+    private static string FormatOptionalInt(int? value) => value?.ToString() ?? "unspecified";
 
     private static string NormalizeActualType(string dataType, string udtName)
     {

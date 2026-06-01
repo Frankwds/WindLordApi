@@ -50,7 +50,7 @@ This capability SHOULD treat WindsMobi differently because the current registrat
 ### Requirement: Schema-contract diagnostics SHALL gate startup after database resolution succeeds
 The system SHALL evaluate schema-contract health checks after `ApplicationDbContext` has been resolved and before entering `host.RunAsync`.
 
-The schema-contract validation SHALL confirm that the live database still satisfies the mapped contract the worker depends on, starting with the `forecast_cache` and `station_data` tables. Missing tables, missing mapped columns, incompatible mapped column types, or missing critical constraints SHALL be reported as unhealthy health-check results rather than through EF Core migration status.
+The schema-contract validation SHALL confirm that the live database still satisfies the mapped contract the worker depends on, starting with the `forecast_cache` and `station_data` tables. Missing tables, missing mapped columns, incompatible mapped column types, incompatible nullability or exact column shape, or missing critical constraints SHALL be reported as unhealthy health-check results rather than through EF Core migration status.
 
 #### Scenario: Forecast-cache contract mismatches are reported through startup health checks
 - **GIVEN** `ApplicationDbContext` resolves successfully

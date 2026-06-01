@@ -3,10 +3,17 @@ using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace WindLordApi.Data.Schema;
 
+public sealed record ColumnSchemaContract(
+    string StoreType,
+    bool IsNullable,
+    int? MaxLength,
+    int? Precision,
+    int? Scale);
+
 public sealed record TableSchemaContract(
     string SchemaName,
     string TableName,
-    IReadOnlyDictionary<string, string> Columns,
+    IReadOnlyDictionary<string, ColumnSchemaContract> Columns,
     IReadOnlyList<string[]> UniqueConstraints)
 {
     public static TableSchemaContract Create<TEntity>(ApplicationDbContext dbContext)
@@ -28,12 +35,12 @@ public sealed record TableSchemaContract(
             .Select(property => new
             {
                 ColumnName = property.GetColumnName(table),
-                StoreType = GetNormalizedStoreType(property, table)
+                ColumnContract = CreateColumnContract(property, table)
             })
             .Where(column => !string.IsNullOrWhiteSpace(column.ColumnName))
             .ToDictionary(
                 column => column.ColumnName!,
-                column => column.StoreType,
+                column => column.ColumnContract,
                 StringComparer.OrdinalIgnoreCase);
 
         var uniqueConstraints = entityType.GetKeys()
@@ -50,13 +57,24 @@ public sealed record TableSchemaContract(
         return new TableSchemaContract(databaseSchemaName, tableName, columns, uniqueConstraints);
     }
 
-    private static string GetNormalizedStoreType(IReadOnlyProperty property, StoreObjectIdentifier table)
+    private static ColumnSchemaContract CreateColumnContract(IReadOnlyProperty property, StoreObjectIdentifier table)
     {
-        var storeType = property.GetColumnType(table)
+        var rawStoreType = GetStoreType(property, table);
+        var (storeTypeMaxLength, storeTypePrecision, storeTypeScale) = ParseStoreTypeMetadata(rawStoreType);
+
+        return new ColumnSchemaContract(
+            StoreType: NormalizeStoreType(rawStoreType),
+            IsNullable: property.IsNullable,
+            MaxLength: property.GetMaxLength() ?? storeTypeMaxLength,
+            Precision: property.GetPrecision() ?? storeTypePrecision,
+            Scale: property.GetScale() ?? storeTypeScale);
+    }
+
+    private static string GetStoreType(IReadOnlyProperty property, StoreObjectIdentifier table)
+    {
+        return property.GetColumnType(table)
             ?? property.GetColumnType()
             ?? property.GetRelationalTypeMapping().StoreType;
-
-        return NormalizeStoreType(storeType);
     }
 
     private static string NormalizeStoreType(string storeType)
@@ -68,4 +86,35 @@ public sealed record TableSchemaContract(
             ? normalizedStoreType[..precisionStart]
             : normalizedStoreType;
     }
+
+    private static (int? MaxLength, int? Precision, int? Scale) ParseStoreTypeMetadata(string storeType)
+    {
+        var normalizedStoreType = storeType.Trim().ToLowerInvariant();
+        var start = normalizedStoreType.IndexOf('(');
+        var end = normalizedStoreType.LastIndexOf(')');
+
+        if (start < 0 || end <= start)
+        {
+            return (null, null, null);
+        }
+
+        var values = normalizedStoreType[(start + 1)..end]
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+        if (values.Length == 0 || !int.TryParse(values[0], out var firstValue))
+        {
+            return (null, null, null);
+        }
+
+        return NormalizeStoreType(storeType) switch
+        {
+            "numeric" or "decimal" =>
+                values.Length > 1 && int.TryParse(values[1], out var scale)
+                    ? (null, firstValue, scale)
+                    : (null, firstValue, null),
+            "character varying" or "varchar" or "character" or "char" => (firstValue, null, null),
+            _ => (null, null, null)
+        };
+    }
+
 }
