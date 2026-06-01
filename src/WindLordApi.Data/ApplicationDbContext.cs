@@ -116,16 +116,6 @@ public class ApplicationDbContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .ValueGeneratedOnAdd();
 
-            // Unique index on FlightlogId
-            entity.HasIndex(e => e.FlightlogId)
-                .IsUnique()
-                .HasDatabaseName("all_paragliding_locations_flightlog_id_key");
-
-            // Composite index on Country and IsActive (filtered)
-            entity.HasIndex(e => new { e.Country, e.IsActive })
-                .HasDatabaseName("all_paragliding_locations_country_is_active_idx")
-                .HasFilter("is_active = true");
-
             // Composite index on IsActive, Latitude, Longitude (filtered)
             entity.HasIndex(e => new { e.IsActive, e.Latitude, e.Longitude })
                 .HasDatabaseName("all_paragliding_locations_is_active_latitude_longitude_idx")
@@ -139,52 +129,11 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Name)
                 .HasDatabaseName("all_paragliding_locations_name_idx");
 
-            // Default values
-            entity.Property(e => e.Altitude)
-                .HasDefaultValue(0);
-
-            entity.Property(e => e.Country)
-                .HasDefaultValue("Norway");
-
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true);
 
-            entity.Property(e => e.N)
-                .HasDefaultValue(false);
-
-            entity.Property(e => e.NE)
-                .HasDefaultValue(false);
-
-            entity.Property(e => e.E)
-                .HasDefaultValue(false);
-
-            entity.Property(e => e.SE)
-                .HasDefaultValue(false);
-
-            entity.Property(e => e.S)
-                .HasDefaultValue(false);
-
-            entity.Property(e => e.SW)
-                .HasDefaultValue(false);
-
-            entity.Property(e => e.W)
-                .HasDefaultValue(false);
-
-            entity.Property(e => e.NW)
-                .HasDefaultValue(false);
-
             entity.Property(e => e.IsMain)
                 .HasDefaultValue(false);
-
-            entity.Property(e => e.Timezone)
-                .HasDefaultValue(string.Empty);
-
-            // Timestamps with UTC handling
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("now()");
-
-            entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("now()");
 
             entity.HasMany(e => e.ForecastCaches)
                 .WithOne(e => e.ParaglidingLocation)

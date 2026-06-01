@@ -505,28 +505,12 @@ public class ParaglidingLocationBuilder
 {
     private Guid _id = Guid.NewGuid();
     private string _name = "Test Paragliding Location";
-    private string? _description = "A test paragliding location";
     private float _longitude = 10.12345f;
     private float _latitude = 60.12345f;
-    private int _altitude = 500;
-    private string _country = "Norway";
-    private string _flightlogId = "TEST-FL-001";
     private bool _isActive = true;
-    private DateTime? _createdAt = DateTime.UtcNow;
-    private DateTime? _updatedAt = DateTime.UtcNow;
-    private bool _n = false;
-    private bool _ne = false;
-    private bool _e = false;
-    private bool _se = false;
-    private bool _s = true; // Default to south-facing
-    private bool _sw = false;
-    private bool _w = false;
-    private bool _nw = false;
     private bool _isMain = false;
     private float? _landingLatitude = 60.11111f;
     private float? _landingLongitude = 10.11111f;
-    private int? _landingAltitude = 100;
-    private string? _timezone = "Europe/Oslo";
 
     public ParaglidingLocationBuilder WithId(Guid id)
     {
@@ -542,7 +526,6 @@ public class ParaglidingLocationBuilder
 
     public ParaglidingLocationBuilder WithDescription(string? description)
     {
-        _description = description;
         return this;
     }
 
@@ -555,19 +538,16 @@ public class ParaglidingLocationBuilder
 
     public ParaglidingLocationBuilder WithAltitude(int altitude)
     {
-        _altitude = altitude;
         return this;
     }
 
     public ParaglidingLocationBuilder WithCountry(string country)
     {
-        _country = country;
         return this;
     }
 
     public ParaglidingLocationBuilder WithFlightlogId(string flightlogId)
     {
-        _flightlogId = flightlogId;
         return this;
     }
 
@@ -580,14 +560,6 @@ public class ParaglidingLocationBuilder
     public ParaglidingLocationBuilder WithDirections(bool n = false, bool ne = false, bool e = false, bool se = false,
         bool s = false, bool sw = false, bool w = false, bool nw = false)
     {
-        _n = n;
-        _ne = ne;
-        _e = e;
-        _se = se;
-        _s = s;
-        _sw = sw;
-        _w = w;
-        _nw = nw;
         return this;
     }
 
@@ -601,13 +573,11 @@ public class ParaglidingLocationBuilder
     {
         _landingLatitude = latitude;
         _landingLongitude = longitude;
-        _landingAltitude = altitude;
         return this;
     }
 
     public ParaglidingLocationBuilder WithTimezone(string? timezone)
     {
-        _timezone = timezone;
         return this;
     }
 
@@ -617,28 +587,12 @@ public class ParaglidingLocationBuilder
         {
             Id = _id,
             Name = _name,
-            Description = _description,
             Longitude = _longitude,
             Latitude = _latitude,
-            Altitude = _altitude,
-            Country = _country,
-            FlightlogId = _flightlogId,
             IsActive = _isActive,
-            CreatedAt = _createdAt,
-            UpdatedAt = _updatedAt,
-            N = _n,
-            NE = _ne,
-            E = _e,
-            SE = _se,
-            S = _s,
-            SW = _sw,
-            W = _w,
-            NW = _nw,
             IsMain = _isMain,
             LandingLatitude = _landingLatitude,
-            LandingLongitude = _landingLongitude,
-            LandingAltitude = _landingAltitude,
-            Timezone = _timezone
+            LandingLongitude = _landingLongitude
         };
     }
 }
