@@ -17,42 +17,6 @@ using WindLordApi.Integrations.GoogleGeocoding;
 using Serilog;
 using Serilog.Events;
 
-static async Task CheckPendingMigrationsAsync(IHost host)
-{
-    using var scope = host.Services.CreateScope();
-    var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
-    var logger = loggerFactory.CreateLogger("MigrationHealthCheck");
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-    try
-    {
-        var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
-
-        if (pendingMigrations.Any())
-        {
-            logger.LogError(
-                "⚠️  PENDING MIGRATIONS DETECTED! The following migrations have not been applied: {PendingMigrations}",
-                string.Join(", ", pendingMigrations));
-
-            logger.LogError(
-                "Please run the following command to apply migrations: dotnet ef database update --project src/WindLordApi.Data/WindLordApi.Data.csproj");
-
-            // Optionally fail startup - uncomment the line below to prevent startup with pending migrations
-            // throw new InvalidOperationException($"Cannot start application with {pendingMigrations.Count()} pending migration(s). Please apply migrations first.");
-        }
-        else
-        {
-            logger.LogInformation("✅ Database migrations are up to date.");
-        }
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "❌ Failed to check for pending migrations. The application will continue, but please verify database connectivity.");
-        // Don't throw - allow application to start even if migration check fails
-        // This prevents connection issues from blocking startup
-    }
-}
-
 
 // Configure Serilog before building the host
 Log.Logger = new LoggerConfiguration()
@@ -165,6 +129,7 @@ builder.Services.AddGoogleGeocodingClient(builder.Configuration);
 
 // Register Health Check Services
 builder.Services.AddScoped<DatabaseHealthCheck>();
+builder.Services.AddScoped<ForecastCacheSchemaHealthCheck>();
 builder.Services.AddScoped<MetFrostHealthCheck>();
 builder.Services.AddScoped<HolfuyHealthCheck>();
 builder.Services.AddScoped<MetYrHealthCheck>();
@@ -174,6 +139,7 @@ builder.Services.AddScoped<PortWindHealthCheck>();
 // Register Health Checks
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database", tags: ["db", "database"])
+    .AddCheck<ForecastCacheSchemaHealthCheck>("forecast-cache-schema", tags: ["db", "database", "schema"])
     .AddCheck<MetFrostHealthCheck>("metfrost", tags: ["api", "metfrost"])
     .AddCheck<HolfuyHealthCheck>("holfuy", tags: ["api", "holfuy"])
     .AddCheck<MetYrHealthCheck>("metyr", tags: ["api", "metyr"])
@@ -187,9 +153,6 @@ var host = builder.Build();
 try
 {
     Log.Information("Starting WindLordApi.Worker application");
-
-    // Check for pending migrations on startup
-    await CheckPendingMigrationsAsync(host);
 
     // Run health checks on startup
     var loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();

@@ -1,7 +1,7 @@
 # Runtime Bootstrap And Health
 
 ## Purpose
-This capability owns the worker host bootstrap that happens before recurring jobs begin. It covers host configuration, connection-string selection, integration and service registration, startup validation, the pending-migration diagnostic, and the startup health-check pass. The primary implementation anchors are `src/WindLordApi.Worker/Program.cs`, `src/WindLordApi.Data/Extensions/ConfigurationExtensions.cs`, and the health-check classes under `src/WindLordApi.Worker/Startup/`.
+This capability owns the worker host bootstrap that happens before recurring jobs begin. It covers host configuration, connection-string selection, integration and service registration, startup validation, the schema-contract validation pass, and the startup health-check pass. The primary implementation anchors are `src/WindLordApi.Worker/Program.cs`, `src/WindLordApi.Data/Extensions/ConfigurationExtensions.cs`, and the health-check classes under `src/WindLordApi.Worker/Startup/`.
 
 This capability does not own startup job ordering or recurring cron execution. Those behaviors belong to separate worker orchestration capabilities.
 ## Requirements
@@ -47,34 +47,34 @@ This capability SHOULD treat WindsMobi differently because the current registrat
 - **THEN** their bound options are validated using the configured startup validation path
 - **AND** invalid required configuration prevents normal host startup
 
-### Requirement: Pending-migration diagnostics SHALL be advisory after database resolution succeeds
-The system SHALL attempt to check for pending EF Core migrations before running startup health checks and before entering `host.RunAsync`.
+### Requirement: Schema-contract diagnostics SHALL be advisory after database resolution succeeds
+The system SHALL evaluate schema-contract health checks after `ApplicationDbContext` has been resolved and before entering `host.RunAsync`.
 
-If the migration query reports pending migrations, the system SHALL log the migration names and an update command. If the migration query itself fails after `ApplicationDbContext` has been resolved, the system SHALL log the failure and continue startup.
+The schema-contract validation SHALL confirm that the live database still satisfies the mapped contract the worker depends on, starting with the `forecast_cache` table. Missing tables, missing mapped columns, incompatible mapped column types, or missing critical constraints SHALL be reported as unhealthy health-check results rather than through EF Core migration status.
 
-#### Scenario: Pending migrations are reported without blocking startup
+#### Scenario: Forecast-cache contract mismatches are reported through startup health checks
 - **GIVEN** `ApplicationDbContext` resolves successfully
-- **AND** the database reports one or more pending migrations
-- **WHEN** the pending-migration check runs
-- **THEN** startup logs the pending migration names and the recommended `dotnet ef database update` command
-- **AND** bootstrap continues to the startup health-check pass
+- **AND** the live database no longer satisfies the mapped `forecast_cache` contract
+- **WHEN** the startup health-check runner executes
+- **THEN** the `forecast-cache-schema` health check reports an unhealthy result describing the mismatch
+- **AND** bootstrap still proceeds to the remaining startup health checks
 
-#### Scenario: Migration query failure is logged and startup continues
+#### Scenario: Forecast-cache contract matches are reported as healthy
 - **GIVEN** `ApplicationDbContext` resolves successfully
-- **AND** the migration query throws while checking database state
-- **WHEN** the pending-migration check runs
-- **THEN** startup logs the exception as a migration-check failure
-- **AND** bootstrap still proceeds to startup health checks
+- **AND** the live database satisfies the mapped `forecast_cache` contract
+- **WHEN** the startup health-check runner executes
+- **THEN** the `forecast-cache-schema` health check reports a healthy result
+- **AND** bootstrap still proceeds to `host.RunAsync`
 
 ### Requirement: Startup health checks SHALL report dependency status without gating worker execution
-The system SHALL run the registered startup health checks after the migration diagnostic and before `host.RunAsync`. The current startup health-check set SHALL include database, MetFrost, Holfuy, MetYr, Open-Meteo, and PortWind.
+The system SHALL run the registered startup health checks after database resolution and before `host.RunAsync`. The current startup health-check set SHALL include database, forecast-cache schema contract, MetFrost, Holfuy, MetYr, Open-Meteo, and PortWind.
 
 The health-check runner SHALL log the overall report status and each individual check result. Unhealthy or degraded results SHALL be logged, but SHALL NOT by themselves stop worker startup.
 
 This capability MAY omit dependencies from the startup health-check set; in the current implementation, WindsMobi and Google Geocoding are registered integrations but are not included in the startup health-check pass.
 
 #### Scenario: Startup health checks log an overall report and per-check results
-- **GIVEN** the host has been built and the migration diagnostic has completed
+- **GIVEN** the host has been built and the schema-contract diagnostics have completed
 - **WHEN** the startup health-check runner executes
 - **THEN** it evaluates all registered checks through `HealthCheckService`
 - **AND** it logs the overall status, total check count, and total duration
