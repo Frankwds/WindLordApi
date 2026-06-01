@@ -10,40 +10,8 @@ namespace WindLordApi.Worker.Startup;
 /// </summary>
 public class ForecastCacheSchemaHealthCheck : IHealthCheck
 {
-    private const string SchemaName = "public";
-    private const string TableName = "forecast_cache";
-
-    private static readonly string[] RequiredUniqueConstraintColumns =
-    [
-        "location_id",
-        "time"
-    ];
-
-    private static readonly IReadOnlyDictionary<string, string> ExpectedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["id"] = "bigint",
-        ["location_id"] = "uuid",
-        ["time"] = "timestamp with time zone",
-        ["temperature"] = "numeric",
-        ["wind_speed"] = "numeric",
-        ["wind_direction"] = "integer",
-        ["wind_gusts"] = "numeric",
-        ["precipitation"] = "numeric",
-        ["precipitation_probability"] = "real",
-        ["pressure_msl"] = "numeric",
-        ["weather_code"] = "text",
-        ["is_day"] = "smallint",
-        ["landing_wind"] = "numeric",
-        ["landing_gust"] = "numeric",
-        ["landing_wind_direction"] = "integer",
-        ["created_at"] = "timestamp with time zone",
-        ["updated_at"] = "timestamp with time zone",
-        ["precipitation_max"] = "double precision",
-        ["precipitation_min"] = "double precision",
-        ["is_yr_data"] = "boolean"
-    };
-
     private readonly ApplicationDbContext _dbContext;
+    private readonly ForecastCacheModelContract _contract;
     private readonly ILogger<ForecastCacheSchemaHealthCheck> _logger;
 
     public ForecastCacheSchemaHealthCheck(
@@ -51,6 +19,7 @@ public class ForecastCacheSchemaHealthCheck : IHealthCheck
         ILogger<ForecastCacheSchemaHealthCheck> logger)
     {
         _dbContext = dbContext;
+        _contract = ForecastCacheModelContract.Create(dbContext);
         _logger = logger;
     }
 
@@ -75,7 +44,7 @@ public class ForecastCacheSchemaHealthCheck : IHealthCheck
                 return Unhealthy(failureMessage);
             }
 
-            var successMessage = $"Schema contract check passed for '{SchemaName}.{TableName}' ({ExpectedColumns.Count} expected columns validated).";
+            var successMessage = $"Schema contract check passed for '{_contract.SchemaName}.{_contract.TableName}' ({_contract.Columns.Count} expected columns validated).";
             _logger.LogInformation(successMessage);
             return HealthCheckResult.Healthy(successMessage);
         }
@@ -99,20 +68,20 @@ public class ForecastCacheSchemaHealthCheck : IHealthCheck
     {
         if (actualColumns.Count == 0)
         {
-            return $"Schema contract check failed: table '{SchemaName}.{TableName}' does not exist or has no visible columns.";
+            return $"Schema contract check failed: table '{_contract.SchemaName}.{_contract.TableName}' does not exist or has no visible columns.";
         }
 
-        var missingColumns = ExpectedColumns.Keys
+        var missingColumns = _contract.Columns.Keys
             .Where(columnName => !actualColumns.ContainsKey(columnName))
             .OrderBy(columnName => columnName)
             .ToArray();
 
         if (missingColumns.Length > 0)
         {
-            return $"Schema contract check failed: table '{SchemaName}.{TableName}' is missing expected columns: {string.Join(", ", missingColumns)}.";
+            return $"Schema contract check failed: table '{_contract.SchemaName}.{_contract.TableName}' is missing expected columns: {string.Join(", ", missingColumns)}.";
         }
 
-        var mismatchedColumns = ExpectedColumns
+        var mismatchedColumns = _contract.Columns
             .Where(column => !string.Equals(column.Value, actualColumns[column.Key], StringComparison.OrdinalIgnoreCase))
             .Select(column => $"{column.Key} (expected {column.Value}, actual {actualColumns[column.Key]})")
             .OrderBy(message => message)
@@ -120,13 +89,13 @@ public class ForecastCacheSchemaHealthCheck : IHealthCheck
 
         if (mismatchedColumns.Length > 0)
         {
-            return $"Schema contract check failed: table '{SchemaName}.{TableName}' has incompatible column types: {string.Join("; ", mismatchedColumns)}.";
+            return $"Schema contract check failed: table '{_contract.SchemaName}.{_contract.TableName}' has incompatible column types: {string.Join("; ", mismatchedColumns)}.";
         }
 
-        var uniqueConstraintExists = await ConstraintExistsAsync(cancellationToken);
-        if (!uniqueConstraintExists)
+        var missingUniqueConstraint = await GetMissingUniqueConstraintAsync(cancellationToken);
+        if (missingUniqueConstraint is not null)
         {
-            return $"Schema contract check failed: table '{SchemaName}.{TableName}' is missing a unique constraint for columns: {string.Join(", ", RequiredUniqueConstraintColumns)}.";
+            return $"Schema contract check failed: table '{_contract.SchemaName}.{_contract.TableName}' is missing a unique constraint for columns: {string.Join(", ", missingUniqueConstraint)}.";
         }
 
         return null;
@@ -147,8 +116,8 @@ FROM information_schema.columns
 WHERE table_schema = @schema
   AND table_name = @tableName;";
 
-        AddParameter(command, "@schema", SchemaName);
-        AddParameter(command, "@tableName", TableName);
+                AddParameter(command, "@schema", _contract.SchemaName);
+                AddParameter(command, "@tableName", _contract.TableName);
 
         var columns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -165,7 +134,15 @@ WHERE table_schema = @schema
         return columns;
     }
 
-    private async Task<bool> ConstraintExistsAsync(CancellationToken cancellationToken)
+    private async Task<string[]?> GetMissingUniqueConstraintAsync(CancellationToken cancellationToken)
+    {
+        var actualUniqueConstraints = await GetActualUniqueConstraintsAsync(cancellationToken);
+
+        return _contract.UniqueConstraints
+            .FirstOrDefault(requiredColumns => !actualUniqueConstraints.Any(actualColumns => ColumnsMatch(actualColumns, requiredColumns)));
+    }
+
+    private async Task<List<string[]>> GetActualUniqueConstraintsAsync(CancellationToken cancellationToken)
     {
         await using var command = _dbContext.Database.GetDbConnection().CreateCommand();
         command.CommandText = @"
@@ -178,8 +155,8 @@ WHERE table_constraints.table_schema = @schema
   AND table_constraints.table_name = @tableName
   AND table_constraints.constraint_type = 'UNIQUE';";
 
-                AddParameter(command, "@schema", SchemaName);
-                AddParameter(command, "@tableName", TableName);
+                AddParameter(command, "@schema", _contract.SchemaName);
+                AddParameter(command, "@tableName", _contract.TableName);
 
         var uniqueConstraints = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
@@ -198,13 +175,17 @@ WHERE table_constraints.table_schema = @schema
             columns.Add(columnName);
         }
 
-        return uniqueConstraints.Values.Any(HasRequiredUniqueColumns);
+        return uniqueConstraints.Values
+            .Select(columns => columns
+                .OrderBy(columnName => columnName, StringComparer.OrdinalIgnoreCase)
+                .ToArray())
+            .ToList();
     }
 
-    private static bool HasRequiredUniqueColumns(IReadOnlySet<string> columns)
+    private static bool ColumnsMatch(IReadOnlyList<string> actualColumns, IReadOnlyList<string> requiredColumns)
     {
-        return columns.Count == RequiredUniqueConstraintColumns.Length
-            && RequiredUniqueConstraintColumns.All(columns.Contains);
+        return actualColumns.Count == requiredColumns.Count
+            && requiredColumns.All(requiredColumn => actualColumns.Contains(requiredColumn, StringComparer.OrdinalIgnoreCase));
     }
 
     private static void AddParameter(IDbCommand command, string name, object value)
@@ -232,5 +213,4 @@ WHERE table_constraints.table_schema = @schema
             _ => dataType.Trim().ToLowerInvariant()
         };
     }
-
 }
