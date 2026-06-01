@@ -1,7 +1,7 @@
 # CONTEXT.md
 
 ## Scope
-- Applies to EF Core model configuration, repositories, services, migrations, and any change that depends on PostgreSQL semantics rather than in-memory behavior. `confirmed`
+- Applies to EF Core model configuration, repositories, services, archived migration history, and any change that depends on PostgreSQL semantics rather than in-memory behavior. `confirmed`
 
 ## Language
 - `StationId` is the durable provider key used for weather-station relationships and upsert matching. Entity `Id` is not the cross-layer provider key. `confirmed`
@@ -17,6 +17,7 @@
 - `ApplicationDbContext.cs` is the source of truth for keys, indexes, check constraints, default values, and view mappings. `confirmed`
 - Repositories hold the actual upsert and update projections; services add input validation, batching, and explicit transaction boundaries. `confirmed`
 - `Extensions/ConfigurationExtensions.cs` owns environment-based connection-string selection. `confirmed`
+- Archived EF migrations live under `archive/ef-migrations/` and are retained as historical reference only, not as the active schema workflow. `confirmed`
 
 ## Local Rules
 - `WeatherStation` is unique by `StationId`. Normal weather-station upserts update metadata but intentionally do not overwrite `Country` or `IsMain`; those are reserved for `UpdateCountriesAsync`. `confirmed`
@@ -31,7 +32,7 @@
 ## Validation
 - Use `dotnet test src/WindLordApi.Tests/WindLordApi.Tests.csproj` for repository or service changes, but prefer the integration tests under `src/WindLordApi.Tests/Integration` when touching upserts, deletes, transactions, views, or filtered indexes. `confirmed`
 - Use `dotnet build WindLordApi.sln` after model or repository changes. `confirmed`
-- Schema or migration changes also need migration-specific validation because the normal test harness uses `EnsureCreatedAsync`. `confirmed`
+- Upstream schema changes should be validated through the startup schema-contract health checks because the normal test harness uses `EnsureCreatedAsync` from the current EF model. `confirmed`
 
 ## Watchouts
 - Renaming or dropping the MetYr forecast-selection views requires coordinated changes in `ApplicationDbContext` and the repositories that consume them; the Open-Meteo refresh-candidate query lives inline in `ParaglidingLocationRepository`. `confirmed`

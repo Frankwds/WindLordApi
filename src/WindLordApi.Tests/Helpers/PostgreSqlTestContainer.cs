@@ -50,7 +50,7 @@ public class PostgreSqlTestContainer : IAsyncLifetime
     }
 
     /// <summary>
-    /// Ensures the database schema is created by running migrations or creating tables.
+    /// Ensures the database schema is created from the current EF model for test isolation.
     /// </summary>
     public async Task EnsureDatabaseCreatedAsync(CancellationToken cancellationToken = default)
     {

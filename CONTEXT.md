@@ -34,8 +34,9 @@
 - Country enrichment is best-effort: the worker retries stations whose country is `null` or `"UKJENT"`, persists successful resolutions, and leaves unresolved stations in place for later attempts. `confirmed`
 - Schedules are code, not configuration: current cron expressions live in `src/WindLordApi.Worker/Worker.cs` and use six-field UTC Cronos expressions with seconds. `confirmed`
 - Configuration chooses `SUPABASE_CONNECTION_STRING` outside production and `SUPABASE_CONNECTION_STRING_PRODUCTION` in production; `Program.cs` explicitly loads user secrets even outside Development. `confirmed`
+- EF migrations are archived under `archive/ef-migrations/` and are no longer the database source of truth for this repo; Supabase schema versioning lives elsewhere. `confirmed`
 - Unit tests can use EF InMemory for narrow helpers, but PostgreSQL behavior such as FlexLabs upsert, `ExecuteDelete`, views, filtered indexes, and transaction behavior should be validated with the PostgreSQL test container. `confirmed`
-- Integration tests initialize schema with `EnsureCreatedAsync`, so migration-application behavior is not fully exercised by the normal test suite. Validate migrations separately when schema changes. `confirmed`
+- Integration tests initialize schema with `EnsureCreatedAsync`, so they validate the current EF runtime mapping contract rather than upstream schema version history. `confirmed`
 
 ## Commands
 - `openspec validate --specs`

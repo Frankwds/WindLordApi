@@ -12,7 +12,7 @@
 - Changes here are risky when they alter ordering, cadence, or failure isolation rather than business calculations. `confirmed`
 
 ## Structure
-- `Program.cs` wires DI, logging, connection-string loading, the startup migration check, and startup health checks. `confirmed`
+- `Program.cs` wires DI, logging, connection-string loading, Local-environment overrides, and startup health checks including schema-contract validation. `confirmed`
 - `Startup/StartupJobs.cs` is the one-time boot sequence. `Worker.cs` defines hard-coded cron cadences and launches long-running scheduler loops. `confirmed`
 - `Schedulers/CronScheduler.cs` parses six-part cron expressions with seconds support and resolves a fresh scoped service for each run. `confirmed`
 
@@ -31,7 +31,7 @@
   - PortWind latest data hourly at minute 3. `confirmed`
   - Holfuy every 15 minutes at second 30. `confirmed`
   - Sunday maintenance window: MetFrost station discovery at 03:00 UTC, MetFrost active-status sync at 04:00 UTC, country locator at 05:00 UTC, PortWind station refresh at 06:00 UTC. `confirmed`
-- `Program.cs` checks for pending migrations at startup and logs errors but does not currently fail host startup when migrations are missing or the check itself fails. `confirmed`
+- `Program.cs` no longer checks EF migration history at startup; it relies on startup health checks, including `forecast-cache-schema`, to verify the live database contract. `confirmed`
 - `Program.cs` explicitly loads user secrets even outside Development to support production debugging. Treat that as an operational choice, not a default host assumption. `confirmed`
 
 ## Validation
