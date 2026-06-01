@@ -34,10 +34,10 @@ public class WeatherStation
     [Column("is_active")]
     public bool IsActive { get; set; } = true;
 
-    [Column("provider")]
+    [Column("provider", TypeName = "character varying")]
     public string? Provider { get; set; }
 
-    [Column("updated_at", TypeName = "timestamp without time zone")]
+    [Column("updated_at", TypeName = "timestamp with time zone")]
     public DateTime? UpdatedAt { get; set; }
 
     [Required]

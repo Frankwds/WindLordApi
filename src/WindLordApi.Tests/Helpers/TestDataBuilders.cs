@@ -227,16 +227,16 @@ public class StationDataBuilder
 /// </summary>
 public class LatestStationDataBuilder
 {
-    private Guid _id = Guid.NewGuid();
+    private long _id = 1;
     private string _stationId = "TEST-001";
     private decimal _windSpeed = 10.5m;
     private decimal? _windGust = 15.2m;
-    private int _direction = 180;
+    private decimal _direction = 180;
     private decimal? _temperature = 20.5m;
     private DateTime _updatedAt = DateTime.UtcNow;
     private decimal? _windMinSpeed = 5.0m;
 
-    public LatestStationDataBuilder WithId(Guid id)
+    public LatestStationDataBuilder WithId(long id)
     {
         _id = id;
         return this;

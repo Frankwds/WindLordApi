@@ -26,7 +26,7 @@
 - `GetStationsWithMissingCountryAsync` treats both `null` and `"UKJENT"` as missing. `confirmed`
 - `GetByIdsAsync` for paragliding locations returns only rows where `IsActive && IsMain`, so both MetYr refresh and Open-Meteo supplementation ignore inactive or secondary locations even if their IDs were selected earlier. `confirmed`
 - `WeatherStationService` and `ForecastCacheService` batch at 1000 records and wrap each batch in an explicit transaction for Supabase pooler compatibility. `confirmed`
-- Some DateTime fields are stored in PostgreSQL `timestamp without time zone`; `WeatherStation.UpdatedAt` is explicitly converted to `DateTimeKind.Unspecified` on write. Treat DateTime-kind edits as persistence changes, not cleanup. `confirmed`
+- DateTime storage is not uniform across tables. `WeatherStation.UpdatedAt` and the forecast/station snapshot tables use PostgreSQL `timestamp with time zone`, while other fields may still use `timestamp without time zone`. Treat DateTime-kind edits as persistence changes, not cleanup. `confirmed`
 
 ## Validation
 - Use `dotnet test src/WindLordApi.Tests/WindLordApi.Tests.csproj` for repository or service changes, but prefer the integration tests under `src/WindLordApi.Tests/Integration` when touching upserts, deletes, transactions, views, or filtered indexes. `confirmed`

@@ -8,32 +8,31 @@ public class LatestStationData
 {
     [Key]
     [Column("id")]
-    public Guid Id { get; set; }
+    public long Id { get; set; }
 
     [Required]
-    [MaxLength(50)]
-    [Column("station_id")]
+    [Column("station_id", TypeName = "text")]
     public string StationId { get; set; } = string.Empty;
 
     [Required]
-    [Column("wind_speed", TypeName = "numeric(5,2)")]
+    [Column("wind_speed", TypeName = "numeric")]
     public decimal WindSpeed { get; set; }
 
-    [Column("wind_gust", TypeName = "numeric(5,2)")]
+    [Column("wind_gust", TypeName = "numeric")]
     public decimal? WindGust { get; set; }
 
     [Required]
-    [Column("direction")]
-    public int Direction { get; set; }
+    [Column("direction", TypeName = "numeric")]
+    public decimal Direction { get; set; }
 
-    [Column("temperature", TypeName = "numeric(4,1)")]
+    [Column("temperature", TypeName = "numeric")]
     public decimal? Temperature { get; set; }
 
     [Required]
     [Column("updated_at", TypeName = "timestamp with time zone")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    [Column("wind_min_speed", TypeName = "numeric(5,2)")]
+    [Column("wind_min_speed", TypeName = "numeric")]
     public decimal? WindMinSpeed { get; set; }
 }
 
