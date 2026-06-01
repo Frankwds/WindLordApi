@@ -3,6 +3,7 @@ using WindLordApi.Worker.Schedulers;
 using WindLordApi.Worker.Services;
 using WindLordApi.Worker.Startup;
 using WindLordApi.Data;
+using WindLordApi.Data.Schema;
 using WindLordApi.Data.Extensions;
 using WindLordApi.Data.Services;
 using WindLordApi.Data.Repositories;
@@ -129,7 +130,9 @@ builder.Services.AddGoogleGeocodingClient(builder.Configuration);
 
 // Register Health Check Services
 builder.Services.AddScoped<DatabaseHealthCheck>();
+builder.Services.AddScoped<TableSchemaValidationService>();
 builder.Services.AddScoped<ForecastCacheSchemaHealthCheck>();
+builder.Services.AddScoped<StationDataSchemaHealthCheck>();
 builder.Services.AddScoped<MetFrostHealthCheck>();
 builder.Services.AddScoped<HolfuyHealthCheck>();
 builder.Services.AddScoped<MetYrHealthCheck>();
@@ -140,6 +143,7 @@ builder.Services.AddScoped<PortWindHealthCheck>();
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database", tags: ["db", "database"])
     .AddCheck<ForecastCacheSchemaHealthCheck>("forecast-cache-schema", tags: ["db", "database", "schema"])
+    .AddCheck<StationDataSchemaHealthCheck>("station-data-schema", tags: ["db", "database", "schema"])
     .AddCheck<MetFrostHealthCheck>("metfrost", tags: ["api", "metfrost"])
     .AddCheck<HolfuyHealthCheck>("holfuy", tags: ["api", "holfuy"])
     .AddCheck<MetYrHealthCheck>("metyr", tags: ["api", "metyr"])

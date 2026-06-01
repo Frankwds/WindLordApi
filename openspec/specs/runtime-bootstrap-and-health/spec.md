@@ -47,10 +47,10 @@ This capability SHOULD treat WindsMobi differently because the current registrat
 - **THEN** their bound options are validated using the configured startup validation path
 - **AND** invalid required configuration prevents normal host startup
 
-### Requirement: Schema-contract diagnostics SHALL be advisory after database resolution succeeds
+### Requirement: Schema-contract diagnostics SHALL gate startup after database resolution succeeds
 The system SHALL evaluate schema-contract health checks after `ApplicationDbContext` has been resolved and before entering `host.RunAsync`.
 
-The schema-contract validation SHALL confirm that the live database still satisfies the mapped contract the worker depends on, starting with the `forecast_cache` table. Missing tables, missing mapped columns, incompatible mapped column types, or missing critical constraints SHALL be reported as unhealthy health-check results rather than through EF Core migration status.
+The schema-contract validation SHALL confirm that the live database still satisfies the mapped contract the worker depends on, starting with the `forecast_cache` and `station_data` tables. Missing tables, missing mapped columns, incompatible mapped column types, or missing critical constraints SHALL be reported as unhealthy health-check results rather than through EF Core migration status.
 
 #### Scenario: Forecast-cache contract mismatches are reported through startup health checks
 - **GIVEN** `ApplicationDbContext` resolves successfully
@@ -58,6 +58,7 @@ The schema-contract validation SHALL confirm that the live database still satisf
 - **WHEN** the startup health-check runner executes
 - **THEN** the `forecast-cache-schema` health check reports an unhealthy result describing the mismatch
 - **AND** bootstrap still proceeds to the remaining startup health checks
+- **AND** startup aborts before `host.RunAsync`
 
 #### Scenario: Forecast-cache contract matches are reported as healthy
 - **GIVEN** `ApplicationDbContext` resolves successfully
@@ -66,10 +67,17 @@ The schema-contract validation SHALL confirm that the live database still satisf
 - **THEN** the `forecast-cache-schema` health check reports a healthy result
 - **AND** bootstrap still proceeds to `host.RunAsync`
 
-### Requirement: Startup health checks SHALL report dependency status without gating worker execution
-The system SHALL run the registered startup health checks after database resolution and before `host.RunAsync`. The current startup health-check set SHALL include database, forecast-cache schema contract, MetFrost, Holfuy, MetYr, Open-Meteo, and PortWind.
+#### Scenario: Station-data contract mismatches abort startup
+- **GIVEN** `ApplicationDbContext` resolves successfully
+- **AND** the live database no longer satisfies the mapped `station_data` contract
+- **WHEN** the startup health-check runner executes
+- **THEN** the `station-data-schema` health check reports an unhealthy result describing the mismatch
+- **AND** startup aborts before `host.RunAsync`
 
-The health-check runner SHALL log the overall report status and each individual check result. Unhealthy or degraded results SHALL be logged, but SHALL NOT by themselves stop worker startup.
+### Requirement: Startup health checks SHALL report dependency status without gating worker execution
+The system SHALL run the registered startup health checks after database resolution and before `host.RunAsync`. The current startup health-check set SHALL include database, forecast-cache schema contract, station-data schema contract, MetFrost, Holfuy, MetYr, Open-Meteo, and PortWind.
+
+The health-check runner SHALL log the overall report status and each individual check result. Unhealthy or degraded results SHALL be logged. Schema-tagged `Unhealthy` results SHALL stop worker startup; non-schema startup health-check failures SHALL remain advisory.
 
 This capability MAY omit dependencies from the startup health-check set; in the current implementation, WindsMobi and Google Geocoding are registered integrations but are not included in the startup health-check pass.
 
@@ -80,11 +88,17 @@ This capability MAY omit dependencies from the startup health-check set; in the 
 - **AND** it logs the overall status, total check count, and total duration
 - **AND** it logs each individual check as information, warning, or error based on the check result
 
-#### Scenario: Unhealthy startup checks do not prevent worker startup
-- **GIVEN** one or more registered startup health checks return `Unhealthy`
+#### Scenario: Non-schema unhealthy startup checks do not prevent worker startup
+- **GIVEN** one or more registered non-schema startup health checks return `Unhealthy`
 - **WHEN** the startup health-check runner completes
 - **THEN** bootstrap logs those failures
 - **AND** the program still proceeds to `host.RunAsync` unless a separate fatal bootstrap exception has already occurred
+
+#### Scenario: Schema unhealthy startup checks prevent worker startup
+- **GIVEN** one or more registered schema-tagged startup health checks return `Unhealthy`
+- **WHEN** the startup health-check runner completes
+- **THEN** bootstrap logs those failures
+- **AND** the program throws a fatal startup exception before entering `host.RunAsync`
 
 ### Requirement: Open-Meteo startup health reporting SHALL use the same advisory pattern as other integrations
 The system SHALL include an Open-Meteo-specific startup health check in the advisory startup health-check pass.
