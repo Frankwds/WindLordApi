@@ -5,7 +5,8 @@ using Microsoft.Extensions.Logging;
 namespace WindLordApi.Worker.Startup;
 
 /// <summary>
-/// Startup health check runner that executes all registered health checks and logs results.
+/// Startup health check runner that executes all registered health checks, logs results,
+/// and aborts startup when required schema checks fail.
 /// </summary>
 public static class HealthCheck
 {

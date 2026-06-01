@@ -10,7 +10,7 @@ namespace WindLordApi.Tests.Unit.Services;
 public class StartupJobsTests
 {
     [Fact]
-    public async Task RunStartupJobsAsync_ShouldRunOpenMeteoBeforeMetYr()
+    public async Task RunStartupJobsAsync_ShouldRunStationDataRetentionBeforeForecastStartupJobs()
     {
         var executionOrder = new List<string>();
 
@@ -66,6 +66,7 @@ public class StartupJobsTests
         var stationDataRetentionServiceMock = new Mock<IStationDataRetentionService>();
         stationDataRetentionServiceMock
             .Setup(service => service.CleanupOldObservationsAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => executionOrder.Add("StationDataRetention"))
             .ReturnsAsync(0);
 
         var serviceProvider = BuildServiceProvider(
@@ -83,7 +84,7 @@ public class StartupJobsTests
 
         await StartupJobs.RunStartupJobsAsync(serviceProvider, loggerMock.Object, TestContext.Current.CancellationToken);
 
-        executionOrder.Should().ContainInOrder("OpenMeteo", "MetYr", "PortWindStations", "PortWindLatest");
+        executionOrder.Should().ContainInOrder("StationDataRetention", "OpenMeteo", "MetYr", "PortWindStations", "PortWindLatest");
     }
 
     [Fact]

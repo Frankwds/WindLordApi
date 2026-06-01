@@ -12,12 +12,13 @@
 - Changes here are risky when they alter ordering, cadence, or failure isolation rather than business calculations. `confirmed`
 
 ## Structure
-- `Program.cs` wires DI, logging, connection-string loading, Local-environment overrides, and startup health checks including schema-contract validation. `confirmed`
+- `Program.cs` wires DI, logging, connection-string loading, Local-environment overrides, and startup health checks including schema-contract validation that can abort host startup before the worker begins executing startup jobs. `confirmed`
 - `Startup/StartupJobs.cs` is the one-time boot sequence. `Worker.cs` defines hard-coded cron cadences and launches long-running scheduler loops. `confirmed`
 - `Schedulers/CronScheduler.cs` parses six-part cron expressions with seconds support and resolves a fresh scoped service for each run. `confirmed`
 
 ## Local Rules
 - Startup order matters: PortWind station refresh runs before PortWind latest-data sync so provider station metadata exists before dependent observations. `confirmed`
+- Schema-tagged `Unhealthy` startup health checks are fatal bootstrap failures. They still log the full startup health report, but the host stops before `Worker.ExecuteAsync()` and `StartupJobs.RunStartupJobsAsync(...)` begin. `confirmed`
 - Forecast startup order also matters: Open-Meteo supplement runs before the authoritative MetYr refresh, but MetYr still owns cleanup and remains the authoritative writer on overlapping forecast-cache rows. `confirmed`
 - Startup job failures are logged and isolated; one failure does not stop later startup jobs. `confirmed`
 - Scheduled-job failures are logged inside `CronScheduler` and the loop continues on the next occurrence. `confirmed`

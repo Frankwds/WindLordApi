@@ -19,6 +19,7 @@ The worker SHALL execute the startup job sequence once before it initializes rec
 The startup runner SHALL execute startup jobs sequentially in the order declared in `StartupJobs.cs`.
 
 The current implemented order is:
+- Station-data retention cleanup
 - Open-Meteo forecast supplement
 - MetYr forecast refresh
 - PortWind station refresh
@@ -29,6 +30,11 @@ The current implemented order is:
 - MetFrost latest-station-data sync
 - MetFrost weather-station sync
 - MetFrost weather-station active-status sync
+
+#### Scenario: Station-data retention runs before provider startup jobs
+- **GIVEN** the worker is executing startup jobs
+- **WHEN** the startup runner begins its declared sequence
+- **THEN** `IStationDataRetentionService.CleanupOldObservationsAsync(...)` runs before Open-Meteo, MetYr, PortWind, WindsMobi, country locator, Holfuy, or MetFrost startup jobs
 
 #### Scenario: Open-Meteo startup runs before MetYr startup
 - **GIVEN** the worker is executing startup jobs
