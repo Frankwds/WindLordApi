@@ -5,7 +5,7 @@
       // Use IntelliSense to find out which attributes exist for C# debugging
       // Use hover for the description of the existing attributes
       // For further information visit https://github.com/dotnet/vscode-csharp/blob/main/debugger-launchjson.md
-      "name": ".NET Core Launch (console)",
+      "name": ".NET Core Launch (Development)",
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
@@ -18,8 +18,37 @@
       "stopAtEntry": false,
       "env": {
         "DOTNET_ENVIRONMENT": "Development",
+        "IS_LOCAL": "false"
+      }
+    },
+    {
+      "name": ".NET Core Launch (Production)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/WindLordApi.Worker/bin/Debug/net9.0/WindLordApi.Worker.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/WindLordApi.Worker",
+      "console": "internalConsole",
+      "stopAtEntry": false,
+      "env": {
+        "DOTNET_ENVIRONMENT": "Production",
+        "IS_LOCAL": "false"
+      }
+    },
+    {
+      "name": ".NET Core Launch (Local)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/WindLordApi.Worker/bin/Debug/net9.0/WindLordApi.Worker.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/WindLordApi.Worker",
+      "console": "internalConsole",
+      "stopAtEntry": false,
+      "env": {
+        "DOTNET_ENVIRONMENT": "Local",
         "IS_LOCAL": "true"
-        // "DOTNET_ENVIRONMENT": "Production"
       }
     },
     {

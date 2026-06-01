@@ -79,6 +79,13 @@ var builder = Host.CreateApplicationBuilder(args);
 // This allows Production debugging to access user secrets
 builder.Configuration.AddUserSecrets(typeof(Program).Assembly);
 
+// Allow a dedicated Local environment file to override user secrets when debugging
+// against the local Supabase stack.
+if (builder.Environment.IsEnvironment("Local"))
+{
+    builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+}
+
 // Use Serilog for logging
 builder.Logging.ClearProviders();
 builder.Logging.AddSerilog();
