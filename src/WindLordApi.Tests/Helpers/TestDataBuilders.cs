@@ -142,10 +142,10 @@ public class WeatherStationBuilder
 public class StationDataBuilder
 {
     private Guid _id = Guid.NewGuid();
-    private decimal _windSpeed = 10.5m;
+    private decimal? _windSpeed = 10.5m;
     private decimal? _windGust = 15.2m;
     private decimal? _windMinSpeed = 5.0m;
-    private int _direction = 180;
+    private int? _direction = 180;
     private decimal? _temperature = 20.5m;
     private DateTime _updatedAt = DateTime.UtcNow;
     private bool _isCompressed = false;
@@ -157,7 +157,7 @@ public class StationDataBuilder
         return this;
     }
 
-    public StationDataBuilder WithWindSpeed(decimal windSpeed)
+    public StationDataBuilder WithWindSpeed(decimal? windSpeed)
     {
         _windSpeed = windSpeed;
         return this;
@@ -175,7 +175,7 @@ public class StationDataBuilder
         return this;
     }
 
-    public StationDataBuilder WithDirection(int direction)
+    public StationDataBuilder WithDirection(int? direction)
     {
         _direction = direction;
         return this;
@@ -229,9 +229,9 @@ public class LatestStationDataBuilder
 {
     private long _id = 1;
     private string _stationId = "TEST-001";
-    private decimal _windSpeed = 10.5m;
+    private decimal? _windSpeed = 10.5m;
     private decimal? _windGust = 15.2m;
-    private decimal _direction = 180;
+    private decimal? _direction = 180;
     private decimal? _temperature = 20.5m;
     private DateTime _updatedAt = DateTime.UtcNow;
     private decimal? _windMinSpeed = 5.0m;
@@ -248,7 +248,7 @@ public class LatestStationDataBuilder
         return this;
     }
 
-    public LatestStationDataBuilder WithWindSpeed(decimal windSpeed)
+    public LatestStationDataBuilder WithWindSpeed(decimal? windSpeed)
     {
         _windSpeed = windSpeed;
         return this;
@@ -260,7 +260,7 @@ public class LatestStationDataBuilder
         return this;
     }
 
-    public LatestStationDataBuilder WithDirection(int direction)
+    public LatestStationDataBuilder WithDirection(int? direction)
     {
         _direction = direction;
         return this;

@@ -14,16 +14,14 @@ public class LatestStationData
     [Column("station_id", TypeName = "text")]
     public string StationId { get; set; } = string.Empty;
 
-    [Required]
     [Column("wind_speed", TypeName = "numeric")]
-    public decimal WindSpeed { get; set; }
+    public decimal? WindSpeed { get; set; }
 
     [Column("wind_gust", TypeName = "numeric")]
     public decimal? WindGust { get; set; }
 
-    [Required]
     [Column("direction", TypeName = "numeric")]
-    public decimal Direction { get; set; }
+    public decimal? Direction { get; set; }
 
     [Column("temperature", TypeName = "numeric")]
     public decimal? Temperature { get; set; }

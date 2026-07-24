@@ -10,9 +10,8 @@ public class StationData
     [Column("id")]
     public Guid Id { get; set; }
 
-    [Required]
     [Column("wind_speed", TypeName = "numeric(5,2)")]
-    public decimal WindSpeed { get; set; }
+    public decimal? WindSpeed { get; set; }
 
     [Column("wind_gust", TypeName = "numeric(5,2)")]
     public decimal? WindGust { get; set; }
@@ -20,9 +19,8 @@ public class StationData
     [Column("wind_min_speed", TypeName = "numeric(5,2)")]
     public decimal? WindMinSpeed { get; set; }
 
-    [Required]
     [Column("direction")]
-    public int Direction { get; set; }
+    public int? Direction { get; set; }
 
     [Column("temperature", TypeName = "numeric(4,1)")]
     public decimal? Temperature { get; set; }

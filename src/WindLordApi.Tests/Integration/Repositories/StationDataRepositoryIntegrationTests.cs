@@ -30,18 +30,17 @@ public class StationDataRepositoryIntegrationTests : IAsyncLifetime
         _context = _container.CreateDbContext();
         _repository = new StationDataRepository(_context);
 
-        _context.StationData.RemoveRange(_context.StationData);
-        _context.WeatherStations.RemoveRange(_context.WeatherStations);
-        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        await _context.StationData.ExecuteDeleteAsync(TestContext.Current.CancellationToken);
+        await _context.WeatherStations.ExecuteDeleteAsync(TestContext.Current.CancellationToken);
+        _context.ChangeTracker.Clear();
     }
 
     public async ValueTask DisposeAsync()
     {
         if (_context != null)
         {
-            _context.StationData.RemoveRange(_context.StationData);
-            _context.WeatherStations.RemoveRange(_context.WeatherStations);
-            await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+            await _context.StationData.ExecuteDeleteAsync(TestContext.Current.CancellationToken);
+            await _context.WeatherStations.ExecuteDeleteAsync(TestContext.Current.CancellationToken);
             await _context.DisposeAsync();
         }
     }

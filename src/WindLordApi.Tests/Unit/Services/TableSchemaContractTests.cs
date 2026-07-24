@@ -41,7 +41,8 @@ public class TableSchemaContractTests
         contract.Columns["wind_speed"].StoreType.Should().Be("numeric");
         contract.Columns["wind_speed"].Precision.Should().Be(5);
         contract.Columns["wind_speed"].Scale.Should().Be(2);
-        contract.Columns["wind_speed"].IsNullable.Should().BeFalse();
+        contract.Columns["wind_speed"].IsNullable.Should().BeTrue();
+        contract.Columns["direction"].IsNullable.Should().BeTrue();
         contract.UniqueConstraints.Should().ContainSingle(columns =>
             columns.SequenceEqual(new[] { "station_id", "updated_at" }));
     }
