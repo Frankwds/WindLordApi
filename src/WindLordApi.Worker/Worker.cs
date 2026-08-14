@@ -61,7 +61,7 @@ public class Worker : BackgroundService
         var metFrostDataCron = "0 2/5 * * * *";         // Every 5 min at :02:00 (35s duration)
         var portWindLatestDataCron = "0 3 * * * *";    // Hourly at :03:00 (~5s duration)
         var metFrostNewStationsCron = "0 0 3 * * SUN";  // Sundays at 3:00 AM (2s duration)
-        var metFrostActiveStatusCron = "0 0 4 * * SUN"; // Sundays at 4:00 AM (2s duration)
+        var metFrostActiveStatusCron = "0 0 4 * * *";   // Daily at 4:00 AM (2s duration)
         var portWindStationRefreshCron = "0 0 6 * * SUN"; // Sundays at 6:00 AM (~5s duration)
         var windsMobiCron = "0 */5 * * * *";              // Every 5 min at :00 seconds (~30s duration)
         var countryLocatorCron = "0 0 5 * * SUN";          // Sundays at 5:00 AM

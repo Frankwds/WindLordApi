@@ -10,7 +10,7 @@ This diagram shows the flow of the MetFrost sync service with three scheduled jo
 flowchart TB
     Worker[Worker.cs] -->|Every 5 min| SyncLatest[SyncLatestStationDataAsync]
     Worker -->|Sundays 3:00 AM| SyncStations[SyncWeatherStationsAsync]
-    Worker -->|Sundays 4:00 AM| SyncStatus[SyncWeatherStationsActiveStatusAsync]
+    Worker -->|Daily 4:00 AM| SyncStatus[SyncWeatherStationsActiveStatusAsync]
 
     %% Main Station Data Sync Flow
     SyncLatest -->|Calls with isActive=true| SyncData[SyncStationDataAsync<br/>isActive: true]
@@ -174,7 +174,7 @@ The three MetFrost operations are scheduled with staggered timing to avoid confl
 | ------------------------------------ | --------------- | --------------------- | -------- |
 | SyncLatestStationDataAsync           | `0 2/5 * * * *` | Every 5 min at :02:00 | ~35s     |
 | SyncWeatherStationsAsync             | `0 0 3 * * SUN` | Sundays at 3:00 AM    | ~2s      |
-| SyncWeatherStationsActiveStatusAsync | `0 0 4 * * SUN` | Sundays at 4:00 AM    | ~2s      |
+| SyncWeatherStationsActiveStatusAsync | `0 0 4 * * *`   | Daily at 4:00 AM      | ~2s      |
 
 **Why the timing?**
 
