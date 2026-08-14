@@ -12,5 +12,14 @@ public interface IHolfuySyncService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Count of new StationData records inserted (only meaningful metric, as other upserts always update existing records).</returns>
     Task<int> SyncHolfuyDataAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deactivates Holfuy stations that have no station data left (silent for over 24 hours,
+    /// once retention has removed their observations). Stations reappearing in the Holfuy
+    /// response are automatically reactivated by the weather-station upsert.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Count of stations deactivated.</returns>
+    Task<int> DeactivateStaleStationsAsync(CancellationToken cancellationToken = default);
 }
 

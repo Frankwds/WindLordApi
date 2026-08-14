@@ -129,6 +129,19 @@ public static class StartupJobs
             logger.LogError(ex, "Holfuy: Error running SyncHolfuyDataAsync on startup");
         }
 
+        // Deactivate stale Holfuy stations on startup
+        try
+        {
+            using var holfuyDeactivateScope = serviceProvider.CreateScope();
+            var holfuySyncService = holfuyDeactivateScope.ServiceProvider.GetRequiredService<IHolfuySyncService>();
+            await holfuySyncService.DeactivateStaleStationsAsync(cancellationToken);
+            logger.LogInformation("Holfuy: Completed startup job: DeactivateStaleStationsAsync");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Holfuy: Error running DeactivateStaleStationsAsync on startup");
+        }
+
         // Sync all weather stations on startup
         try
         {

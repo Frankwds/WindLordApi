@@ -82,5 +82,23 @@ public class HolfuySyncService : IHolfuySyncService
             throw;
         }
     }
+
+    public async Task<int> DeactivateStaleStationsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Retention deletes station_data older than 24 hours, so "no data" means the
+            // station has been silent for over 24 hours. Stations reappearing in the s=all
+            // response are automatically reactivated by the weather-station upsert.
+            var deactivatedCount = await _weatherStationService.SetAllStationsWithoutDataToInactiveByProviderAsync("Holfuy", cancellationToken);
+            _logger.LogInformation("Holfuy: Deactivated {Count} station(s) with no data in the last 24 hours", deactivatedCount);
+            return deactivatedCount;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Holfuy: Error deactivating stale stations");
+            throw;
+        }
+    }
 }
 

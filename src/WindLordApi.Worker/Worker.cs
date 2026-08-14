@@ -58,6 +58,7 @@ public class Worker : BackgroundService
         var metYrForecastRefreshCron = "0 1/5 * * * *";      // Every 5 min at :01:00 seconds (34s duration)
         var openMeteoForecastSupplementCron = "0 6/10 * * * *"; // Every 10 min at :06:00 seconds (15s duration)
         var holfuyCron = "30 */15 * * * *";             // Every 15 min at :30 seconds (18s duration)
+        var holfuyDeactivateCron = "0 30 4 * * *";      // Daily at 4:30 AM (deactivate stale Holfuy stations)
         var metFrostDataCron = "0 2/5 * * * *";         // Every 5 min at :02:00 (35s duration)
         var portWindLatestDataCron = "0 3 * * * *";    // Hourly at :03:00 (~5s duration)
         var metFrostNewStationsCron = "0 0 3 * * SUN";  // Sundays at 3:00 AM (2s duration)
@@ -71,6 +72,7 @@ public class Worker : BackgroundService
         var metYrForecastRefreshNextRun = CronScheduler<IMetYrForecastRefreshService>.CalculateNextRunTime(metYrForecastRefreshCron);
         var openMeteoForecastSupplementNextRun = CronScheduler<IOpenMeteoForecastSupplementService>.CalculateNextRunTime(openMeteoForecastSupplementCron);
         var holfuyNextRun = CronScheduler<IHolfuySyncService>.CalculateNextRunTime(holfuyCron);
+        var holfuyDeactivateNextRun = CronScheduler<IHolfuySyncService>.CalculateNextRunTime(holfuyDeactivateCron);
         var metFrostDataNextRun = CronScheduler<IMetFrostSyncService>.CalculateNextRunTime(metFrostDataCron);
         var portWindLatestDataNextRun = CronScheduler<IPortWindLatestDataSyncService>.CalculateNextRunTime(portWindLatestDataCron);
         var metFrostNewStationsNextRun = CronScheduler<IMetFrostSyncService>.CalculateNextRunTime(metFrostNewStationsCron);
@@ -84,6 +86,7 @@ public class Worker : BackgroundService
         jobSchedule.Add(("RefreshMetYrForecastsAsync", metYrForecastRefreshCron, metYrForecastRefreshNextRun?.DateTime, 34));
         jobSchedule.Add(("SupplementOpenMeteoForecastsAsync", openMeteoForecastSupplementCron, openMeteoForecastSupplementNextRun?.DateTime, 15));
         jobSchedule.Add(("SyncHolfuyDataAsync", holfuyCron, holfuyNextRun?.DateTime, 18));
+        jobSchedule.Add(("DeactivateStaleHolfuyStationsAsync", holfuyDeactivateCron, holfuyDeactivateNextRun?.DateTime, 2));
         jobSchedule.Add(("SyncLatestStationDataAsync", metFrostDataCron, metFrostDataNextRun?.DateTime, 35));
         jobSchedule.Add(("SyncPortWindLatestStationDataAsync", portWindLatestDataCron, portWindLatestDataNextRun?.DateTime, 5));
         jobSchedule.Add(("SyncNewWeatherStationsAsync", metFrostNewStationsCron, metFrostNewStationsNextRun?.DateTime, 2));
@@ -113,6 +116,12 @@ public class Worker : BackgroundService
             holfuyCron,
             async (service, ct) => { await service.SyncHolfuyDataAsync(ct); },
             "SyncHolfuyDataAsync",
+            stoppingToken);
+
+        var holfuyDeactivateTask = _holfuyScheduler.RunAsync(
+            holfuyDeactivateCron,
+            async (service, ct) => { await service.DeactivateStaleStationsAsync(ct); },
+            "DeactivateStaleHolfuyStationsAsync",
             stoppingToken);
 
         var syncDataTask = _metFrostScheduler.RunAsync(
@@ -164,7 +173,7 @@ public class Worker : BackgroundService
             stoppingToken);
 
         // Wait for all tasks (they will run until cancellation is requested)
-        await Task.WhenAll(syncDataTask, portWindLatestDataTask, syncStationsTask, syncStatusTask, portWindStationRefreshTask, holfuySyncTask, metYrForecastRefreshTask, openMeteoForecastSupplementTask, windsMobiSyncTask, countryLocatorTask, stationDataRetentionTask);
+        await Task.WhenAll(syncDataTask, portWindLatestDataTask, syncStationsTask, syncStatusTask, portWindStationRefreshTask, holfuySyncTask, holfuyDeactivateTask, metYrForecastRefreshTask, openMeteoForecastSupplementTask, windsMobiSyncTask, countryLocatorTask, stationDataRetentionTask);
     }
 
     private void PrintJobSchedule(List<(string Name, string CronExpression, DateTime? FirstRun, int ExpectedDuration)> schedule, DateTime startTime)

@@ -1,10 +1,14 @@
 # MetFrost Sync Service Flow
 
-This diagram shows the flow of the MetFrost sync service with three scheduled jobs:
+This diagram shows the flow of the MetFrost sync service with three scheduled
+jobs:
 
-- **Station Data Sync**: Every 5 minutes (cron: `0 2/5 * * * *`) - Duration: ~35s
-- **New Stations Sync**: Sundays at 3:00 AM (cron: `0 0 3 * * SUN`) - Duration: ~2s
-- **Active Status Sync**: Sundays at 4:00 AM (cron: `0 0 4 * * SUN`) - Duration: ~2s
+- **Station Data Sync**: Every 5 minutes (cron: `0 2/5 * * * *`) - Duration:
+  ~35s
+- **New Stations Sync**: Sundays at 3:00 AM (cron: `0 0 3 * * SUN`) - Duration:
+  ~2s
+- **Active Status Sync**: Sundays at 4:00 AM (cron: `0 0 4 * * SUN`) - Duration:
+  ~2s
 
 ```mermaid
 flowchart TB
@@ -74,27 +78,33 @@ flowchart TB
 
 ## Service Overview
 
-The `MetFrostSyncService` manages weather data synchronization from the Norwegian Meteorological Institute's Frost API. It handles three main responsibilities:
+The `MetFrostSyncService` manages weather data synchronization from the
+Norwegian Meteorological Institute's Frost API. It handles three main
+responsibilities:
 
 1. **Active Station Data Sync** - Regular updates from active weather stations
 2. **Weather Station Discovery** - Weekly sync of station metadata
-3. **Station Status Management** - Weekly check to activate/deactivate stations based on data availability
+3. **Station Status Management** - Weekly check to activate/deactivate stations
+   based on data availability
 
 ## Process Details
 
 ### 1. Station Data Sync (SyncLatestStationDataAsync)
 
-**Frequency**: Every 5 minutes at :02:00 seconds  
+**Frequency**: Every 5 minutes at :02:00 seconds\
 **Purpose**: Fetch latest weather observations from active MET stations
 
 **Flow**:
 
-1. **Fetch Active Station IDs**: Gets all MET station IDs marked as active from database
-2. **Batch Processing**: Splits stations into batches of 100 (MetFrost API limit)
+1. **Fetch Active Station IDs**: Gets all MET station IDs marked as active from
+   database
+2. **Batch Processing**: Splits stations into batches of 100 (MetFrost API
+   limit)
 3. **API Call**: Fetches observations from MetFrost API for each batch
 4. **Map Data**: Converts MET observations to `StationData` domain models
 5. **Upsert Station Data**: Saves to `StationData` table (historical records)
-6. **Update Latest Data**: Converts and upserts to `LatestStationData` table (current snapshot)
+6. **Update Latest Data**: Converts and upserts to `LatestStationData` table
+   (current snapshot)
 
 **Error Handling**:
 
@@ -107,13 +117,14 @@ The `MetFrostSyncService` manages weather data synchronization from the Norwegia
 
 ### 2. Weather Stations Sync (SyncWeatherStationsAsync)
 
-**Frequency**: Sundays at 3:00 AM  
+**Frequency**: Sundays at 3:00 AM\
 **Purpose**: Discover new weather stations and update existing station metadata
 
 **Flow**:
 
 1. **Fetch All Stations**: Calls MetFrost API to get complete station list
-2. **Map to Domain**: Converts MetFrost station format to `WeatherStation` entities
+2. **Map to Domain**: Converts MetFrost station format to `WeatherStation`
+   entities
 3. **Upsert**: Updates existing stations and inserts new ones
 
 **Error Handling**:
@@ -121,19 +132,23 @@ The `MetFrostSyncService` manages weather data synchronization from the Norwegia
 - Throws exception on failure (critical operation)
 - Logs detailed error information
 
-**Note**: This is an upsert operation, so the count returned represents all processed stations, not just new ones.
+**Note**: This is an upsert operation, so the count returned represents all
+processed stations, not just new ones.
 
 ### 3. Station Active Status Sync (SyncWeatherStationsActiveStatusAsync)
 
-**Frequency**: Sundays at 4:00 AM  
-**Purpose**: Automatically activate/deactivate stations based on data availability
+**Frequency**: Sundays at 4:00 AM\
+**Purpose**: Automatically activate/deactivate stations based on data
+availability
 
 **Flow**:
 
-1. **Sync Inactive Stations**: Attempts to fetch data for all inactive stations using `SyncStationDataAsync(isActive: false)`
+1. **Sync Inactive Stations**: Attempts to fetch data for all inactive stations
+   using `SyncStationDataAsync(isActive: false)`
    - Uses same batching logic as active station sync
    - Checks if previously inactive stations now have data
-2. **Activate Stations**: Marks stations as active if they have data in `StationData` table
+2. **Activate Stations**: Marks stations as active if they have data in
+   `StationData` table
 3. **Deactivate Stations**: Marks stations as inactive if they have no data
 
 **Why This Matters**:
@@ -168,7 +183,8 @@ PostgreSQL Database
 
 ## Scheduling in Worker.cs
 
-The three MetFrost operations are scheduled with staggered timing to avoid conflicts:
+The three MetFrost operations are scheduled with staggered timing to avoid
+conflicts:
 
 | Job                                  | Cron Expression | Description           | Duration |
 | ------------------------------------ | --------------- | --------------------- | -------- |
@@ -178,6 +194,8 @@ The three MetFrost operations are scheduled with staggered timing to avoid confl
 
 **Why the timing?**
 
-- Station data runs every 5 minutes (offset by 1 minute from forecast updates to avoid collision)
+- Station data runs every 5 minutes (offset by 1 minute from forecast updates to
+  avoid collision)
 - Station discovery runs weekly (metadata doesn't change frequently)
-- Status sync runs after station discovery to ensure latest station list is available
+- Status sync runs after station discovery to ensure latest station list is
+  available
